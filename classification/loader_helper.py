@@ -16,17 +16,27 @@ class LoaderHelper:
 
         if task == Task.NC_v_AD:
             self.labels = ["NC", "AD"]
-        else:
+        elif task == Task.sMCI_v_pMCI:
             self.labels = ["sMCI", "pMCI"]
+        elif task == Task.Normal_v_COPD:
+            self.labels = ["Normal", "COPD"]
 
         #cat12
-        self.train_ds = MRIDataset(root_dir="./datasets/adni1/",
+        # 根據任務設定資料路徑
+        if task == Task.Normal_v_COPD:
+            train_root = "./datasets/copd_train/"
+            test_root = "./datasets/copd_test/"
+        else:
+            train_root = "./datasets/adni1/"
+            test_root = "./datasets/adni2/"
+            
+        self.train_ds = MRIDataset(root_dir=train_root,
                 labels=self.labels,
                 training=True,
                 transform=transforms.Compose([
                 ToTensor()
             ]))
-        self.test_ds = MRIDataset(root_dir="./datasets/adni2/",
+        self.test_ds = MRIDataset(root_dir=test_root,
                 labels=self.labels,
                 training=False,
                 transform=transforms.Compose([
@@ -50,8 +60,12 @@ class LoaderHelper:
         '''Gets task string'''
         if self.task == Task.NC_v_AD:
             return "NC_v_AD"
-        else:
+        elif self.task == Task.sMCI_v_pMCI:
             return "sMCI_v_pMCI"
+        elif self.task == Task.Normal_v_COPD:
+            return "Normal_v_COPD"
+        else:
+            return "Unknown_Task"
 
 
     def change_ds_labels(self, labels_in):
@@ -67,10 +81,12 @@ class LoaderHelper:
         '''Function to change task of the Datasets'''
         self.task = task
         
-        if (task == Task.NC_v_AD):
+        if task == Task.NC_v_AD:
             self.labels = ["NC", "AD"]
-        else:
+        elif task == Task.sMCI_v_pMCI:
             self.labels = ["sMCI", "pMCI"]
+        elif task == Task.Normal_v_COPD:
+            self.labels = ["Normal", "COPD"]
 
         self.dataset = MRIDataset(root_dir="../data/",
                             labels=self.labels,
@@ -136,7 +152,9 @@ class LoaderHelper:
 
         
         train_ds = Subset(self.train_ds, self.indices[0])
-        train_dl = DataLoader(train_ds, batch_size=2, shuffle=shuffle, num_workers=4, drop_last=True)
+        train_dl = DataLoader(train_ds, batch_size=12, shuffle=shuffle, num_workers=6, 
+                             drop_last=True, pin_memory=True, persistent_workers=True,
+                             prefetch_factor=4)  # 每個 worker 預先載入 4 個 batch
 
         return train_dl
 
@@ -144,7 +162,9 @@ class LoaderHelper:
     def get_test_dl(self, fold_ind, shuffle=True):
 
         test_ds = Subset(self.test_ds, self.indices[1])
-        test_dl = DataLoader(test_ds, batch_size=2, shuffle=shuffle, num_workers=4, drop_last=True)
+        test_dl = DataLoader(test_ds, batch_size=12, shuffle=shuffle, num_workers=6, 
+                            drop_last=True, pin_memory=True, persistent_workers=True,
+                            prefetch_factor=4)
 
         return test_dl
 

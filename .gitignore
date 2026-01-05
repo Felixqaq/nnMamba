@@ -1,0 +1,95 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 訓練相關
+weights/
+train_log/
+logs/
+figures/
+*.pth
+*.pt
+*.ckpt
+
+# 資料集 - 醫療影像檔案
+*.nii
+*.nii.gz
+*.dcm
+*.dicom
+Normal/
+Abnormal/
+classification/datasets/
+
+# 臨時檔案
+*.log
+*.tmp
+*.bak
+*.cache
+
+# 測試相關
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# 環境變數
+.env
+.env.local
+
+# 系統檔案
+Thumbs.db
+desktop.ini
+
+# 大型資料檔案
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+
+# 編譯檔案
+*.o
+*.a
+*.lib
+*.dll
+*.dylib
+
+# 文檔生成
+docs/_build/
+site/

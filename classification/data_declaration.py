@@ -15,10 +15,11 @@ import monai
 
 class Task(Enum):
     '''
-        Enum class for the two classification tasks
+        Enum class for the classification tasks
     '''
     NC_v_AD = 1
     sMCI_v_pMCI = 2
+    Normal_v_COPD = 3
 
 def get_ptid(path):
     '''Gets the image id from the file path string'''
@@ -72,10 +73,27 @@ def get_label(path, labels):
     return label
 
 def get_mri(path, training):
-    '''Gets a numpy array representing the mri object from a file path'''
-    mri = nib.load(str(path)).get_fdata()
-    # mri = transform.resize(mri,(96, 96, 96))
-    mri = np.expand_dims(mri, axis=0)
+    '''Gets a numpy array representing the mri/ct object from a file path'''
+    try:
+        mri = nib.load(str(path)).get_fdata()
+        
+        # 確保是3D影像
+        if len(mri.shape) > 3:
+            mri = mri[:, :, :, 0]  # 取第一個通道
+        elif len(mri.shape) < 3:
+            raise ValueError(f"影像維度不足: {mri.shape}")
+        
+        # 重採樣到固定尺寸以支援 batch 處理
+        target_shape = (112, 136, 112)  # 使用與原始 ADNI 相似的尺寸
+        if mri.shape != target_shape:
+            mri = transform.resize(mri, target_shape, order=1, preserve_range=True, anti_aliasing=True)
+        
+        mri = np.expand_dims(mri, axis=0)
+        
+    except Exception as e:
+        print(f"Error loading {path}: {e}")
+        # 返回空白影像以避免中斷
+        mri = np.zeros((1, 112, 136, 112), dtype=np.float32)
     # if training:
         # mri = monai.transforms.RandAffine(prob=0.5, rotate_range=(0, 0, np.pi/4), scale_range=(0.9, 1.1), padding_mode='zeros')(mri)
         # mri = monai.transforms.RandFlip(prob=0.5, spatial_axis=0)(mri)

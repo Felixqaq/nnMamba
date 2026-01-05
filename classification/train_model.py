@@ -25,10 +25,13 @@ from networks.tr_crate import CRATE_small_3D
 from evaluation import evaluate_model
 from torchmetrics import AUROC, Accuracy, Specificity, Recall
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # 改為使用 GPU 0
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Running on: {DEVICE}")
+
+if not torch.cuda.is_available():
+    print("⚠️  警告: 未檢測到 GPU，某些模型（如 nnMamba）需要 CUDA 支援")
 
 def setup_seed(seed):
     torch.manual_seed(seed)
@@ -117,6 +120,10 @@ def evaluate(model_in, test_dl, thresh=0.5, param_count=False):
     specificity = round(specificity, 5)
     auc = round(auc, 5)
     
+    # 清理 GPU 記憶體
+    del total_label, total_pred, auroc, accuracy_metric, specificity_metric, sensitivity_metric
+    torch.cuda.empty_cache()
+    
     return accuracy, sensitivity, specificity, auc
 
 def train_loop(model_in, train_dl, test_dl, epochs, uuid_, k_folds, task):
@@ -164,22 +171,45 @@ def train_loop(model_in, train_dl, test_dl, epochs, uuid_, k_folds, task):
         filein.write("Epoch: {}/{}, train loss: {}\n".format(i, epochs, round(loss, 5)))
         loss_fig.append(round(loss, 5))
 
-        accuracy, sensitivity, specificity, auc = evaluate(model_in, test_dl)
-
-        eva_fig.append(accuracy)
-        tqdm.write("Epoch: {}/{}, evaluation loss: {}".format(i, epochs, (accuracy, sensitivity, specificity, auc)))
-        filein.write("Epoch: {}/{}, evaluation loss: {}\n".format(i, epochs, (accuracy, sensitivity, specificity, auc)))
+        # 每 5 個 epoch 才評估一次，提升訓練效率
+        if i % 5 == 0 or i == epochs:
+            # 測試集評估
+            test_acc, test_sens, test_spec, test_auc = evaluate(model_in, test_dl)
+            eva_fig.append(test_acc)
+            
+            # 訓練集評估（檢查過擬合）
+            train_acc, train_sens, train_spec, train_auc = evaluate(model_in, train_dl)
+            
+            tqdm.write("Epoch: {}/{}, Test: Acc={}, AUC={} | Train: Acc={}, AUC={}".format(
+                i, epochs, test_acc, test_auc, train_acc, train_auc))
+            filein.write("Epoch: {}/{}, Test: Acc={}, Sens={}, Spec={}, AUC={} | Train: Acc={}, AUC={}\n".format(
+                i, epochs, test_acc, test_sens, test_spec, test_auc, train_acc, train_auc))
+            
+            # 檢查過擬合警告
+            if train_auc - test_auc > 0.1:
+                tqdm.write("⚠️  警告: 可能過擬合 (Train AUC - Test AUC = {:.3f})".format(train_auc - test_auc))
+            
+            if test_auc >= best_auc:
+                save_best_weights(model_in, uuid_, task=task)
+                best_auc = test_auc
+                tqdm.write(f"🎯 New best AUC: {test_auc}")
+        else:
+            # 不評估時，重複使用上次的準確率
+            eva_fig.append(eva_fig[-1] if eva_fig else 0)
+        
+        # 每 10 個 epoch 保存權重和圖表
         if i % 10 == 0 and i != 0:
             save_weights(model_in, uuid_, epoch=i, fold=k_folds, task=task)
-            plt.plot(range(i), loss_fig)
-            plt.plot(range(i), eva_fig)
+            plt.clf()  # 清除舊圖
+            plt.plot(range(1, i+1), loss_fig, label='Train Loss')
+            plt.plot(range(1, i+1), eva_fig, label='Accuracy')
+            plt.xlabel('Epoch')
+            plt.ylabel('Value')
+            plt.legend()
+            plt.title('Training Progress')
             os.makedirs("../figures/", exist_ok=True)
-            plt.savefig("../figures/" + uuid_ + 'eva.png')
-            
-
-        if auc >= best_auc:
-            save_best_weights(model_in, uuid_, task=task)
-            best_auc = auc
+            plt.savefig("../figures/" + uuid_ + '_eva.png')
+            plt.close()  # 關閉圖表釋放記憶體
 
 
 def train_camull(ld_helper, k_folds=1, model=None, epochs=40, model_name='nnmamba'):
@@ -232,5 +262,6 @@ def eval():
     evaluate_model(DEVICE, model_uuid, ld_helper)
 
 
-# main()
-eval()
+if __name__ == "__main__":
+    # main()
+    eval()

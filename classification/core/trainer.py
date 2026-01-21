@@ -2,8 +2,6 @@
 
 import os
 import random
-from datetime import datetime
-from pathlib import Path
 
 import numpy as np
 import torch
@@ -14,8 +12,8 @@ from tqdm import tqdm
 
 from .config import Config
 from .checkpoints import save_checkpoint, generate_uuid
-from .evaluator import evaluate, Metrics
-from .visualizer import plot_training_curves
+from .evaluator import evaluate
+from .visualizer import plot_training_curves, plot_paper_results, plot_global_summary
 
 
 def setup_seed(seed: int) -> None:
@@ -33,6 +31,7 @@ class Trainer:
         self.config = config
         self.model = model
         self.loader_helper = loader_helper
+        self.best_results = []
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         os.environ["CUDA_VISIBLE_DEVICES"] = config.gpu_device_id
@@ -60,13 +59,18 @@ class Trainer:
 
         for fold in range(start_fold, cfg.training.k_folds):
             print(f"\n📊 Fold {fold + 1}/{cfg.training.k_folds}")
-            self._train_fold(fold)
+            best_res = self._train_fold(fold)
+            self.best_results.append(best_res)
             print(f"✅ Fold {fold + 1} complete\n")
+
+        # Generate global summary for all folds
+        fig_dir = self.config.paths.figures / self.config.task / self.uuid
+        plot_global_summary(self.best_results, fig_dir)
 
         return self.uuid
 
-    def _train_fold(self, fold: int) -> None:
-        """Train a single fold."""
+    def _train_fold(self, fold: int):
+        """Train a single fold. Returns best metrics object."""
         cfg = self.config.training
         self.model.to(self.device)
 
@@ -78,7 +82,7 @@ class Trainer:
             lr=cfg.learning_rate,
             weight_decay=cfg.weight_decay,
         )
-        scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, "min", patience=1)
+        lr_scheduler.ReduceLROnPlateau(optimizer, "min", patience=1)
         loss_fn = nn.BCEWithLogitsLoss()
 
         # Metrics tracking
@@ -87,9 +91,11 @@ class Trainer:
         train_metrics = {"acc": [], "auc": []}
         eval_epochs = []
         best_auc = 0.0
+        best_fold_result = None
 
-        log_path = self.config.paths.logs / f"{self.uuid}.txt"
-        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_dir = self.config.paths.logs / self.config.task / self.uuid
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_path = log_dir / f"{self.uuid}.txt"
 
         with open(log_path, "a") as log_file:
             for epoch in range(1, cfg.epochs + 1):
@@ -102,7 +108,7 @@ class Trainer:
                 # Periodic evaluation
                 if epoch % cfg.eval_interval == 0 or epoch == cfg.epochs:
                     eval_epochs.append(epoch)
-                    best_auc = self._evaluate_and_log(
+                    auc_res, res_obj = self._evaluate_and_log(
                         train_dl,
                         test_dl,
                         epoch,
@@ -112,6 +118,9 @@ class Trainer:
                         train_metrics,
                         best_auc,
                     )
+                    if auc_res > best_auc:
+                        best_auc = auc_res
+                        best_fold_result = res_obj
 
                 # Periodic checkpoint
                 if epoch % cfg.save_interval == 0:
@@ -123,6 +132,8 @@ class Trainer:
                         train_metrics,
                         eval_epochs,
                     )
+
+        return best_fold_result
 
     def _train_epoch(
         self, dataloader, optimizer: optim.Optimizer, loss_fn: nn.Module
@@ -156,8 +167,8 @@ class Trainer:
         test_metrics: dict,
         train_metrics: dict,
         best_auc: float,
-    ) -> float:
-        """Evaluate model and log results. Returns new best AUC."""
+    ) -> tuple[float, any]:
+        """Evaluate model and log results. Returns (new best AUC, current metrics object)."""
         test_result = evaluate(self.model, test_dl, self.device)
         train_result = evaluate(self.model, train_dl, self.device)
 
@@ -185,10 +196,17 @@ class Trainer:
         if test_result.auc >= best_auc:
             weight_path = self.config.paths.weights / self.config.task / self.uuid
             save_checkpoint(self.model, weight_path, is_best=True)
-            tqdm.write(f"🎯 New best AUC: {test_result.auc}")
-            return test_result.auc
 
-        return best_auc
+            # Generate advanced paper plots for the best model
+            fig_dir = self.config.paths.figures / self.config.task / self.uuid
+            plot_paper_results(
+                test_result, fold + 1, fig_dir, class_names=self.config.get_labels()
+            )
+
+            tqdm.write(f"🎯 New best AUC: {test_result.auc}")
+            return test_result.auc, test_result
+
+        return best_auc, test_result
 
     def _save_and_plot(
         self,
@@ -208,7 +226,7 @@ class Trainer:
             test_metrics,
             train_metrics,
             eval_epochs,
-            self.config.paths.figures,
+            self.config.paths.figures / self.config.task / self.uuid,
             self.uuid,
             fold + 1,
         )

@@ -15,6 +15,8 @@ class Metrics:
     sensitivity: float
     specificity: float
     auc: float
+    labels: torch.Tensor = None
+    preds: torch.Tensor = None
 
 
 def evaluate(
@@ -64,4 +66,6 @@ def evaluate(
         sensitivity=round(sensitivity_metric(all_preds, all_labels).item(), 5),
         specificity=round(specificity_metric(all_preds, all_labels).item(), 5),
         auc=round(auc, 5),
+        labels=all_labels.cpu(),
+        preds=all_preds.cpu(),
     )

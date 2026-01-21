@@ -179,6 +179,7 @@ def plot_roc_curve(
 ) -> None:
     """Plot and save ROC curve."""
     roc = ROC(task="binary")
+    labels = labels.to(torch.long)
     fpr, tpr, thresholds = roc(preds, labels)
 
     plt.figure(figsize=(8, 8))
@@ -211,6 +212,7 @@ def plot_confusion_matrix(
 ) -> None:
     """Plot and save confusion matrix."""
     cm_metric = ConfusionMatrix(task="binary")
+    labels = labels.to(torch.long)
     cm = cm_metric(preds, labels).numpy()
 
     plt.figure(figsize=(8, 6))
@@ -252,6 +254,7 @@ def plot_pr_curve(
 ) -> None:
     """Plot and save Precision-Recall curve."""
     pr_curve = PrecisionRecallCurve(task="binary")
+    labels = labels.to(torch.long)
     precision, recall, thresholds = pr_curve(preds, labels)
 
     plt.figure(figsize=(8, 8))
@@ -301,6 +304,7 @@ def plot_combined_roc(
     aucs = []
 
     for i, (labels, preds) in enumerate(zip(all_labels, all_preds)):
+        labels = labels.to(torch.long)
         roc = ROC(task="binary")
         fpr, tpr, _ = roc(preds, labels)
         auc_val = torch.trapz(tpr, fpr).item()
@@ -370,6 +374,7 @@ def plot_combined_pr(
     base_recall = np.linspace(0, 1, 101)
 
     for i, (labels, preds) in enumerate(zip(all_labels, all_preds)):
+        labels = labels.to(torch.long)
         pr_curve = PrecisionRecallCurve(task="binary")
         precision, recall, _ = pr_curve(preds, labels)
 

@@ -1,4 +1,5 @@
-'''The following module declares the Dataset objects required by torch to iterate over the data.'''
+"""The following module declares the Dataset objects required by torch to iterate over the data."""
+
 from enum import Enum
 import glob
 import pathlib
@@ -13,36 +14,42 @@ from skimage import transform
 import monai
 # from monai.transforms import AddChannel, Compose, RandAffine, RandRotate90, RandFlip, apply_transform
 
+
 class Task(Enum):
-    '''
-        Enum class for the classification tasks
-    '''
+    """
+    Enum class for the classification tasks
+    """
+
     NC_v_AD = 1
     sMCI_v_pMCI = 2
     Normal_v_COPD = 3
+    Normal_v_Abnormal = 4
+
 
 def get_ptid(path):
-    '''Gets the image id from the file path string'''
+    """Gets the image id from the file path string"""
     fname = path.stem
     ptid_str = ""
-    #the I that comes before the id needs to be removed hence [1:]
+    # the I that comes before the id needs to be removed hence [1:]
     ptid_str = fname
     return ptid_str
 
+
 def get_ptid1(path):
-    '''Gets the image id from the file path string'''
+    """Gets the image id from the file path string"""
     fname = path.stem
     ptid_str = ""
-    #the I that comes before the id needs to be removed hence [1:]
+    # the I that comes before the id needs to be removed hence [1:]
     ptid_str = fname[7:17]
     return ptid_str
 
+
 def get_ptid2(path):
-    '''Gets the image id from the file path string'''
-    fname = path.stem.split('_')[0][8:]
+    """Gets the image id from the file path string"""
+    fname = path.stem.split("_")[0][8:]
     ptid_str = ""
-    #the I that comes before the id needs to be removed hence [1:]
-    ptid_str = fname[:3] + '_' + fname[3] + '_' + fname[4:]
+    # the I that comes before the id needs to be removed hence [1:]
+    ptid_str = fname[:3] + "_" + fname[3] + "_" + fname[4:]
     return ptid_str
 
 
@@ -61,8 +68,9 @@ def get_ptid2(path):
 
 #     return acq_year_str[1:]
 
+
 def get_label(path, labels):
-    '''Gets label from the path'''
+    """Gets label from the path"""
     label_str = path.parent.stem
     label = None
 
@@ -72,41 +80,44 @@ def get_label(path, labels):
         label = np.array([1], dtype=np.float32)
     return label
 
+
 def get_mri(path, training):
-    '''Gets a numpy array representing the mri/ct object from a file path'''
+    """Gets a numpy array representing the mri/ct object from a file path"""
     try:
         mri = nib.load(str(path)).get_fdata()
-        
+
         # 確保是3D影像
         if len(mri.shape) > 3:
             mri = mri[:, :, :, 0]  # 取第一個通道
         elif len(mri.shape) < 3:
             raise ValueError(f"影像維度不足: {mri.shape}")
-        
+
         # 重採樣到固定尺寸以支援 batch 處理
         target_shape = (112, 136, 112)  # 使用與原始 ADNI 相似的尺寸
         if mri.shape != target_shape:
-            mri = transform.resize(mri, target_shape, order=1, preserve_range=True, anti_aliasing=True)
-        
+            mri = transform.resize(
+                mri, target_shape, order=1, preserve_range=True, anti_aliasing=True
+            )
+
         mri = np.expand_dims(mri, axis=0)
-        
+
     except Exception as e:
         print(f"Error loading {path}: {e}")
         # 返回空白影像以避免中斷
         mri = np.zeros((1, 112, 136, 112), dtype=np.float32)
     # if training:
-        # mri = monai.transforms.RandAffine(prob=0.5, rotate_range=(0, 0, np.pi/4), scale_range=(0.9, 1.1), padding_mode='zeros')(mri)
-        # mri = monai.transforms.RandFlip(prob=0.5, spatial_axis=0)(mri)
-        # mri = monai.transforms.RandFlip(prob=0.5, spatial_axis=1)(mri)
-        # mri = monai.transforms.RandFlip(prob=0.5, spatial_axis=2)(mri)
-        # mri = monai.transforms.RandRotate90(prob=0.5, spatial_axes=(0, 1))(mri)
-        # mri = monai.transforms.RandRotate90(prob=0.5, spatial_axes=(0, 2))(mri)
-        # mri = monai.transforms.RandRotate90(prob=0.5, spatial_axes=(1, 2))(mri)
-    #print(mri.shape)
+    # mri = monai.transforms.RandAffine(prob=0.5, rotate_range=(0, 0, np.pi/4), scale_range=(0.9, 1.1), padding_mode='zeros')(mri)
+    # mri = monai.transforms.RandFlip(prob=0.5, spatial_axis=0)(mri)
+    # mri = monai.transforms.RandFlip(prob=0.5, spatial_axis=1)(mri)
+    # mri = monai.transforms.RandFlip(prob=0.5, spatial_axis=2)(mri)
+    # mri = monai.transforms.RandRotate90(prob=0.5, spatial_axes=(0, 1))(mri)
+    # mri = monai.transforms.RandRotate90(prob=0.5, spatial_axes=(0, 2))(mri)
+    # mri = monai.transforms.RandRotate90(prob=0.5, spatial_axes=(1, 2))(mri)
+    # print(mri.shape)
     mri = np.asarray(mri).astype(np.float32)
     # print('before',mri.shape)
     # mri = mri[:, 9:-8, 20:-21, 9:-8]
-        
+
     # mri = mri[:, :-1, :-1, :-1] # 112 136 112
     # mri = mri[:, :-1, 7:133, :-1] # 112 126 112
 
@@ -115,9 +126,8 @@ def get_mri(path, training):
     return mri
 
 
-
 def get_clinical(sub_id, clin_df):
-    '''Gets clinical features vector by searching dataframe for image id'''
+    """Gets clinical features vector by searching dataframe for image id"""
     clinical = np.zeros(9)
     if sub_id in clin_df["PTID"].values:
         row = clin_df.loc[clin_df["PTID"] == sub_id].iloc[0]
@@ -133,21 +143,19 @@ def get_clinical(sub_id, clin_df):
         # Education
         clinical[2] = row["PTEDUCAT"]
 
-
-
         # clinical[4] = row["RAVLT_immediate_bl"]
         # clinical[5] = row["CDRSB_bl"]
-        #if row["PTAU_bl"].empty:
+        # if row["PTAU_bl"].empty:
         #    clinical[6] = 0
-        #else:
+        # else:
         # clinical[4] = row["PTAU_bl"]
         # clinical[6] = row["missing_PTAU_bl"]
         # clinical[7] = row["ABETA_bl"]
         # clinical[8] = row["TAU_bl"]
 
-        #if row["FDG_bl"].empty:
+        # if row["FDG_bl"].empty:
         #    clinical[7] = 0
-        #else:
+        # else:
         clinical[3] = row["FDG_bl"]
 
         # clinical[8] = row["missing_FDG_bl"]
@@ -185,23 +193,21 @@ def get_clinical(sub_id, clin_df):
         elif apoe4_allele == 1:
             clinical[6] = 0
             clinical[7] = 1
-            clinical[8] = 0 
+            clinical[8] = 0
         elif apoe4_allele == 2:
             clinical[6] = 0
             clinical[7] = 0
             clinical[8] = 1
-        
-    
-    
+
     else:
         print(sub_id)
     return clinical
 
 
 class MRIDataset(Dataset):
-    '''Provides an object for the MRI data that can be iterated.'''
-    def __init__(self, root_dir, labels, training, transform=None):
+    """Provides an object for the MRI data that can be iterated."""
 
+    def __init__(self, root_dir, labels, training, transform=None):
         self.root_dir = root_dir  # root_dir="../data/"
         self.transform = transform
         self.directories = []
@@ -209,7 +215,7 @@ class MRIDataset(Dataset):
         self.labels = labels
         self.training = training
         # self.clin_data = pd.read_csv("/data2/kangluoyao/tabu/mid_ADNIMERGE.csv")
-    
+
         train_dirs = []
 
         for label in labels:
@@ -222,11 +228,9 @@ class MRIDataset(Dataset):
         self.len = len(self.directories)
 
     def __len__(self):
-
         return self.len
 
     def __getitem__(self, idx):
-
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
@@ -243,7 +247,7 @@ class MRIDataset(Dataset):
                 label = get_label(path, self.labels)
                 # print(label)
                 # sample = {'mri': mri, 'clinical': clinical, 'label': label}
-                sample = {'mri': mri, 'label':label}
+                sample = {"mri": mri, "label": label}
                 if self.transform:
                     sample = self.transform(sample)
 
@@ -255,18 +259,20 @@ class MRIDataset(Dataset):
                     idx += 1
                 else:
                     idx = 0
-        print(sample['mri'].shape)
+        print(sample["mri"].shape)
 
         return sample
 
 
 def minmaxscaler(data):
     min = np.amin(data)
-    max = np.amax(data)    
-    return (data - min)/(max-min)
+    max = np.amax(data)
+    return (data - min) / (max - min)
 
-class ToTensor():
-    '''Convert ndarrays in sample to Tensors.'''
+
+class ToTensor:
+    """Convert ndarrays in sample to Tensors."""
+
     def __call__(self, sample):
         # image, clinical, label = sample['mri'],sample['clinical'], sample['label']
         # #image, label = sample['mri'], sample['label']
@@ -278,10 +284,9 @@ class ToTensor():
         #         'clin_t': clin_t,
         #         'label': label}
 
-        image, label = sample['mri'], sample['label']
+        image, label = sample["mri"], sample["label"]
         # mri_t = torch.from_numpy(minmaxscaler(image))
         mri_t = torch.from_numpy(image)
-        
+
         label = torch.from_numpy(label)
-        return {'mri': mri_t,
-                'label': label}
+        return {"mri": mri_t, "label": label}

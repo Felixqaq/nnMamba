@@ -3,11 +3,13 @@
 Summarize N-fold results and generate paper-ready plots.
 """
 
-import os
 import re
 import argparse
 import numpy as np
 import pandas as pd
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from pathlib import Path
 

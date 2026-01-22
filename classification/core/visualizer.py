@@ -2,6 +2,9 @@
 
 from pathlib import Path
 import numpy as np
+import matplotlib
+
+matplotlib.use("Agg")  # Enforce non-interactive backend
 import matplotlib.pyplot as plt
 from torchmetrics import ROC, ConfusionMatrix, PrecisionRecallCurve
 import torch

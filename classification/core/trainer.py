@@ -65,7 +65,9 @@ class Trainer:
 
         # Generate global summary for all folds
         fig_dir = self.config.paths.figures / self.config.task / self.uuid
-        plot_global_summary(self.best_results, fig_dir)
+        plot_global_summary(
+            self.best_results, fig_dir, class_names=self.config.get_labels()
+        )
 
         return self.uuid
 

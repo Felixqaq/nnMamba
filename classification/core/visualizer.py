@@ -423,9 +423,56 @@ def plot_combined_pr(
     plt.close()
 
 
+def plot_combined_confusion_matrix(
+    all_labels: list[torch.Tensor],
+    all_preds: list[torch.Tensor],
+    save_dir: Path,
+    class_names: list[str] = ["Normal", "Abnormal"],
+) -> None:
+    """Plot combined confusion matrix for all folds."""
+    cm_metric = ConfusionMatrix(task="binary")
+
+    # Combine all labels and preds
+    combined_labels = torch.cat(all_labels).to(torch.long)
+    combined_preds = torch.cat(all_preds)
+
+    cm = cm_metric(combined_preds, combined_labels).numpy()
+
+    plt.figure(figsize=(8, 6))
+    plt.imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)
+    plt.title("Combined Confusion Matrix - All Folds", fontsize=14, fontweight="bold")
+    plt.colorbar()
+
+    tick_marks = np.arange(len(class_names))
+    plt.xticks(tick_marks, class_names, fontsize=12)
+    plt.yticks(tick_marks, class_names, fontsize=12)
+
+    # Annotate
+    thresh = cm.max() / 2.0
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            plt.text(
+                j,
+                i,
+                format(int(cm[i, j]), "d"),
+                ha="center",
+                va="center",
+                color="white" if cm[i, j] > thresh else "black",
+                fontsize=14,
+                fontweight="bold",
+            )
+
+    plt.ylabel("True Label", fontsize=12)
+    plt.xlabel("Predicted Label", fontsize=12)
+    plt.tight_layout()
+    plt.savefig(save_dir / "total_cm.png", dpi=300)
+    plt.close()
+
+
 def plot_global_summary(
     all_results: list,
     save_dir: Path,
+    class_names: list[str] = ["Normal", "Abnormal"],
 ) -> None:
     """Generate aggregate plots for all folds."""
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -436,3 +483,4 @@ def plot_global_summary(
     if len(all_labels) > 0:
         plot_combined_roc(all_labels, all_preds, save_dir)
         plot_combined_pr(all_labels, all_preds, save_dir)
+        plot_combined_confusion_matrix(all_labels, all_preds, save_dir, class_names)

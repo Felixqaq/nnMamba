@@ -12,7 +12,11 @@ from tqdm import tqdm
 
 from .config import Config
 from .checkpoints import save_checkpoint, generate_uuid
-from .evaluator import evaluate
+from .evaluator import (
+    get_predictions,
+    find_optimal_threshold,
+    compute_metrics,
+)
 from .visualizer import plot_training_curves, plot_paper_results, plot_global_summary
 
 
@@ -171,8 +175,16 @@ class Trainer:
         best_auc: float,
     ) -> tuple[float, any]:
         """Evaluate model and log results. Returns (new best AUC, current metrics object)."""
-        test_result = evaluate(self.model, test_dl, self.device)
-        train_result = evaluate(self.model, train_dl, self.device)
+        # Dynamic thresholding: Find best threshold on Train, apply to Test
+        train_labels, train_preds = get_predictions(self.model, train_dl, self.device)
+        best_thresh = find_optimal_threshold(train_labels, train_preds)
+
+        train_result = compute_metrics(
+            train_labels, train_preds, best_thresh, self.device
+        )
+
+        test_labels, test_preds = get_predictions(self.model, test_dl, self.device)
+        test_result = compute_metrics(test_labels, test_preds, best_thresh, self.device)
 
         test_metrics["acc"].append(test_result.accuracy)
         test_metrics["auc"].append(test_result.auc)
@@ -183,7 +195,8 @@ class Trainer:
 
         msg = (
             f"Epoch {epoch}: Test AUC={test_result.auc}, Acc={test_result.accuracy} | "
-            f"Train AUC={train_result.auc}, Acc={train_result.accuracy}"
+            f"Train AUC={train_result.auc}, Acc={train_result.accuracy} | "
+            f"Thresh={best_thresh:.3f}"
         )
         tqdm.write(msg)
         log_file.write(msg + "\n")

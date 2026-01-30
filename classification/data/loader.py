@@ -1,6 +1,7 @@
-"""DataLoader helper for k-fold cross-validation."""
+"""DataLoader helper for stratified k-fold cross-validation."""
 
 import numpy as np
+from sklearn.model_selection import StratifiedKFold
 from torch.utils.data import DataLoader, Subset
 from torchvision import transforms
 
@@ -9,7 +10,7 @@ from .transforms import ToTensor
 
 
 class LoaderHelper:
-    """Manages dataset loading and k-fold cross-validation splits."""
+    """Manages dataset loading and stratified k-fold cross-validation splits."""
 
     TASK_LABELS = {
         Task.NC_v_AD: ["NC", "AD"],
@@ -29,35 +30,40 @@ class LoaderHelper:
         self.task = task
         self.labels = self.TASK_LABELS[task]
 
-        train_root, test_root = self.TASK_PATHS[task]
+        train_root, _ = self.TASK_PATHS[task]
         transform = transforms.Compose([ToTensor()])
 
         self.train_ds = MRIDataset(
             train_root, self.labels, training=True, transform=transform
         )
-        self.test_ds = MRIDataset(
-            test_root, self.labels, training=False, transform=transform
-        )
 
-        self._setup_folds(k_folds, seed)
+        self._setup_stratified_folds(k_folds, seed)
 
-    def _setup_folds(self, k_folds: int, seed: int) -> None:
-        """Create k-fold cross-validation splits."""
-        np.random.seed(seed)
+    def _setup_stratified_folds(self, k_folds: int, seed: int) -> None:
+        """Create stratified k-fold splits preserving class ratios."""
+        labels = [self.train_ds[i]["label"].item() for i in range(len(self.train_ds))]
+        indices = np.arange(len(self.train_ds))
 
-        indices = list(range(len(self.train_ds)))
-        np.random.shuffle(indices)
+        skf = StratifiedKFold(n_splits=k_folds, shuffle=True, random_state=seed)
+        self.fold_indices = [
+            (train_idx.tolist(), test_idx.tolist())
+            for train_idx, test_idx in skf.split(indices, labels)
+        ]
 
-        fold_size = len(indices) // k_folds
-        self.fold_indices = []
+        self._print_fold_distribution(labels)
 
-        for fold in range(k_folds):
-            start = fold * fold_size
-            end = start + fold_size if fold < k_folds - 1 else len(indices)
-
-            test_idx = indices[start:end]
-            train_idx = indices[:start] + indices[end:]
-            self.fold_indices.append((train_idx, test_idx))
+    def _print_fold_distribution(self, all_labels: list) -> None:
+        """Print class distribution for each fold."""
+        print(f"\n📊 Stratified K-Fold Distribution ({len(self.fold_indices)} folds):")
+        for i, (train_idx, test_idx) in enumerate(self.fold_indices):
+            test_labels = [all_labels[j] for j in test_idx]
+            n_class0 = test_labels.count(0)
+            n_class1 = test_labels.count(1)
+            print(
+                f"  Fold {i + 1}: {self.labels[0]}={n_class0}, "
+                f"{self.labels[1]}={n_class1} (Total={len(test_idx)})"
+            )
+        print()
 
     def get_task_string(self) -> str:
         """Get task name as string."""
@@ -72,11 +78,9 @@ class LoaderHelper:
             train_ds,
             batch_size=12,
             shuffle=shuffle,
-            num_workers=6,
+            num_workers=0,  # Data is pre-cached, no need for workers
             drop_last=True,
             pin_memory=True,
-            persistent_workers=True,
-            prefetch_factor=4,
         )
 
     def get_test_dl(self, fold: int, shuffle: bool = False) -> DataLoader:
@@ -88,7 +92,7 @@ class LoaderHelper:
             test_ds,
             batch_size=4,
             shuffle=shuffle,
-            num_workers=4,
+            num_workers=0,  # Data is pre-cached
             drop_last=False,
             pin_memory=True,
         )

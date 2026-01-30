@@ -62,7 +62,7 @@ def get_mri(path: pathlib.Path, training: bool = False) -> np.ndarray:
 
 
 class MRIDataset(Dataset):
-    """PyTorch Dataset for MRI/CT images."""
+    """PyTorch Dataset for MRI/CT images with optional pre-caching."""
 
     def __init__(
         self,
@@ -70,16 +70,33 @@ class MRIDataset(Dataset):
         labels: list[str],
         training: bool = True,
         transform=None,
+        cache_data: bool = True,
     ):
         self.root_dir = root_dir
         self.labels = labels
         self.training = training
         self.transform = transform
+        self.cache_data = cache_data
         self.directories = []
+        self.cached_data = []
 
         for label in labels:
             for path in glob.glob(f"{root_dir}{label}/*"):
                 self.directories.append(pathlib.Path(path))
+
+        if cache_data:
+            self._preload_all()
+
+    def _preload_all(self) -> None:
+        """Pre-load all images into memory for faster training."""
+        from tqdm import tqdm
+
+        print(f"🔄 Pre-loading {len(self.directories)} images into memory...")
+        for path in tqdm(self.directories, desc="Caching", leave=False):
+            mri = get_mri(path, self.training)
+            label = get_label(path, self.labels)
+            self.cached_data.append({"mri": mri, "label": label})
+        print(f"✅ Cached {len(self.cached_data)} images!")
 
     def __len__(self) -> int:
         return len(self.directories)
@@ -88,11 +105,13 @@ class MRIDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        path = self.directories[idx]
-        mri = get_mri(path, self.training)
-        label = get_label(path, self.labels)
-
-        sample = {"mri": mri, "label": label}
+        if self.cache_data:
+            sample = self.cached_data[idx].copy()
+        else:
+            path = self.directories[idx]
+            mri = get_mri(path, self.training)
+            label = get_label(path, self.labels)
+            sample = {"mri": mri, "label": label}
 
         if self.transform:
             sample = self.transform(sample)

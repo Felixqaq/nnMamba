@@ -212,9 +212,10 @@ def plot_confusion_matrix(
     fold: int,
     save_dir: Path,
     class_names: list[str] = ["Normal", "Abnormal"],
+    threshold: float = 0.5,
 ) -> None:
     """Plot and save confusion matrix."""
-    cm_metric = ConfusionMatrix(task="binary")
+    cm_metric = ConfusionMatrix(task="binary", threshold=threshold)
     labels = labels.to(torch.long)
     cm = cm_metric(preds, labels).numpy()
 
@@ -289,7 +290,12 @@ def plot_paper_results(
             test_metrics.labels, test_metrics.preds, test_metrics.auc, fold, save_dir
         )
         plot_confusion_matrix(
-            test_metrics.labels, test_metrics.preds, fold, save_dir, class_names
+            test_metrics.labels,
+            test_metrics.preds,
+            fold,
+            save_dir,
+            class_names,
+            threshold=getattr(test_metrics, "threshold", 0.5),
         )
         plot_pr_curve(test_metrics.labels, test_metrics.preds, fold, save_dir)
 
@@ -424,18 +430,33 @@ def plot_combined_pr(
 
 
 def plot_combined_confusion_matrix(
-    all_labels: list[torch.Tensor],
-    all_preds: list[torch.Tensor],
+    all_results: list,
     save_dir: Path,
     class_names: list[str] = ["Normal", "Abnormal"],
 ) -> None:
-    """Plot combined confusion matrix for all folds."""
+    """Plot combined confusion matrix for all folds using per-fold thresholds."""
     cm_metric = ConfusionMatrix(task="binary")
 
-    # Combine all labels and preds
-    combined_labels = torch.cat(all_labels).to(torch.long)
-    combined_preds = torch.cat(all_preds)
+    # Binarize predictions using each fold's threshold
+    hard_preds_list = []
+    labels_list = []
 
+    for res in all_results:
+        if res.labels is None or res.preds is None:
+            continue
+        thresh = getattr(res, "threshold", 0.5)
+        # Binarize: (preds >= thresh) -> 1, else 0
+        hard_preds = (res.preds >= thresh).long()
+        hard_preds_list.append(hard_preds)
+        labels_list.append(res.labels.long())
+
+    if not hard_preds_list:
+        return
+
+    combined_preds = torch.cat(hard_preds_list)
+    combined_labels = torch.cat(labels_list)
+
+    # For integer inputs, ConfusionMatrix treats them as class indices
     cm = cm_metric(combined_preds, combined_labels).numpy()
 
     plt.figure(figsize=(8, 6))
@@ -483,4 +504,4 @@ def plot_global_summary(
     if len(all_labels) > 0:
         plot_combined_roc(all_labels, all_preds, save_dir)
         plot_combined_pr(all_labels, all_preds, save_dir)
-        plot_combined_confusion_matrix(all_labels, all_preds, save_dir, class_names)
+        plot_combined_confusion_matrix(all_results, save_dir, class_names)

@@ -16,6 +16,7 @@ from .evaluator import (
     get_predictions,
     find_optimal_threshold,
     compute_metrics,
+    save_misclassified,
 )
 from .visualizer import plot_training_curves, plot_paper_results, plot_global_summary
 
@@ -82,6 +83,7 @@ class Trainer:
 
         train_dl = self.loader_helper.get_train_dl(fold)
         test_dl = self.loader_helper.get_test_dl(fold)
+        test_fold_indices = self.loader_helper.fold_indices[fold][1]
 
         optimizer = optim.AdamW(
             self.model.parameters(),
@@ -123,6 +125,7 @@ class Trainer:
                         test_metrics,
                         train_metrics,
                         best_auc,
+                        test_fold_indices,
                     )
                     if auc_res > best_auc:
                         best_auc = auc_res
@@ -173,17 +176,18 @@ class Trainer:
         test_metrics: dict,
         train_metrics: dict,
         best_auc: float,
+        test_fold_indices: list,
     ) -> tuple[float, any]:
         """Evaluate model and log results. Returns (new best AUC, current metrics object)."""
         # Dynamic thresholding: Find best threshold on Train, apply to Test
-        train_labels, train_preds = get_predictions(self.model, train_dl, self.device)
+        train_labels, train_preds, _ = get_predictions(self.model, train_dl, self.device)
         best_thresh = find_optimal_threshold(train_labels, train_preds)
 
         train_result = compute_metrics(
             train_labels, train_preds, best_thresh, self.device
         )
 
-        test_labels, test_preds = get_predictions(self.model, test_dl, self.device)
+        test_labels, test_preds, _ = get_predictions(self.model, test_dl, self.device)
         test_result = compute_metrics(test_labels, test_preds, best_thresh, self.device)
 
         test_metrics["acc"].append(test_result.accuracy)
@@ -218,7 +222,18 @@ class Trainer:
                 test_result, fold + 1, fig_dir, class_names=self.config.get_labels()
             )
 
-            tqdm.write(f"🎯 New best AUC: {test_result.auc}")
+            # Save misclassified samples
+            errors = save_misclassified(
+                test_result,
+                self.loader_helper.train_ds,
+                test_fold_indices,
+                self.config.get_labels(),
+                fig_dir,
+                fold + 1,
+            )
+            n_fn = len(errors.get("false_negatives", []))
+            n_fp = len(errors.get("false_positives", []))
+            tqdm.write(f"🎯 New best AUC: {test_result.auc} (FN={n_fn}, FP={n_fp})")
             return test_result.auc, test_result
 
         return best_auc, test_result

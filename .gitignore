@@ -54,7 +54,11 @@ figures/
 *.dcm
 *.dicom
 Normal/
+Normal_ori/
+Normal_aug_ori/
 Abnormal/
+Abnormal_ori/
+Abnormal_aug_ori/
 classification/datasets/
 
 # 臨時檔案

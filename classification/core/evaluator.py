@@ -1,6 +1,9 @@
 """Evaluation metrics and utilities."""
 
+import json
 from dataclasses import dataclass
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -18,20 +21,22 @@ class Metrics:
     labels: torch.Tensor = None
     preds: torch.Tensor = None
     threshold: float = 0.5
+    sample_indices: list = None
 
 
 def get_predictions(
     model: nn.Module,
     dataloader: DataLoader,
     device: torch.device,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Run inference to get labels and predictions."""
+) -> tuple[torch.Tensor, torch.Tensor, list]:
+    """Run inference to get labels, predictions, and sample indices."""
     model.eval()
     all_labels = []
     all_preds = []
+    all_indices = []
 
     with torch.no_grad():
-        for batch in dataloader:
+        for batch_idx, batch in enumerate(dataloader):
             x = batch["mri"].to(device)
             y = batch["label"].to(device)
 
@@ -39,10 +44,64 @@ def get_predictions(
             all_labels.append(y.flatten())
             all_preds.append(out.flatten())
 
-    if not all_preds:
-        return torch.tensor([]), torch.tensor([])
+            # Track batch indices
+            batch_size = x.size(0)
+            start_idx = batch_idx * dataloader.batch_size
+            all_indices.extend(range(start_idx, start_idx + batch_size))
 
-    return torch.cat(all_labels), torch.cat(all_preds)
+    if not all_preds:
+        return torch.tensor([]), torch.tensor([]), []
+
+    return torch.cat(all_labels), torch.cat(all_preds), all_indices
+
+
+def save_misclassified(
+    metrics: "Metrics",
+    dataset,
+    fold_indices: list,
+    labels: list[str],
+    save_path: Path,
+    fold: int,
+) -> dict:
+    """Save misclassified samples to JSON file."""
+    if metrics.labels is None or metrics.preds is None:
+        return {}
+
+    threshold = metrics.threshold
+    pred_labels = (metrics.preds >= threshold).int()
+    true_labels = metrics.labels.int()
+
+    misclassified = {
+        "fold": fold,
+        "threshold": threshold,
+        "false_negatives": [],
+        "false_positives": [],
+    }
+
+    for i, (true, pred, prob) in enumerate(
+        zip(true_labels, pred_labels, metrics.preds)
+    ):
+        if true != pred:
+            idx = fold_indices[i]
+            path = str(dataset.directories[idx])
+            entry = {
+                "path": path,
+                "filename": Path(path).name,
+                "true_label": labels[true.item()],
+                "pred_label": labels[pred.item()],
+                "prob_abnormal": round(prob.item(), 4),
+            }
+            if true == 1 and pred == 0:
+                misclassified["false_negatives"].append(entry)
+            else:
+                misclassified["false_positives"].append(entry)
+
+    save_path.mkdir(parents=True, exist_ok=True)
+    json_path = save_path / f"fold{fold}_errors.json"
+    with open(json_path, "w") as f:
+        json.dump(misclassified, f, indent=2)
+
+    return misclassified
 
 
 def find_optimal_threshold(labels: torch.Tensor, preds: torch.Tensor) -> float:

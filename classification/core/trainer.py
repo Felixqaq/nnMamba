@@ -1,7 +1,9 @@
 """Training loop for nnMamba classification."""
 
+import json
 import os
 import random
+from datetime import datetime
 
 import numpy as np
 import torch
@@ -73,6 +75,7 @@ class Trainer:
         plot_global_summary(
             self.best_results, fig_dir, class_names=self.config.get_labels()
         )
+        self._save_results_json(fig_dir)
 
         return self.uuid
 
@@ -180,7 +183,9 @@ class Trainer:
     ) -> tuple[float, any]:
         """Evaluate model and log results. Returns (new best AUC, current metrics object)."""
         # Dynamic thresholding: Find best threshold on Train, apply to Test
-        train_labels, train_preds, _ = get_predictions(self.model, train_dl, self.device)
+        train_labels, train_preds, _ = get_predictions(
+            self.model, train_dl, self.device
+        )
         best_thresh = find_optimal_threshold(train_labels, train_preds)
 
         train_result = compute_metrics(
@@ -260,3 +265,61 @@ class Trainer:
             self.uuid,
             fold + 1,
         )
+
+    def _save_results_json(self, save_dir) -> None:
+        """Save all training results to a single JSON file."""
+        cfg = self.config
+        fold_entries = []
+        auc_vals, acc_vals, sens_vals, spec_vals = [], [], [], []
+
+        for i, res in enumerate(self.best_results):
+            if res is None:
+                continue
+            fold_entries.append(
+                {
+                    "fold": i + 1,
+                    "best_auc": res.auc,
+                    "best_accuracy": res.accuracy,
+                    "best_sensitivity": res.sensitivity,
+                    "best_specificity": res.specificity,
+                    "threshold": res.threshold,
+                }
+            )
+            auc_vals.append(res.auc)
+            acc_vals.append(res.accuracy)
+            sens_vals.append(res.sensitivity)
+            spec_vals.append(res.specificity)
+
+        results = {
+            "meta": {
+                "uuid": self.uuid,
+                "model": cfg.model.name,
+                "task": cfg.task,
+                "timestamp": datetime.now().isoformat(),
+                "config": {
+                    "epochs": cfg.training.epochs,
+                    "batch_size": cfg.training.batch_size,
+                    "learning_rate": cfg.training.learning_rate,
+                    "weight_decay": cfg.training.weight_decay,
+                    "k_folds": cfg.training.k_folds,
+                    "seed": cfg.training.seed,
+                },
+            },
+            "folds": fold_entries,
+            "summary": {
+                "mean_auc": round(float(np.mean(auc_vals)), 5),
+                "std_auc": round(float(np.std(auc_vals)), 5),
+                "mean_accuracy": round(float(np.mean(acc_vals)), 5),
+                "std_accuracy": round(float(np.std(acc_vals)), 5),
+                "mean_sensitivity": round(float(np.mean(sens_vals)), 5),
+                "std_sensitivity": round(float(np.std(sens_vals)), 5),
+                "mean_specificity": round(float(np.mean(spec_vals)), 5),
+                "std_specificity": round(float(np.std(spec_vals)), 5),
+            },
+        }
+
+        save_dir.mkdir(parents=True, exist_ok=True)
+        with open(save_dir / "results.json", "w") as f:
+            json.dump(results, f, indent=2)
+
+        tqdm.write(f"📄 Results saved to {save_dir / 'results.json'}")

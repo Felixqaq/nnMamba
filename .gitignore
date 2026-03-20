@@ -97,3 +97,5 @@ desktop.ini
 # 文檔生成
 docs/_build/
 site/
+
+/by_angle_all/reclassification_manifest.json

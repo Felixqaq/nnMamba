@@ -3,6 +3,14 @@
 ## Project Structure & Module Organization
 `classification/` is the main maintained training pipeline for image classification. Keep reusable training and evaluation code in `classification/core/`, dataset and transform logic in `classification/data/`, architecture implementations in `classification/networks/`, and model selection in `classification/models.py`. Root-level `nnMamba.py` and `nnMamba4cls.py` hold core model definitions, while `nnunet/` contains the segmentation and landmark-detection stack. Generated artifacts belong in gitignored directories such as `weights/`, `train_log/`, `figures/`, and `graphs/`. Large medical-image inputs stay outside version control in folders such as `Normal/`, `Abnormal/`, and `classification/datasets/`.
 
+## Environment Setup
+
+### Use the Conda Environment
+**Always activate the environment before working:**
+```bash
+conda activate nnMamba
+```
+
 ## Build, Test, and Development Commands
 Work from `classification/` when developing the classifier:
 

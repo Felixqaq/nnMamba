@@ -1,0 +1,6 @@
+weights/
+train_log/
+figures/
+graphs/
+__pycache__/
+*.pyc

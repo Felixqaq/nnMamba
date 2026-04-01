@@ -99,3 +99,12 @@ docs/_build/
 site/
 
 /by_angle_all/reclassification_manifest.json
+
+# Agent / AI 工具相關
+.claude/
+.omc/
+.codex/
+.aider*
+.cursor/
+*.claude_cache
+.codex

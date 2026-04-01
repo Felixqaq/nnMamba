@@ -60,6 +60,7 @@ Abnormal/
 Abnormal_ori/
 Abnormal_aug_ori/
 classification/datasets/
+/by_angle_all/
 
 # 臨時檔案
 *.log

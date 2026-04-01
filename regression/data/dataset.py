@@ -114,6 +114,8 @@ class AngleRegressionDataset(Dataset):
                 "source_group": record.source_group,
                 "path": record.path,
             }
+            if self.transform is not None:
+                sample = self.transform(sample)
             self.cached_data.append(sample)
 
     def __len__(self) -> int:
@@ -138,7 +140,6 @@ class AngleRegressionDataset(Dataset):
                 "source_group": record.source_group,
                 "path": record.path,
             }
-
-        if self.transform is not None:
-            sample = self.transform(sample)
+            if self.transform is not None:
+                sample = self.transform(sample)
         return sample

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import random
 from datetime import datetime
@@ -148,17 +149,31 @@ class Trainer:
                         target_std=eval_target_std,
                     )
 
-                    train_metrics["mae"].append(train_result.mae)
-                    train_metrics["rmse"].append(train_result.rmse)
-                    train_metrics["r2"].append(train_result.r2)
-                    train_metrics["pearson"].append(train_result.pearson)
-                    train_metrics["mean_error"].append(train_result.mean_error)
-                    val_metrics["mae"].append(val_result.mae)
-                    val_metrics["rmse"].append(val_result.rmse)
-                    val_metrics["r2"].append(val_result.r2)
-                    val_metrics["pearson"].append(val_result.pearson)
-                    val_metrics["mean_error"].append(val_result.mean_error)
-                    scheduler.step(val_result.mae)
+                    if train_result.num_invalid_samples > 0 or val_result.num_invalid_samples > 0:
+                        warn_msg = (
+                            f"Epoch {epoch}: invalid predictions detected "
+                            f"(train={train_result.num_invalid_samples}, "
+                            f"val={val_result.num_invalid_samples})"
+                        )
+                        tqdm.write(warn_msg)
+                        log_file.write(warn_msg + "\n")
+
+                    train_metrics["mae"].append(self._finite_or_nan(train_result.mae))
+                    train_metrics["rmse"].append(self._finite_or_nan(train_result.rmse))
+                    train_metrics["r2"].append(self._finite_or_nan(train_result.r2))
+                    train_metrics["pearson"].append(self._finite_or_nan(train_result.pearson))
+                    train_metrics["mean_error"].append(
+                        self._finite_or_nan(train_result.mean_error)
+                    )
+                    val_metrics["mae"].append(self._finite_or_nan(val_result.mae))
+                    val_metrics["rmse"].append(self._finite_or_nan(val_result.rmse))
+                    val_metrics["r2"].append(self._finite_or_nan(val_result.r2))
+                    val_metrics["pearson"].append(self._finite_or_nan(val_result.pearson))
+                    val_metrics["mean_error"].append(
+                        self._finite_or_nan(val_result.mean_error)
+                    )
+                    if math.isfinite(val_result.mae):
+                        scheduler.step(val_result.mae)
 
                     metric_msg = (
                         f"Epoch {epoch}: "
@@ -257,13 +272,19 @@ class Trainer:
         num_batches = max(len(dataloader), 1)
 
         for batch in tqdm(dataloader, leave=False):
-            x = batch["mri"].to(self.device) if "mri" in batch else batch["ct"].to(self.device)
-            y = batch["angle"].to(self.device).float().view(-1)
+            x = (
+                batch["mri"].to(self.device, non_blocking=True)
+                if "mri" in batch
+                else batch["ct"].to(self.device, non_blocking=True)
+            )
+            y = batch["angle"].to(self.device, non_blocking=True).float().view(-1)
 
-            optimizer.zero_grad()
+            optimizer.zero_grad(set_to_none=True)
             out = model(x).view(-1)
             y_target = self._normalize_targets(y, target_mean, target_std)
             loss = loss_fn(out, y_target)
+            if not torch.isfinite(loss):
+                raise RuntimeError("Non-finite loss encountered during training.")
             loss.backward()
 
             if self.config.training.clip_grad_norm > 0:
@@ -284,6 +305,10 @@ class Trainer:
             std = target_std if abs(target_std) > 1e-8 else 1.0
             return (targets - target_mean) / std
         return targets
+
+    def _finite_or_nan(self, value: float) -> float:
+        """Keep plots numeric without letting inf blow up the axes."""
+        return float(value) if math.isfinite(value) else float("nan")
 
     def _get_eval_target_stats(
         self, target_mean: float, target_std: float

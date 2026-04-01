@@ -91,3 +91,36 @@ Training writes:
 - `regression/figures/PFT_angle_regression/<run_uuid>/`
 
 Per-fold figures include loss/MAE/RMSE/R2/Pearson curves plus scatter, residual, error histogram, and Bland-Altman plots. Global figures aggregate all folds into `total_*.png`.
+
+## Architecture
+
+Recommended paper-style architecture figure:
+
+- [mamba_regressor_architecture_auto.svg](/home/felix/Research/nnMamba/regression/docs/assets/mamba_regressor_architecture_auto.svg)
+- [mamba_regressor_explained_zh.md](/home/felix/Research/nnMamba/regression/docs/mamba_regressor_explained_zh.md)
+
+Other variants:
+
+- [mamba_regressor_architecture.md](/home/felix/Research/nnMamba/regression/docs/mamba_regressor_architecture.md)
+- [mamba_regressor_architecture_simple.svg](/home/felix/Research/nnMamba/regression/docs/assets/mamba_regressor_architecture_simple.svg)
+- [mamba_regressor_architecture.svg](/home/felix/Research/nnMamba/regression/docs/assets/mamba_regressor_architecture.svg)
+
+Model graph export for Netron:
+
+- [export_model_graph.py](/home/felix/Research/nnMamba/regression/scripts/export_model_graph.py)
+- [generate_paper_architecture.py](/home/felix/Research/nnMamba/regression/scripts/generate_paper_architecture.py)
+
+Recommended usage from `regression/`:
+
+```bash
+conda run -n nnMamba python scripts/export_model_graph.py --config config.yaml --device cuda
+conda run -n nnMamba python scripts/export_model_graph.py --config config.yaml --uuid <run_uuid> --fold 1 --device cuda
+conda run -n nnMamba python scripts/generate_paper_architecture.py --config config.yaml
+```
+
+Notes:
+
+- `TorchScript` export is the safest default for this repo because Netron can open `.pt` files.
+- `ONNX` export additionally requires the `onnx` package in the `nnMamba` environment.
+- This Mamba implementation uses a CUDA custom op, so export should be run with `--device cuda`.
+- `mamba_regressor_architecture_auto.svg` is the current recommended figure for manuscripts and slides.

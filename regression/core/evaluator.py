@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +26,8 @@ class RegressionMetrics:
     labels: torch.Tensor | None = None
     preds: torch.Tensor | None = None
     sample_indices: list[int] | None = None
+    num_valid_samples: int = 0
+    num_invalid_samples: int = 0
 
     @property
     def pearson_r(self) -> float:
@@ -96,8 +99,8 @@ def get_predictions(
     with torch.no_grad():
         for batch in dataloader:
             x, target = _extract_inputs(batch)
-            x = x.to(device)
-            target = target.to(device)
+            x = x.to(device, non_blocking=True)
+            target = target.to(device, non_blocking=True)
 
             preds = _extract_predictions(model(x))
             if abs(target_std) > 1e-8:
@@ -140,6 +143,33 @@ def compute_metrics(
     if labels.numel() == 0 or preds.numel() == 0:
         return RegressionMetrics(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 
+    finite_mask = torch.isfinite(labels) & torch.isfinite(preds)
+    num_valid = int(finite_mask.sum().item())
+    num_invalid = int((~finite_mask).sum().item())
+
+    if sample_indices is not None and len(sample_indices) == len(finite_mask):
+        sample_indices = [
+            idx for idx, keep in zip(sample_indices, finite_mask.tolist()) if keep
+        ]
+
+    labels = labels[finite_mask]
+    preds = preds[finite_mask]
+
+    if labels.numel() == 0:
+        return RegressionMetrics(
+            mae=math.inf,
+            rmse=math.inf,
+            r2=-math.inf,
+            pearson=0.0,
+            mean_error=math.inf,
+            mse=math.inf,
+            labels=labels,
+            preds=preds,
+            sample_indices=sample_indices,
+            num_valid_samples=num_valid,
+            num_invalid_samples=num_invalid,
+        )
+
     errors = preds - labels
     mse = torch.mean(errors**2)
     mae = torch.mean(errors.abs())
@@ -172,6 +202,8 @@ def compute_metrics(
         labels=labels,
         preds=preds,
         sample_indices=sample_indices,
+        num_valid_samples=num_valid,
+        num_invalid_samples=num_invalid,
     )
 
 

@@ -28,6 +28,18 @@ def conv1x1(in_channels: int, out_channels: int, stride: int = 1) -> nn.Conv3d:
     )
 
 
+def norm3d(num_channels: int, max_groups: int = 8) -> nn.GroupNorm:
+    """Return a GroupNorm layer that evenly divides the channel count.
+
+    BatchNorm was unstable for this tiny 3D regression dataset because eval mode
+    depends on running statistics. GroupNorm avoids that train/eval mismatch.
+    """
+    num_groups = min(max_groups, num_channels)
+    while num_groups > 1 and num_channels % num_groups != 0:
+        num_groups -= 1
+    return nn.GroupNorm(num_groups=num_groups, num_channels=num_channels)
+
+
 class ResidualMambaBlock(nn.Module):
     """3D residual block that mixes spatial tokens with Mamba."""
 
@@ -39,7 +51,7 @@ class ResidualMambaBlock(nn.Module):
         expand: int = 2,
     ):
         super().__init__()
-        self.pre_norm = nn.BatchNorm3d(dim)
+        self.pre_norm = norm3d(dim)
         self.pre_proj = conv1x1(dim, dim)
         self.mamba = Mamba(
             d_model=dim,
@@ -47,7 +59,7 @@ class ResidualMambaBlock(nn.Module):
             d_conv=d_conv,
             expand=expand,
         )
-        self.post_norm = nn.BatchNorm3d(dim)
+        self.post_norm = norm3d(dim)
         self.post_proj = conv1x1(dim, dim)
         self.act = nn.GELU()
 
@@ -77,7 +89,7 @@ class DownsampleStage(nn.Module):
         layers: list[nn.Module] = [
             nn.Sequential(
                 conv3x3(in_channels, out_channels, stride=stride),
-                nn.BatchNorm3d(out_channels),
+                norm3d(out_channels),
                 nn.GELU(),
             )
         ]
@@ -109,7 +121,7 @@ class MambaAngleRegressor(nn.Module):
                 padding=3,
                 bias=False,
             ),
-            nn.BatchNorm3d(base_channels),
+            norm3d(base_channels),
             nn.GELU(),
         )
         self.stage1 = DownsampleStage(base_channels, base_channels, depths[0], stride=1)
@@ -129,6 +141,13 @@ class MambaAngleRegressor(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(base_channels * 2, 1),
         )
+        self._init_head()
+
+    def _init_head(self) -> None:
+        """Keep initial regression outputs close to zero in normalized space."""
+        final_linear = self.head[-1]
+        nn.init.normal_(final_linear.weight, mean=0.0, std=1e-3)
+        nn.init.zeros_(final_linear.bias)
 
     def forward_features(self, x: torch.Tensor) -> torch.Tensor:
         x1 = self.stage1(self.stem(x))

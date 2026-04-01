@@ -1,0 +1,131 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FAF8F3"/>
+      <stop offset="1" stop-color="#F2F6FB"/>
+    </linearGradient>
+    <linearGradient id="inputBox" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#365C7D"/>
+      <stop offset="1" stop-color="#4F81A8"/>
+    </linearGradient>
+    <linearGradient id="encoder1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2E7D69"/>
+      <stop offset="1" stop-color="#44A58A"/>
+    </linearGradient>
+    <linearGradient id="encoder2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#C57B39"/>
+      <stop offset="1" stop-color="#E29A59"/>
+    </linearGradient>
+    <linearGradient id="encoder3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#B6564E"/>
+      <stop offset="1" stop-color="#D97B72"/>
+    </linearGradient>
+    <linearGradient id="headBox" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#684D8E"/>
+      <stop offset="1" stop-color="#8A68B8"/>
+    </linearGradient>
+    <linearGradient id="outputBox" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7A3143"/>
+      <stop offset="1" stop-color="#A44F65"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#243645" flood-opacity="0.14"/>
+    </filter>
+    <marker id="arrow" markerWidth="14" markerHeight="14" refX="11" refY="7" orient="auto">
+      <path d="M0 0L14 7L0 14V9H8V5H0V0Z" fill="#536B84"/>
+    </marker>
+    <style>
+      .title { font: 700 30px 'DejaVu Sans', Arial, sans-serif; fill: #16212B; }
+      .subtitle { font: 500 16px 'DejaVu Sans', Arial, sans-serif; fill: #53677A; }
+      .label { font: 700 18px 'DejaVu Sans', Arial, sans-serif; fill: white; }
+      .small { font: 500 14px 'DejaVu Sans Mono', 'Courier New', monospace; fill: white; }
+      .note { font: 500 14px 'DejaVu Sans', Arial, sans-serif; fill: #53677A; }
+      .darkLabel { font: 700 17px 'DejaVu Sans', Arial, sans-serif; fill: #223241; }
+      .darkSmall { font: 500 13px 'DejaVu Sans Mono', 'Courier New', monospace; fill: #415264; }
+      .arrow { stroke: #536B84; stroke-width: 4; fill: none; marker-end: url(#arrow); }
+      .merge { stroke: #6C839A; stroke-width: 3.5; fill: none; marker-end: url(#arrow); }
+      .dash { stroke-dasharray: 10 8; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="900" fill="url(#bg)"/>
+
+  <text x="72" y="80" class="title">MambaAngleRegressor</text>
+  <text x="72" y="112" class="subtitle">Simple encoder-style schematic, drawn like a U-Net paper figure but without a decoder branch</text>
+
+  <rect x="66" y="150" width="1468" height="690" rx="28" fill="#FFFFFF" stroke="#D8E1EA" stroke-width="2"/>
+
+  <rect x="130" y="320" width="150" height="180" rx="26" fill="url(#inputBox)" filter="url(#shadow)"/>
+  <text x="163" y="374" class="label">Input CT</text>
+  <text x="152" y="408" class="small">1 x 112 x 136 x 112</text>
+  <text x="163" y="438" class="small">3D volume</text>
+
+  <rect x="360" y="275" width="150" height="225" rx="26" fill="url(#encoder1)" filter="url(#shadow)"/>
+  <text x="405" y="327" class="label">Stem</text>
+  <text x="389" y="360" class="small">Conv7 s=4</text>
+  <text x="388" y="390" class="small">GN + GELU</text>
+  <text x="381" y="430" class="small">32 x 28 x 34 x 28</text>
+
+  <rect x="590" y="238" width="170" height="262" rx="26" fill="url(#encoder1)" filter="url(#shadow)"/>
+  <text x="632" y="290" class="label">Stage 1</text>
+  <text x="617" y="323" class="small">stride = 1</text>
+  <text x="608" y="353" class="small">3 x Mamba blocks</text>
+  <text x="611" y="393" class="small">32 x 28 x 34 x 28</text>
+
+  <rect x="850" y="275" width="150" height="225" rx="26" fill="url(#encoder2)" filter="url(#shadow)"/>
+  <text x="892" y="327" class="label">Stage 2</text>
+  <text x="877" y="360" class="small">stride = 2</text>
+  <text x="868" y="390" class="small">3 x Mamba blocks</text>
+  <text x="865" y="430" class="small">64 x 14 x 17 x 14</text>
+
+  <rect x="1080" y="320" width="130" height="180" rx="26" fill="url(#encoder3)" filter="url(#shadow)"/>
+  <text x="1109" y="372" class="label">Stage 3</text>
+  <text x="1103" y="405" class="small">stride = 2</text>
+  <text x="1092" y="435" class="small">3 x Mamba</text>
+  <text x="1098" y="463" class="small">blocks</text>
+  <text x="1089" y="490" class="small">128 x 7 x 9 x 7</text>
+
+  <path d="M280 410H360" class="arrow"/>
+  <path d="M510 387H590" class="arrow"/>
+  <path d="M760 387H850" class="arrow"/>
+  <path d="M1000 410H1080" class="arrow"/>
+
+  <rect x="400" y="610" width="160" height="90" rx="18" fill="#E7F3EE" stroke="#BFD9CE" stroke-width="2"/>
+  <text x="441" y="646" class="darkLabel">GAP</text>
+  <text x="426" y="673" class="darkSmall">32-dim feature</text>
+
+  <rect x="845" y="610" width="160" height="90" rx="18" fill="#F8EDDF" stroke="#E8D0B0" stroke-width="2"/>
+  <text x="886" y="646" class="darkLabel">GAP</text>
+  <text x="871" y="673" class="darkSmall">64-dim feature</text>
+
+  <rect x="1190" y="610" width="160" height="90" rx="18" fill="#F7E6E4" stroke="#E2C0BC" stroke-width="2"/>
+  <text x="1231" y="646" class="darkLabel">GAP</text>
+  <text x="1212" y="673" class="darkSmall">128-dim feature</text>
+
+  <path d="M675 500V610" class="merge"/>
+  <path d="M925 500V610" class="merge"/>
+  <path d="M1145 500V610" class="merge"/>
+
+  <rect x="640" y="735" width="470" height="110" rx="24" fill="url(#headBox)" filter="url(#shadow)"/>
+  <text x="680" y="777" class="label">Concatenate -> MLP Head</text>
+  <text x="680" y="808" class="small">224 -> 128 -> 64 -> 1</text>
+
+  <rect x="1220" y="742" width="180" height="96" rx="24" fill="url(#outputBox)" filter="url(#shadow)"/>
+  <text x="1276" y="780" class="label">Output</text>
+  <text x="1260" y="811" class="small">predicted angle</text>
+
+  <path d="M480 700C480 735 730 735 730 735" class="merge"/>
+  <path d="M925 700V735" class="merge"/>
+  <path d="M1270 700C1270 735 1020 735 1020 735" class="merge"/>
+  <path d="M1110 790H1220" class="arrow"/>
+
+  <text x="128" y="610" class="note">Each stage starts with a 3D convolutional reduction layer.</text>
+  <text x="128" y="638" class="note">After that, the network applies 3 ResidualMambaBlocks at the same scale.</text>
+  <text x="128" y="666" class="note">Unlike U-Net, this model does not decode back to full resolution.</text>
+  <text x="128" y="694" class="note">It pools multi-scale encoder features and regresses a single scalar angle.</text>
+
+  <rect x="126" y="735" width="350" height="92" rx="18" fill="#F7FAFD" stroke="#D8E1EA" stroke-width="2"/>
+  <text x="151" y="770" class="darkLabel">ResidualMambaBlock</text>
+  <text x="151" y="798" class="darkSmall">GN -> 1x1x1 Conv -> flatten to [B,N,C]</text>
+  <text x="151" y="819" class="darkSmall">Mamba -> reshape back -> GN -> 1x1x1 Conv + residual</text>
+</svg>

@@ -34,6 +34,7 @@ class RegressionLoaderHelper:
         manifest_path: str | Path | None = None,
         intensity_window: tuple[float, float] | None = None,
         pin_memory: bool = True,
+        prefetch_factor: int = 2,
     ):
         if hasattr(data_root, "data") and hasattr(data_root, "training"):
             config = data_root
@@ -50,6 +51,7 @@ class RegressionLoaderHelper:
             manifest_path = config.data.manifest
             intensity_window = config.data.intensity_window
             pin_memory = config.data.pin_memory
+            prefetch_factor = config.data.prefetch_factor
 
         self.data_root = Path(data_root)
         self.labels_json = Path(labels_json)
@@ -64,6 +66,7 @@ class RegressionLoaderHelper:
         self.manifest_path = Path(manifest_path) if manifest_path else None
         self.intensity_window = intensity_window
         self.pin_memory = pin_memory
+        self.prefetch_factor = prefetch_factor
 
         manifest = build_angle_manifest(self.data_root, self.labels_json)
         self.manifest = manifest
@@ -171,14 +174,18 @@ class RegressionLoaderHelper:
         drop_last: bool,
     ) -> DataLoader:
         subset = Subset(self.train_ds, indices)
-        return DataLoader(
-            subset,
+        loader_kwargs = dict(
+            dataset=subset,
             batch_size=batch_size,
             shuffle=shuffle,
             num_workers=self.num_workers,
             pin_memory=self.pin_memory and torch.cuda.is_available(),
             drop_last=drop_last,
         )
+        if self.num_workers > 0:
+            loader_kwargs["persistent_workers"] = True
+            loader_kwargs["prefetch_factor"] = self.prefetch_factor
+        return DataLoader(**loader_kwargs)
 
     def get_train_dl(self, fold: int, shuffle: bool = True) -> DataLoader:
         """Get the training loader for a given fold."""

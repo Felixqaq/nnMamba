@@ -28,6 +28,7 @@ data:
   manifest: ./datasets/generated/regression_manifest.smoke.json
   image_size: [112, 136, 112]
   intensity_window: [-1000.0, 400.0]
+  input_normalization: zscore
   target_normalization: zscore
   cache_data: true
   num_workers: 4

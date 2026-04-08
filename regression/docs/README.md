@@ -74,6 +74,13 @@ conda run -n nnMamba python train.py --config config.yaml
 
 The loader will scan `../by_angle_all`, match patient IDs against `../patient_angle_classification_by_group.json`, and auto-save a manifest to `./datasets/generated/regression_manifest.json`.
 
+Relevant data preprocessing knobs in `config.yaml`:
+
+- `intensity_window`: clip HU values before any optional normalization
+- `input_normalization`: CT input preprocessing mode, `zscore` or `none`
+- `target_normalization`: regression target normalization, `zscore` or `none`
+  when set to `zscore`, the mean/std now come from the full dataset rather than fold-specific splits
+
 ## Evaluation
 
 ```bash

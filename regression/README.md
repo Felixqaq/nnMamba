@@ -70,6 +70,22 @@ conda run -n nnMamba python train.py --config config.yaml
 - loss: `smooth_l1`
 - target: CT -> 單一角度值
 
+資料前處理相關設定在 `data:` 區塊：
+
+- `intensity_window`: 先對 CT 做 HU clipping，預設 `[-1000, 400]`
+- `input_normalization`: CT 輸入正規化方式，預設 `zscore`
+- `target_normalization`: 角度 label 的正規化方式，預設 `zscore`
+  使用 `zscore` 時，現在是用整個資料集的 angle mean/std 計算，不再依 fold 分開算
+
+如果你想停用 CT 輸入正規化，但保留 intensity window，可以改成：
+
+```yaml
+data:
+  intensity_window: [-1000.0, 400.0]
+  input_normalization: none
+  target_normalization: zscore
+```
+
 ## 5. 評估模型
 
 訓練完後，假設 run id 是 `<run_uuid>`：

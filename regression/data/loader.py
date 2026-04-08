@@ -33,6 +33,7 @@ class RegressionLoaderHelper:
         cache_data: bool = True,
         manifest_path: str | Path | None = None,
         intensity_window: tuple[float, float] | None = None,
+        input_normalization: str = "zscore",
         pin_memory: bool = True,
         prefetch_factor: int = 2,
     ):
@@ -50,6 +51,7 @@ class RegressionLoaderHelper:
             cache_data = config.data.cache_data
             manifest_path = config.data.manifest
             intensity_window = config.data.intensity_window
+            input_normalization = config.data.input_normalization
             pin_memory = config.data.pin_memory
             prefetch_factor = config.data.prefetch_factor
 
@@ -65,6 +67,7 @@ class RegressionLoaderHelper:
         self.cache_data = cache_data
         self.manifest_path = Path(manifest_path) if manifest_path else None
         self.intensity_window = intensity_window
+        self.input_normalization = input_normalization
         self.pin_memory = pin_memory
         self.prefetch_factor = prefetch_factor
 
@@ -73,12 +76,14 @@ class RegressionLoaderHelper:
         self.records = list(manifest.records)
         self.targets = np.asarray([record.angle for record in self.records], dtype=np.float32)
         self.patient_ids = [record.patient_id for record in self.records]
+        self.target_mean, self.target_std = self._compute_target_stats(self.targets)
 
         self.train_ds = AngleRegressionDataset(
             self.data_root,
             self.labels_json,
             image_size=self.image_size,
             intensity_window=self.intensity_window,
+            input_normalization=self.input_normalization,
             records=self.records,
             transform=transforms.Compose([ToTensor()]),
             cache_data=self.cache_data,
@@ -157,14 +162,22 @@ class RegressionLoaderHelper:
         train_idx, val_idx = self.fold_indices[fold]
         return self.targets[train_idx], self.targets[val_idx]
 
-    def get_fold_target_stats(self, fold: int) -> tuple[float, float]:
-        """Return mean/std of train targets for a fold."""
-        train_targets, _ = self.get_fold_targets(fold)
-        mean = float(np.mean(train_targets)) if len(train_targets) else 0.0
-        std = float(np.std(train_targets)) if len(train_targets) else 1.0
+    def _compute_target_stats(self, targets: np.ndarray) -> tuple[float, float]:
+        """Return mean/std of the provided target array."""
+        mean = float(np.mean(targets)) if len(targets) else 0.0
+        std = float(np.std(targets)) if len(targets) else 1.0
         if std < 1e-8:
             std = 1.0
         return mean, std
+
+    def get_target_stats(self) -> tuple[float, float]:
+        """Return global mean/std of all regression targets in the dataset."""
+        return self.target_mean, self.target_std
+
+    def get_fold_target_stats(self, fold: int) -> tuple[float, float]:
+        """Backward-compatible alias for dataset-level target stats."""
+        del fold
+        return self.get_target_stats()
 
     def _build_loader(
         self,

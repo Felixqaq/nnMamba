@@ -29,6 +29,7 @@ data:
   manifest: ./datasets/generated/regression_manifest.json
   image_size: [112, 136, 112]
   intensity_window: [-1000.0, 400.0]
+  input_normalization: none
   target_normalization: zscore
   cache_data: true
   num_workers: 0

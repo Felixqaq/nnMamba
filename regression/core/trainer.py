@@ -89,7 +89,7 @@ class Trainer:
 
         train_dl = self.loader_helper.get_train_dl(fold)
         test_dl = self.loader_helper.get_test_dl(fold)
-        target_mean, target_std = self.loader_helper.get_fold_target_stats(fold)
+        target_mean, target_std = self.loader_helper.get_target_stats()
         eval_target_mean, eval_target_std = self._get_eval_target_stats(
             target_mean, target_std
         )
@@ -201,6 +201,7 @@ class Trainer:
                                 "target_stats": {
                                     "mean": eval_target_mean,
                                     "std": eval_target_std,
+                                    "scope": "dataset",
                                 },
                                 "metrics": {
                                     "mae": val_result.mae,
@@ -239,6 +240,7 @@ class Trainer:
                             "target_stats": {
                                 "mean": eval_target_mean,
                                 "std": eval_target_std,
+                                "scope": "dataset",
                             },
                         },
                     )

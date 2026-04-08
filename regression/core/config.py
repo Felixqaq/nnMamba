@@ -9,6 +9,7 @@ import yaml
 
 ModelType = Literal["nnmamba_regressor", "nnmamba"]
 LossType = Literal["smooth_l1", "mse", "mae"]
+InputNormType = Literal["zscore", "none"]
 TargetNormType = Literal["zscore", "none"]
 
 
@@ -51,6 +52,7 @@ class DataConfig:
     )
     image_size: tuple[int, int, int] = (112, 136, 112)
     intensity_window: tuple[float, float] = (-1000.0, 400.0)
+    input_normalization: InputNormType = "zscore"
     target_normalization: TargetNormType = "zscore"
     cache_data: bool = True
     num_workers: int = 0
@@ -126,6 +128,9 @@ class Config:
                 image_size=tuple(data_section.get("image_size", [112, 136, 112])),
                 intensity_window=tuple(
                     data_section.get("intensity_window", [-1000.0, 400.0])
+                ),
+                input_normalization=data_section.get(
+                    "input_normalization", "zscore"
                 ),
                 target_normalization=data_section.get(
                     "target_normalization", "zscore"

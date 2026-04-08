@@ -7,6 +7,7 @@ import os
 import torch
 
 from core.config import Config
+from core.runtime import configure_torch_runtime
 from core.trainer import Trainer
 from data.loader import LoaderHelper
 from models import build_model
@@ -19,6 +20,7 @@ def main() -> None:
 
     config = Config.from_yaml(args.config)
     os.environ["CUDA_VISIBLE_DEVICES"] = config.gpu.device_id
+    configure_torch_runtime()
 
     device = "CUDA" if torch.cuda.is_available() else "CPU"
     print(f"Running on: {device}")
@@ -32,6 +34,12 @@ def main() -> None:
     uuid = trainer.train()
 
     print(f"\nTraining complete. Run UUID: {uuid}")
+    if trainer.total_training_seconds is not None:
+        print(
+            "Total training time: "
+            f"{trainer.total_training_seconds / 3600.0:.2f} hours "
+            f"({trainer.total_training_seconds / 60.0:.1f} minutes)"
+        )
     print(f"Weights saved to: {config.paths.weights / config.task / uuid}")
 
 

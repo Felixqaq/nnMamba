@@ -7,6 +7,7 @@ import math
 import os
 import random
 from datetime import datetime
+from time import perf_counter
 
 import numpy as np
 import torch
@@ -49,6 +50,12 @@ class Trainer:
         self.loader_helper = loader_helper
         self.best_results = []
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.use_amp = bool(config.training.amp and self.device.type == "cuda")
+        self.scaler = torch.amp.GradScaler("cuda", enabled=self.use_amp)
+        self.optimizer_label = "AdamW"
+        self.run_started_at: datetime | None = None
+        self.run_finished_at: datetime | None = None
+        self.total_training_seconds: float | None = None
 
         os.environ["CUDA_VISIBLE_DEVICES"] = config.gpu.device_id
         setup_seed(config.training.seed)
@@ -56,18 +63,37 @@ class Trainer:
         self.uuid = (
             config.resume.uuid
             if config.resume.enabled and config.resume.uuid
-            else generate_uuid("nnMambaReg")
+            else generate_uuid(str(config.model.name))
         )
 
     def train(self) -> str:
         """Run full k-fold training and save per-fold/global summaries."""
         cfg = self.config
         start_fold = cfg.resume.start_fold if cfg.resume.enabled else 0
+        self.run_started_at = datetime.now()
+        started_perf = perf_counter()
 
         print(f"\n{'=' * 72}")
         print(f"Training: {self.uuid}")
         print(
             f"Model: {cfg.model.name} | Task: {cfg.task} | {cfg.training.k_folds} folds"
+        )
+        if hasattr(self.loader_helper, "batch_size") and hasattr(
+            self.loader_helper, "val_batch_size"
+        ):
+            print(
+                f"Train batch: {self.loader_helper.batch_size} | "
+                f"Eval batch: {self.loader_helper.val_batch_size} | "
+                f"AMP: {'on' if self.use_amp else 'off'}"
+            )
+        if str(cfg.model.name).lower() == "swinunetr":
+            print(
+                f"Swin window: {cfg.model.window_size} | "
+                f"Checkpointing: {'on' if cfg.model.use_checkpoint else 'off'}"
+            )
+        print(
+            f"Optimizer: {self.optimizer_label} | "
+            f"Train metrics during eval: {'on' if cfg.training.track_train_metrics else 'off'}"
         )
         print(f"{'=' * 72}\n")
 
@@ -75,9 +101,13 @@ class Trainer:
             print(f"\nFold {fold + 1}/{cfg.training.k_folds}")
             best_res = self._train_fold(fold)
             self.best_results.append(best_res)
+            if self.device.type == "cuda":
+                torch.cuda.empty_cache()
             print(f"Fold {fold + 1} complete\n")
 
         fig_dir = self.config.paths.figures / self.config.task / self.uuid
+        self.run_finished_at = datetime.now()
+        self.total_training_seconds = perf_counter() - started_perf
         plot_global_summary(self.best_results, fig_dir)
         self._save_results_json(fig_dir)
         return self.uuid
@@ -94,11 +124,7 @@ class Trainer:
             target_mean, target_std
         )
 
-        optimizer = optim.AdamW(
-            model.parameters(),
-            lr=cfg.learning_rate,
-            weight_decay=cfg.weight_decay,
-        )
+        optimizer = self._build_optimizer(model)
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, mode="min", factor=0.5, patience=2
         )
@@ -134,37 +160,45 @@ class Trainer:
 
                 if epoch % cfg.eval_interval == 0 or epoch == cfg.epochs:
                     eval_epochs.append(epoch)
-                    train_result = evaluate(
-                        model=model,
-                        dataloader=train_dl,
-                        device=self.device,
-                        target_mean=eval_target_mean,
-                        target_std=eval_target_std,
-                    )
+                    train_result = None
+                    if cfg.track_train_metrics:
+                        train_result = evaluate(
+                            model=model,
+                            dataloader=train_dl,
+                            device=self.device,
+                            target_mean=eval_target_mean,
+                            target_std=eval_target_std,
+                            use_amp=self.use_amp,
+                        )
                     val_result = evaluate(
                         model=model,
                         dataloader=test_dl,
                         device=self.device,
                         target_mean=eval_target_mean,
                         target_std=eval_target_std,
+                        use_amp=self.use_amp,
                     )
 
-                    if train_result.num_invalid_samples > 0 or val_result.num_invalid_samples > 0:
+                    if (
+                        train_result is not None
+                        and train_result.num_invalid_samples > 0
+                    ) or val_result.num_invalid_samples > 0:
                         warn_msg = (
                             f"Epoch {epoch}: invalid predictions detected "
-                            f"(train={train_result.num_invalid_samples}, "
+                            f"(train={train_result.num_invalid_samples if train_result is not None else 0}, "
                             f"val={val_result.num_invalid_samples})"
                         )
                         tqdm.write(warn_msg)
                         log_file.write(warn_msg + "\n")
 
-                    train_metrics["mae"].append(self._finite_or_nan(train_result.mae))
-                    train_metrics["rmse"].append(self._finite_or_nan(train_result.rmse))
-                    train_metrics["r2"].append(self._finite_or_nan(train_result.r2))
-                    train_metrics["pearson"].append(self._finite_or_nan(train_result.pearson))
-                    train_metrics["mean_error"].append(
-                        self._finite_or_nan(train_result.mean_error)
-                    )
+                    if train_result is not None:
+                        train_metrics["mae"].append(self._finite_or_nan(train_result.mae))
+                        train_metrics["rmse"].append(self._finite_or_nan(train_result.rmse))
+                        train_metrics["r2"].append(self._finite_or_nan(train_result.r2))
+                        train_metrics["pearson"].append(self._finite_or_nan(train_result.pearson))
+                        train_metrics["mean_error"].append(
+                            self._finite_or_nan(train_result.mean_error)
+                        )
                     val_metrics["mae"].append(self._finite_or_nan(val_result.mae))
                     val_metrics["rmse"].append(self._finite_or_nan(val_result.rmse))
                     val_metrics["r2"].append(self._finite_or_nan(val_result.r2))
@@ -177,9 +211,13 @@ class Trainer:
 
                     metric_msg = (
                         f"Epoch {epoch}: "
-                        f"Val MAE={val_result.mae:.4f}, RMSE={val_result.rmse:.4f}, R2={val_result.r2:.4f} | "
-                        f"Train MAE={train_result.mae:.4f}, RMSE={train_result.rmse:.4f}, R2={train_result.r2:.4f}"
+                        f"Val MAE={val_result.mae:.4f}, RMSE={val_result.rmse:.4f}, R2={val_result.r2:.4f}"
                     )
+                    if train_result is not None:
+                        metric_msg += (
+                            f" | Train MAE={train_result.mae:.4f}, "
+                            f"RMSE={train_result.rmse:.4f}, R2={train_result.r2:.4f}"
+                        )
                     tqdm.write(metric_msg)
                     log_file.write(metric_msg + "\n")
 
@@ -259,6 +297,23 @@ class Trainer:
             best_fold_result.best_epoch = best_epoch
         return best_fold_result
 
+    def _build_optimizer(self, model: nn.Module) -> optim.Optimizer:
+        """Build AdamW and use the fused CUDA kernel when available."""
+        kwargs = {
+            "lr": self.config.training.learning_rate,
+            "weight_decay": self.config.training.weight_decay,
+        }
+        if self.device.type == "cuda":
+            try:
+                optimizer = optim.AdamW(model.parameters(), fused=True, **kwargs)
+                self.optimizer_label = "Fused AdamW"
+                return optimizer
+            except (TypeError, RuntimeError):
+                pass
+
+        self.optimizer_label = "AdamW"
+        return optim.AdamW(model.parameters(), **kwargs)
+
     def _train_epoch(
         self,
         model: nn.Module,
@@ -282,19 +337,26 @@ class Trainer:
             y = batch["angle"].to(self.device, non_blocking=True).float().view(-1)
 
             optimizer.zero_grad(set_to_none=True)
-            out = model(x).view(-1)
-            y_target = self._normalize_targets(y, target_mean, target_std)
-            loss = loss_fn(out, y_target)
+            with torch.autocast(
+                device_type=self.device.type,
+                dtype=torch.float16,
+                enabled=self.use_amp,
+            ):
+                out = model(x).view(-1)
+                y_target = self._normalize_targets(y, target_mean, target_std)
+                loss = loss_fn(out, y_target)
             if not torch.isfinite(loss):
                 raise RuntimeError("Non-finite loss encountered during training.")
-            loss.backward()
+            self.scaler.scale(loss).backward()
 
             if self.config.training.clip_grad_norm > 0:
+                self.scaler.unscale_(optimizer)
                 nn.utils.clip_grad_norm_(
                     model.parameters(), max_norm=self.config.training.clip_grad_norm
                 )
 
-            optimizer.step()
+            self.scaler.step(optimizer)
+            self.scaler.update()
             total_loss += loss.item()
 
         return total_loss / num_batches
@@ -353,6 +415,20 @@ class Trainer:
                 "model": self.config.model.name,
                 "task": self.config.task,
                 "timestamp": datetime.now().isoformat(),
+                "training_started_at": (
+                    self.run_started_at.isoformat() if self.run_started_at else None
+                ),
+                "training_finished_at": (
+                    self.run_finished_at.isoformat() if self.run_finished_at else None
+                ),
+                "training_duration_seconds": round(self.total_training_seconds, 3)
+                if self.total_training_seconds is not None
+                else None,
+                "training_duration_hours": round(
+                    self.total_training_seconds / 3600.0, 4
+                )
+                if self.total_training_seconds is not None
+                else None,
                 "config": {
                     "epochs": self.config.training.epochs,
                     "batch_size": self.config.training.batch_size,

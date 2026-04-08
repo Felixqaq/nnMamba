@@ -2,17 +2,29 @@
 # =====================================
 
 model:
-  name: nnmamba_regressor
+  name: swinunetr  # options: mamba | swinunetr
   in_channels: 1
-  base_channels: 32
-  blocks: 3
   hidden_dim: 128
   dropout: 0.3
+  base_channels: 32
+  blocks: 3
+
+  # SwinUNETR-only settings. Keep these here so switching models only needs
+  # changing `name`.
+  feature_size: 24
+  depths: [2, 2, 2, 2]
+  num_heads: [3, 6, 12, 24]
+  window_size: 4
+  patch_size: 2
+  use_checkpoint: false
+  use_v2: true
 
 training:
   epochs: 80
-  batch_size: 4
-  eval_batch_size: 2
+  batch_size: 12
+  eval_batch_size: 12
+  swin_batch_size: 5
+  swin_eval_batch_size: 6
   learning_rate: 0.0001
   weight_decay: 0.001
   k_folds: 5
@@ -21,6 +33,8 @@ training:
   seed: 42
   loss: smooth_l1
   clip_grad_norm: 1.0
+  amp: true
+  track_train_metrics: false
 
 data:
   source_dir: ../by_angle_all
@@ -32,9 +46,9 @@ data:
   input_normalization: none
   target_normalization: zscore
   cache_data: true
-  num_workers: 0
+  num_workers: 4
   pin_memory: true
-  prefetch_factor: 2
+  prefetch_factor: 4
   angle_bin_count: 5
 
 paths:

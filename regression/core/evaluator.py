@@ -87,6 +87,7 @@ def get_predictions(
     device: torch.device,
     target_mean: float = 0.0,
     target_std: float = 1.0,
+    use_amp: bool = False,
 ) -> tuple[torch.Tensor, torch.Tensor, list[int]]:
     """Run inference to get labels, predictions, and sample indices."""
 
@@ -102,7 +103,12 @@ def get_predictions(
             x = x.to(device, non_blocking=True)
             target = target.to(device, non_blocking=True)
 
-            preds = _extract_predictions(model(x))
+            with torch.autocast(
+                device_type=device.type,
+                dtype=torch.float16,
+                enabled=bool(use_amp and device.type == "cuda"),
+            ):
+                preds = _extract_predictions(model(x))
             if abs(target_std) > 1e-8:
                 preds = preds * target_std + target_mean
             else:
@@ -213,6 +219,7 @@ def evaluate(
     device: torch.device,
     target_mean: float = 0.0,
     target_std: float = 1.0,
+    use_amp: bool = False,
 ) -> RegressionMetrics:
     """Evaluate model on a dataloader."""
 
@@ -222,6 +229,7 @@ def evaluate(
         device,
         target_mean=target_mean,
         target_std=target_std,
+        use_amp=use_amp,
     )
     return compute_metrics(labels, preds, indices)
 

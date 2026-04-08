@@ -7,7 +7,10 @@ from typing import Literal
 import yaml
 
 
-ModelType = Literal["nnmamba_regressor", "nnmamba"]
+ModelType = Literal[
+    "mamba",
+    "swinunetr",
+]
 LossType = Literal["smooth_l1", "mse", "mae"]
 InputNormType = Literal["zscore", "none"]
 TargetNormType = Literal["zscore", "none"]
@@ -15,12 +18,19 @@ TargetNormType = Literal["zscore", "none"]
 
 @dataclass
 class ModelConfig:
-    name: ModelType = "nnmamba_regressor"
+    name: ModelType = "mamba"
     in_channels: int = 1
     base_channels: int = 32
     blocks: int = 3
     hidden_dim: int = 128
     dropout: float = 0.3
+    feature_size: int = 24
+    depths: tuple[int, int, int, int] = (2, 2, 2, 2)
+    num_heads: tuple[int, int, int, int] = (3, 6, 12, 24)
+    window_size: int | tuple[int, int, int] = 4
+    patch_size: int = 2
+    use_checkpoint: bool = False
+    use_v2: bool = True
 
 
 @dataclass
@@ -28,6 +38,8 @@ class TrainingConfig:
     epochs: int = 80
     batch_size: int = 4
     eval_batch_size: int = 2
+    swin_batch_size: int = 4
+    swin_eval_batch_size: int = 5
     learning_rate: float = 1e-4
     weight_decay: float = 1e-3
     k_folds: int = 5
@@ -36,6 +48,8 @@ class TrainingConfig:
     seed: int = 42
     loss: LossType = "smooth_l1"
     clip_grad_norm: float = 1.0
+    amp: bool = True
+    track_train_metrics: bool = False
 
 
 @dataclass
@@ -100,12 +114,30 @@ class Config:
         with open(config_path, "r", encoding="utf-8") as handle:
             data = yaml.safe_load(handle) or {}
 
+        model_section = data.get("model", {})
         data_section = data.get("data", {})
         paths_section = data.get("paths", {})
         gpu_section = data.get("gpu", {})
+        window_size = model_section.get("window_size", 4)
+        if isinstance(window_size, list):
+            window_size = tuple(window_size)
 
         return cls(
-            model=ModelConfig(**data.get("model", {})),
+            model=ModelConfig(
+                name=model_section.get("name", "mamba"),
+                in_channels=model_section.get("in_channels", 1),
+                base_channels=model_section.get("base_channels", 32),
+                blocks=model_section.get("blocks", 3),
+                hidden_dim=model_section.get("hidden_dim", 128),
+                dropout=model_section.get("dropout", 0.3),
+                feature_size=model_section.get("feature_size", 24),
+                depths=tuple(model_section.get("depths", [2, 2, 2, 2])),
+                num_heads=tuple(model_section.get("num_heads", [3, 6, 12, 24])),
+                window_size=window_size,
+                patch_size=model_section.get("patch_size", 2),
+                use_checkpoint=model_section.get("use_checkpoint", False),
+                use_v2=model_section.get("use_v2", True),
+            ),
             training=TrainingConfig(**data.get("training", {})),
             data=DataConfig(
                 source_dir=Path(data_section.get("source_dir", "../by_angle_all")),

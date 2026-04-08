@@ -45,8 +45,12 @@ class RegressionLoaderHelper:
             k_folds = config.training.k_folds
             seed = config.training.seed
             n_bins = config.data.angle_bin_count
-            batch_size = config.training.batch_size
-            val_batch_size = config.training.eval_batch_size
+            if str(config.model.name).lower() == "swinunetr":
+                batch_size = config.training.swin_batch_size
+                val_batch_size = config.training.swin_eval_batch_size
+            else:
+                batch_size = config.training.batch_size
+                val_batch_size = config.training.eval_batch_size
             num_workers = config.data.num_workers
             cache_data = config.data.cache_data
             manifest_path = config.data.manifest

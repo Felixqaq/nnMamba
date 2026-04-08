@@ -9,6 +9,7 @@ import torch
 from core.checkpoints import load_checkpoint
 from core.config import Config
 from core.evaluator import evaluate
+from core.runtime import configure_torch_runtime
 from data.loader import LoaderHelper
 from models import build_model
 
@@ -28,6 +29,7 @@ def main() -> None:
     args = parser.parse_args()
 
     config = Config.from_yaml(args.config)
+    configure_torch_runtime()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Evaluating on: {device}")
 
@@ -46,6 +48,7 @@ def main() -> None:
             device=device,
             target_mean=target_mean,
             target_std=target_std,
+            use_amp=bool(config.training.amp and device.type == "cuda"),
         )
 
         print(f"\nFold {fold}")

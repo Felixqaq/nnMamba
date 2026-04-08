@@ -1,17 +1,29 @@
 # Quick smoke config for validating regression training stability.
 
 model:
-  name: nnmamba_regressor
+  name: mamba  # options: mamba | swinunetr
   in_channels: 1
-  base_channels: 32
-  blocks: 3
   hidden_dim: 128
   dropout: 0.3
+  base_channels: 32
+  blocks: 3
+
+  # SwinUNETR-only settings. Keep these here so switching models only needs
+  # changing `name`.
+  feature_size: 24
+  depths: [2, 2, 2, 2]
+  num_heads: [3, 6, 12, 24]
+  window_size: 4
+  patch_size: 2
+  use_checkpoint: false
+  use_v2: true
 
 training:
   epochs: 15
-  batch_size: 8
-  eval_batch_size: 8
+  batch_size: 12
+  eval_batch_size: 12
+  swin_batch_size: 4
+  swin_eval_batch_size: 5
   learning_rate: 0.0001
   weight_decay: 0.001
   k_folds: 2
@@ -20,6 +32,8 @@ training:
   seed: 42
   loss: smooth_l1
   clip_grad_norm: 1.0
+  amp: true
+  track_train_metrics: false
 
 data:
   source_dir: ../by_angle_all

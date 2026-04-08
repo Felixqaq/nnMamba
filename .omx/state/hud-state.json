@@ -1,5 +1,5 @@
 {
-  "last_turn_at": "2026-04-08T05:04:42.520Z",
-  "turn_count": 9,
-  "last_agent_output": "`window clipping` 就是先把 CT 強度限制在一個固定範圍內。\n\n例如你現在設定的是：\n\n```yaml\nintensity_window: [-1000.0, 400.0]\n```\n"
+  "last_turn_at": "2026-04-08T06:14:14.160Z",
+  "turn_count": 23,
+  "last_agent_output": "不一定會比較好。`AMP` 的主要目的不是提升準確率，而是：\n\n- 跑更快\n- 吃更少顯存\n- 讓你能用更大的 batch 或更大的模型\n\n對結果本身來說，通常是：\n- 大多數情況下跟 `float3"
 }

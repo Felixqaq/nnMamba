@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import torch.nn as nn
 
+from networks.hybrid_mamba_attention_regressor import HybridMambaAttentionRegressor
 from networks.mamba_regressor import MambaAngleRegressor
 from networks.swinunetr_v2_regressor import SwinUNETRV2AngleRegressor
 
 
 MODEL_REGISTRY = {
+    "hybrid": HybridMambaAttentionRegressor,
+    "hybrid_mamba_attention": HybridMambaAttentionRegressor,
+    "hybrid_mamba_attention_regressor": HybridMambaAttentionRegressor,
     "mamba": MambaAngleRegressor,
+    "mamba_hybrid": HybridMambaAttentionRegressor,
     "nnmamba": MambaAngleRegressor,
     "nnmamba_regressor": MambaAngleRegressor,
     "swinunetr": SwinUNETRV2AngleRegressor,
@@ -34,6 +39,23 @@ def build_model(model_config, device=None) -> nn.Module:
                 "base_channels": int(model_config.base_channels),
                 "depths": tuple([int(model_config.blocks)] * 3),
                 "dropout": float(model_config.dropout),
+            }
+        elif key in {
+            "hybrid",
+            "hybrid_mamba_attention",
+            "hybrid_mamba_attention_regressor",
+            "mamba_hybrid",
+        }:
+            kwargs = {
+                "in_channels": int(model_config.in_channels),
+                "base_channels": int(model_config.base_channels),
+                "depths": tuple([int(model_config.blocks)] * 3),
+                "head_hidden_dim": int(model_config.hidden_dim),
+                "dropout": float(model_config.dropout),
+                "attn_heads": int(model_config.attn_heads),
+                "attn_layers": int(model_config.attn_layers),
+                "attn_mlp_ratio": float(model_config.attn_mlp_ratio),
+                "attn_dropout": float(model_config.attn_dropout),
             }
         else:
             window_size = model_config.window_size

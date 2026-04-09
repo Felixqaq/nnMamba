@@ -16,6 +16,15 @@ from .manifest import build_angle_manifest
 from .transforms import ToTensor
 
 
+ATTENTION_HEAVY_MODELS = {
+    "hybrid",
+    "hybrid_mamba_attention",
+    "hybrid_mamba_attention_regressor",
+    "mamba_hybrid",
+    "swinunetr",
+}
+
+
 class RegressionLoaderHelper:
     """Manage CT regression data loading and fold splitting."""
 
@@ -45,7 +54,7 @@ class RegressionLoaderHelper:
             k_folds = config.training.k_folds
             seed = config.training.seed
             n_bins = config.data.angle_bin_count
-            if str(config.model.name).lower() == "swinunetr":
+            if str(config.model.name).lower() in ATTENTION_HEAVY_MODELS:
                 batch_size = config.training.swin_batch_size
                 val_batch_size = config.training.swin_eval_batch_size
             else:

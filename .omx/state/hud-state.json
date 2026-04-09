@@ -1,5 +1,5 @@
 {
-  "last_turn_at": "2026-04-08T06:14:14.160Z",
-  "turn_count": 23,
-  "last_agent_output": "不一定會比較好。`AMP` 的主要目的不是提升準確率，而是：\n\n- 跑更快\n- 吃更少顯存\n- 讓你能用更大的 batch 或更大的模型\n\n對結果本身來說，通常是：\n- 大多數情況下跟 `float3"
+  "last_turn_at": "2026-04-09T07:22:52.290Z",
+  "turn_count": 47,
+  "last_agent_output": "已經整理進 [TODO.md](/home/felix/Research/nnMamba/TODO.md)。\n\n我把這次對話裡有用的資訊收斂成幾塊：\n- 目前最佳 baseline 與 tuning "
 }

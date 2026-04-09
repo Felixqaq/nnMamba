@@ -1,12 +1,16 @@
 # Quick smoke config for validating regression training stability.
 
 model:
-  name: mamba  # options: mamba | swinunetr
+  name: hybrid_mamba_attention  # options: mamba | hybrid_mamba_attention | swinunetr
   in_channels: 1
   hidden_dim: 128
   dropout: 0.3
   base_channels: 32
   blocks: 3
+  attn_heads: 8
+  attn_layers: 1
+  attn_mlp_ratio: 2.0
+  attn_dropout: 0.1
 
   # SwinUNETR-only settings. Keep these here so switching models only needs
   # changing `name`.

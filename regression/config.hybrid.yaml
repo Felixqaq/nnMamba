@@ -1,17 +1,17 @@
-# nnMamba Regression Configuration
+# nnMamba Hybrid Regression Configuration
 # =====================================
 
 model:
-  name: swinunetr  # options: mamba | hybrid_mamba_attention | swinunetr
+  name: hybrid_mamba_attention
   in_channels: 1
-  hidden_dim: 128
+  hidden_dim: 192
   dropout: 0.3
   base_channels: 32
   blocks: 3
   attn_heads: 8
   attn_layers: 1
   attn_mlp_ratio: 2.0
-  attn_dropout: 0.1
+  attn_dropout: 0.0
 
   # SwinUNETR-only settings. Keep these here so switching models only needs
   # changing `name`.
@@ -44,7 +44,7 @@ data:
   source_dir: ../by_angle_all
   labels_json: ../patient_angle_classification_by_group.json
   angle_split_manifest: ../by_angle_all/reclassification_manifest.json
-  manifest: ./datasets/generated/regression_manifest.json
+  manifest: ./datasets/generated/regression_manifest.hybrid.json
   image_size: [112, 136, 112]
   intensity_window: [-1000.0, 400.0]
   input_normalization: none

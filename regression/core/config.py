@@ -8,6 +8,8 @@ import yaml
 
 
 ModelType = Literal[
+    "hybrid",
+    "hybrid_mamba_attention",
     "mamba",
     "swinunetr",
 ]
@@ -31,6 +33,10 @@ class ModelConfig:
     patch_size: int = 2
     use_checkpoint: bool = False
     use_v2: bool = True
+    attn_heads: int = 8
+    attn_layers: int = 1
+    attn_mlp_ratio: float = 2.0
+    attn_dropout: float = 0.1
 
 
 @dataclass
@@ -137,6 +143,10 @@ class Config:
                 patch_size=model_section.get("patch_size", 2),
                 use_checkpoint=model_section.get("use_checkpoint", False),
                 use_v2=model_section.get("use_v2", True),
+                attn_heads=model_section.get("attn_heads", 8),
+                attn_layers=model_section.get("attn_layers", 1),
+                attn_mlp_ratio=model_section.get("attn_mlp_ratio", 2.0),
+                attn_dropout=model_section.get("attn_dropout", 0.1),
             ),
             training=TrainingConfig(**data.get("training", {})),
             data=DataConfig(

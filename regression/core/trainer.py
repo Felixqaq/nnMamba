@@ -20,6 +20,14 @@ from .config import Config
 from .evaluator import evaluate, save_predictions
 from .visualizer import plot_global_summary, plot_paper_results, plot_training_curves
 
+ATTENTION_HEAVY_MODELS = {
+    "hybrid",
+    "hybrid_mamba_attention",
+    "hybrid_mamba_attention_regressor",
+    "mamba_hybrid",
+    "swinunetr",
+}
+
 
 def setup_seed(seed: int) -> None:
     """Set random seeds for reproducibility."""
@@ -86,10 +94,17 @@ class Trainer:
                 f"Eval batch: {self.loader_helper.val_batch_size} | "
                 f"AMP: {'on' if self.use_amp else 'off'}"
             )
-        if str(cfg.model.name).lower() == "swinunetr":
+        model_key = str(cfg.model.name).lower()
+        if model_key == "swinunetr":
             print(
                 f"Swin window: {cfg.model.window_size} | "
                 f"Checkpointing: {'on' if cfg.model.use_checkpoint else 'off'}"
+            )
+        elif model_key in ATTENTION_HEAVY_MODELS:
+            print(
+                f"Hybrid attention: layers={cfg.model.attn_layers}, "
+                f"heads={cfg.model.attn_heads}, "
+                f"dropout={cfg.model.attn_dropout}"
             )
         print(
             f"Optimizer: {self.optimizer_label} | "

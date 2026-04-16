@@ -1,5 +1,5 @@
-# nnMamba Hybrid Regression Configuration
-# =====================================
+# nnMamba Hybrid Regression Preset
+# ================================
 
 model:
   name: hybrid_mamba_attention
@@ -35,14 +35,16 @@ training:
   eval_interval: 5
   save_interval: 10
   seed: 42
-  loss: smooth_l1
+  loss: auto
   clip_grad_norm: 1.0
   amp: true
   track_train_metrics: false
 
 data:
+  target_mode: angle  # angle | gold
   source_dir: ../by_angle_all
   labels_json: ../patient_angle_classification_by_group.json
+  pft_json: ../pft.json
   angle_split_manifest: ../by_angle_all/reclassification_manifest.json
   manifest: ./datasets/generated/regression_manifest.hybrid.json
   image_size: [112, 136, 112]
@@ -61,7 +63,7 @@ paths:
   figures: ./figures
   graphs: ./graphs
 
-task: PFT_angle_regression
+task: PFT_angle_regression  # change to GOLD_stage_classification for GOLD runs
 
 resume:
   enabled: false

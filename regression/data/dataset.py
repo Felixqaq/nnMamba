@@ -1,4 +1,4 @@
-"""Dataset classes for CT angle regression."""
+"""Dataset classes for CT angle regression and GOLD classification."""
 
 from __future__ import annotations
 
@@ -79,12 +79,14 @@ def load_ct(
 
 
 class AngleRegressionDataset(Dataset):
-    """PyTorch dataset for collapse-angle regression from CT."""
+    """PyTorch dataset for CT tasks using a shared volume pipeline."""
 
     def __init__(
         self,
         data_root: str | Path,
         labels_json: str | Path,
+        pft_json: str | Path | None = None,
+        target_mode: str = "angle",
         image_size: tuple[int, int, int] = DEFAULT_IMAGE_SIZE,
         intensity_window: tuple[float, float] | None = None,
         input_normalization: InputNormalization = "zscore",
@@ -94,6 +96,8 @@ class AngleRegressionDataset(Dataset):
     ):
         self.data_root = Path(data_root)
         self.labels_json = Path(labels_json)
+        self.pft_json = Path(pft_json) if pft_json is not None else None
+        self.target_mode = target_mode
         self.image_size = image_size
         self.intensity_window = intensity_window
         self.input_normalization = input_normalization
@@ -101,7 +105,12 @@ class AngleRegressionDataset(Dataset):
         self.cache_data = cache_data
 
         if records is None:
-            manifest = build_angle_manifest(self.data_root, self.labels_json)
+            manifest = build_angle_manifest(
+                self.data_root,
+                self.labels_json,
+                pft_json=self.pft_json,
+                target_mode=self.target_mode,
+            )
             self.records = list(manifest.records)
         else:
             self.records = list(records)
@@ -110,27 +119,48 @@ class AngleRegressionDataset(Dataset):
         if self.cache_data:
             self._preload_all()
 
+    def _build_sample(self, record: AngleRecord) -> dict:
+        """Load and assemble a sample dictionary for one CT volume."""
+        if self.target_mode == "gold":
+            if record.gold_stage is None:
+                raise ValueError(
+                    f"Missing GOLD stage for patient {record.patient_id} in gold mode."
+                )
+            target = np.array(record.gold_stage, dtype=np.int64)
+        else:
+            target = np.array(record.angle, dtype=np.float32)
+
+        sample = {
+            "ct": load_ct(
+                record.path,
+                self.image_size,
+                intensity_window=self.intensity_window,
+                input_normalization=self.input_normalization,
+            ),
+            "target": target,
+            "angle": np.array(record.angle, dtype=np.float32),
+            "label": (
+                np.array(record.gold_stage, dtype=np.int64)
+                if record.gold_stage is not None
+                else None
+            ),
+            "patient_id": record.patient_id,
+            "source_group": record.source_group,
+            "gold_stage_label": record.gold_stage_label,
+            "post_fev1_percent_predicted": record.post_fev1_percent_predicted,
+            "path": record.path,
+        }
+        if self.transform is not None:
+            sample = self.transform(sample)
+        return sample
+
     def _preload_all(self) -> None:
         """Preload all CTs into memory for fast k-fold iteration."""
         from tqdm import tqdm
 
         self.cached_data = []
         for record in tqdm(self.records, desc="Caching CTs", leave=False):
-            sample = {
-                "ct": load_ct(
-                    record.path,
-                    self.image_size,
-                    intensity_window=self.intensity_window,
-                    input_normalization=self.input_normalization,
-                ),
-                "angle": np.array(record.angle, dtype=np.float32),
-                "patient_id": record.patient_id,
-                "source_group": record.source_group,
-                "path": record.path,
-            }
-            if self.transform is not None:
-                sample = self.transform(sample)
-            self.cached_data.append(sample)
+            self.cached_data.append(self._build_sample(record))
 
     def __len__(self) -> int:
         return len(self.records)
@@ -143,18 +173,5 @@ class AngleRegressionDataset(Dataset):
         if self.cache_data and self.cached_data:
             sample = dict(self.cached_data[idx])
         else:
-            sample = {
-                "ct": load_ct(
-                    record.path,
-                    self.image_size,
-                    intensity_window=self.intensity_window,
-                    input_normalization=self.input_normalization,
-                ),
-                "angle": np.array(record.angle, dtype=np.float32),
-                "patient_id": record.patient_id,
-                "source_group": record.source_group,
-                "path": record.path,
-            }
-            if self.transform is not None:
-                sample = self.transform(sample)
+            sample = self._build_sample(record)
         return sample

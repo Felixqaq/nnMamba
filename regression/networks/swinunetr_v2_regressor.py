@@ -22,11 +22,12 @@ def _to_3tuple(value: int | Sequence[int]) -> tuple[int, int, int]:
 
 
 class SwinUNETRV2AngleRegressor(nn.Module):
-    """3D CT regressor built on the SwinUNETR v2 encoder backbone."""
+    """3D CT predictor built on the SwinUNETR v2 encoder backbone."""
 
     def __init__(
         self,
         in_channels: int = 1,
+        num_classes: int = 1,
         feature_size: int = 24,
         head_hidden_dim: int = 192,
         dropout: float = 0.2,
@@ -72,7 +73,7 @@ class SwinUNETRV2AngleRegressor(nn.Module):
             nn.Linear(head_hidden_dim, head_mid_dim),
             nn.GELU(),
             nn.Dropout(float(dropout)),
-            nn.Linear(head_mid_dim, 1),
+            nn.Linear(head_mid_dim, int(num_classes)),
         )
         self._init_head()
 
@@ -112,4 +113,5 @@ class SwinUNETRV2AngleRegressor(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         features = self.forward_features(x)
-        return self.head(features).squeeze(-1)
+        output = self.head(features)
+        return output.squeeze(-1) if output.shape[-1] == 1 else output

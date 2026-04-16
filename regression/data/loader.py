@@ -1,4 +1,4 @@
-"""DataLoader helper for regression with stratified binning."""
+"""DataLoader helper for regression and GOLD-stage classification."""
 
 from __future__ import annotations
 
@@ -32,6 +32,8 @@ class RegressionLoaderHelper:
         self,
         data_root: str | Path | Any = "../by_angle_all",
         labels_json: str | Path = "../patient_angle_classification_by_group.json",
+        pft_json: str | Path = "../pft.json",
+        target_mode: str = "angle",
         image_size: tuple[int, int, int] = DEFAULT_IMAGE_SIZE,
         k_folds: int = 5,
         seed: int = 42,
@@ -50,6 +52,8 @@ class RegressionLoaderHelper:
             config = data_root
             data_root = config.data.source_dir
             labels_json = config.data.labels_json
+            pft_json = config.data.pft_json
+            target_mode = config.data.target_mode
             image_size = config.data.image_size
             k_folds = config.training.k_folds
             seed = config.training.seed
@@ -70,6 +74,8 @@ class RegressionLoaderHelper:
 
         self.data_root = Path(data_root)
         self.labels_json = Path(labels_json)
+        self.pft_json = Path(pft_json)
+        self.target_mode = str(target_mode)
         self.image_size = image_size
         self.k_folds = k_folds
         self.seed = seed
@@ -84,16 +90,33 @@ class RegressionLoaderHelper:
         self.pin_memory = pin_memory
         self.prefetch_factor = prefetch_factor
 
-        manifest = build_angle_manifest(self.data_root, self.labels_json)
+        manifest = build_angle_manifest(
+            self.data_root,
+            self.labels_json,
+            pft_json=self.pft_json,
+            target_mode=self.target_mode,
+        )
         self.manifest = manifest
         self.records = list(manifest.records)
-        self.targets = np.asarray([record.angle for record in self.records], dtype=np.float32)
+        self.class_names = list(manifest.class_names)
+        if self.target_mode == "gold":
+            self.targets = np.asarray(
+                [int(record.gold_stage) for record in self.records],
+                dtype=np.int64,
+            )
+        else:
+            self.targets = np.asarray(
+                [record.angle for record in self.records],
+                dtype=np.float32,
+            )
         self.patient_ids = [record.patient_id for record in self.records]
         self.target_mean, self.target_std = self._compute_target_stats(self.targets)
 
         self.train_ds = AngleRegressionDataset(
             self.data_root,
             self.labels_json,
+            pft_json=self.pft_json,
+            target_mode=self.target_mode,
             image_size=self.image_size,
             intensity_window=self.intensity_window,
             input_normalization=self.input_normalization,
@@ -103,7 +126,11 @@ class RegressionLoaderHelper:
         )
         self.dataset = self.train_ds
 
-        self.bin_edges, self.strata = self._build_strata(self.targets, self.n_bins)
+        if self.target_mode == "gold":
+            self.bin_edges = None
+            self.strata = self.targets.astype(int)
+        else:
+            self.bin_edges, self.strata = self._build_strata(self.targets, self.n_bins)
         self._setup_folds()
 
         if self.manifest_path is not None:
@@ -135,7 +162,13 @@ class RegressionLoaderHelper:
     def _setup_folds(self) -> None:
         """Create fold indices using stratified binning when possible."""
         indices = np.arange(len(self.records))
-        if len(np.unique(self.strata)) > 1 and np.bincount(self.strata).min() >= self.k_folds:
+        if self.target_mode == "gold":
+            splitter = StratifiedKFold(
+                n_splits=self.k_folds, shuffle=True, random_state=self.seed
+            )
+            splits = splitter.split(indices, self.targets)
+            self.split_strategy = "stratified_gold"
+        elif len(np.unique(self.strata)) > 1 and np.bincount(self.strata).min() >= self.k_folds:
             splitter = StratifiedKFold(
                 n_splits=self.k_folds, shuffle=True, random_state=self.seed
             )
@@ -155,6 +188,22 @@ class RegressionLoaderHelper:
 
     def _print_fold_distribution(self) -> None:
         """Print fold-level label statistics for sanity checking."""
+        if self.target_mode == "gold":
+            print(
+                f"\n📊 GOLD classification folds ({self.k_folds}) using "
+                f"{self.split_strategy}: {len(self.records)} samples"
+            )
+            for fold_idx, (_, val_idx) in enumerate(self.fold_indices, start=1):
+                fold_targets = self.targets[val_idx]
+                counts = np.bincount(fold_targets, minlength=max(len(self.class_names), 1))
+                summary = ", ".join(
+                    f"{self.class_names[i] if i < len(self.class_names) else i}={int(count)}"
+                    for i, count in enumerate(counts)
+                    if int(count) > 0
+                )
+                print(f"  Fold {fold_idx}: n={len(val_idx)}, {summary}")
+            return
+
         print(
             f"\n📊 Regression folds ({self.k_folds}) using {self.split_strategy}: "
             f"{len(self.records)} samples"
@@ -185,12 +234,18 @@ class RegressionLoaderHelper:
 
     def get_target_stats(self) -> tuple[float, float]:
         """Return global mean/std of all regression targets in the dataset."""
+        if self.target_mode == "gold":
+            return 0.0, 1.0
         return self.target_mean, self.target_std
 
     def get_fold_target_stats(self, fold: int) -> tuple[float, float]:
         """Backward-compatible alias for dataset-level target stats."""
         del fold
         return self.get_target_stats()
+
+    def get_class_names(self) -> list[str]:
+        """Return classification label names when available."""
+        return list(self.class_names)
 
     def _build_loader(
         self,

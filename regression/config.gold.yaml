@@ -1,7 +1,8 @@
-# Quick smoke config for validating regression training stability.
+# nnMamba GOLD Stage Classification Configuration
+# ===============================================
 
 model:
-  name: hybrid_mamba_attention  # options: mamba | hybrid_mamba_attention | swinunetr
+  name: swinunetr  # options: mamba | hybrid_mamba_attention | swinunetr
   in_channels: 1
   hidden_dim: 128
   dropout: 0.3
@@ -23,16 +24,16 @@ model:
   use_v2: true
 
 training:
-  epochs: 15
+  epochs: 80
   batch_size: 12
   eval_batch_size: 12
-  swin_batch_size: 4
-  swin_eval_batch_size: 5
+  swin_batch_size: 5
+  swin_eval_batch_size: 6
   learning_rate: 0.0001
   weight_decay: 0.001
-  k_folds: 2
+  k_folds: 5
   eval_interval: 5
-  save_interval: 5
+  save_interval: 10
   seed: 42
   loss: auto
   clip_grad_norm: 1.0
@@ -40,16 +41,16 @@ training:
   track_train_metrics: false
 
 data:
-  target_mode: angle  # angle | gold
+  target_mode: gold
   source_dir: ../by_angle_all
   labels_json: ../patient_angle_classification_by_group.json
   pft_json: ../pft.json
   angle_split_manifest: ../by_angle_all/reclassification_manifest.json
-  manifest: ./datasets/generated/regression_manifest.smoke.json
+  manifest: ./datasets/generated/gold_manifest.json
   image_size: [112, 136, 112]
   intensity_window: [-1000.0, 400.0]
-  input_normalization: zscore
-  target_normalization: zscore
+  input_normalization: none
+  target_normalization: none
   cache_data: true
   num_workers: 4
   pin_memory: true
@@ -62,7 +63,7 @@ paths:
   figures: ./figures
   graphs: ./graphs
 
-task: PFT_angle_regression  # change to GOLD_stage_classification for GOLD runs
+task: GOLD_stage_classification
 
 resume:
   enabled: false

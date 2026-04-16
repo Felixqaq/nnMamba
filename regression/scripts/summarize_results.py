@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarize cross-validation regression results into paper-ready figures."""
+"""Summarize cross-validation regression/classification results."""
 
 from __future__ import annotations
 
@@ -34,11 +34,19 @@ plt.rcParams.update(
 )
 
 
-METRICS = [
+REGRESSION_METRICS = [
     ("mae", "MAE", "#2ca02c"),
     ("rmse", "RMSE", "#d62728"),
     ("r2", "R2", "#9467bd"),
     ("pearson", "Pearson", "#ff7f0e"),
+]
+
+CLASSIFICATION_METRICS = [
+    ("accuracy", "Accuracy", "#2ca02c"),
+    ("macro_f1", "Macro F1", "#d62728"),
+    ("balanced_accuracy", "Balanced Accuracy", "#9467bd"),
+    ("macro_precision", "Macro Precision", "#ff7f0e"),
+    ("macro_recall", "Macro Recall", "#17becf"),
 ]
 
 
@@ -49,13 +57,24 @@ def load_results(path: Path) -> list[dict]:
     return list(data.get("folds", []))
 
 
-def write_summary_csv(folds: list[dict], output_dir: Path) -> Path:
+def detect_metrics(folds: list[dict]) -> tuple[list[tuple[str, str, str]], str]:
+    """Detect whether the results contain regression or classification metrics."""
+    if any("macro_f1" in fold for fold in folds):
+        return CLASSIFICATION_METRICS, "classification"
+    return REGRESSION_METRICS, "regression"
+
+
+def write_summary_csv(
+    folds: list[dict],
+    output_dir: Path,
+    metrics: list[tuple[str, str, str]],
+) -> Path:
     """Write mean/std summary to CSV."""
     output_path = output_dir / "summary.csv"
     with open(output_path, "w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["metric", "mean", "std"])
-        for key, label, _ in METRICS:
+        for key, label, _ in metrics:
             values = np.asarray([fold[key] for fold in folds if key in fold], dtype=float)
             if values.size == 0:
                 continue
@@ -63,12 +82,17 @@ def write_summary_csv(folds: list[dict], output_dir: Path) -> Path:
     return output_path
 
 
-def plot_metric_boxplot(folds: list[dict], output_dir: Path) -> Path:
+def plot_metric_boxplot(
+    folds: list[dict],
+    output_dir: Path,
+    metrics: list[tuple[str, str, str]],
+    task_name: str,
+) -> Path:
     """Create a fold-wise metric boxplot."""
     data = []
     labels = []
     colors = []
-    for key, label, color in METRICS:
+    for key, label, color in metrics:
         values = np.asarray([fold[key] for fold in folds if key in fold], dtype=float)
         if values.size == 0:
             continue
@@ -77,7 +101,7 @@ def plot_metric_boxplot(folds: list[dict], output_dir: Path) -> Path:
         colors.append(color)
 
     if not data:
-        raise ValueError("No regression metrics found in results.json.")
+        raise ValueError("No supported metrics found in results.json.")
 
     fig, ax = plt.subplots(figsize=(10, 6))
     bp = ax.boxplot(data, patch_artist=True, widths=0.55)
@@ -92,7 +116,7 @@ def plot_metric_boxplot(folds: list[dict], output_dir: Path) -> Path:
     ax.set_xticks(range(1, len(labels) + 1))
     ax.set_xticklabels(labels)
     ax.set_ylabel("Score")
-    ax.set_title("Cross-Validation Regression Metrics", fontweight="bold")
+    ax.set_title(f"Cross-Validation {task_name.title()} Metrics", fontweight="bold")
     ax.grid(True, axis="y", alpha=0.25)
     fig.tight_layout()
 
@@ -102,14 +126,19 @@ def plot_metric_boxplot(folds: list[dict], output_dir: Path) -> Path:
     return output_path
 
 
-def plot_metric_barplot(folds: list[dict], output_dir: Path) -> Path:
+def plot_metric_barplot(
+    folds: list[dict],
+    output_dir: Path,
+    metrics: list[tuple[str, str, str]],
+    task_name: str,
+) -> Path:
     """Create mean ± std barplot for paper summaries."""
     labels = []
     means = []
     stds = []
     colors = []
 
-    for key, label, color in METRICS:
+    for key, label, color in metrics:
         values = np.asarray([fold[key] for fold in folds if key in fold], dtype=float)
         if values.size == 0:
             continue
@@ -124,7 +153,7 @@ def plot_metric_barplot(folds: list[dict], output_dir: Path) -> Path:
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.set_ylabel("Score")
-    ax.set_title("Regression Summary (Mean ± Std)", fontweight="bold")
+    ax.set_title(f"{task_name.title()} Summary (Mean ± Std)", fontweight="bold")
     ax.grid(True, axis="y", alpha=0.25)
 
     for idx, (mean, std) in enumerate(zip(means, stds)):
@@ -138,7 +167,9 @@ def plot_metric_barplot(folds: list[dict], output_dir: Path) -> Path:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Summarize regression CV results")
+    parser = argparse.ArgumentParser(
+        description="Summarize regression/classification CV results"
+    )
     parser.add_argument("results_json", type=Path, help="Path to results.json")
     parser.add_argument(
         "--out_dir",
@@ -155,9 +186,10 @@ def main() -> None:
     if not folds:
         raise ValueError("results.json does not contain any fold entries.")
 
-    csv_path = write_summary_csv(folds, output_dir)
-    box_path = plot_metric_boxplot(folds, output_dir)
-    bar_path = plot_metric_barplot(folds, output_dir)
+    metrics, task_name = detect_metrics(folds)
+    csv_path = write_summary_csv(folds, output_dir, metrics)
+    box_path = plot_metric_boxplot(folds, output_dir, metrics, task_name)
+    bar_path = plot_metric_barplot(folds, output_dir, metrics, task_name)
 
     print(f"Saved summary CSV to: {csv_path}")
     print(f"Saved metric boxplot to: {box_path}")

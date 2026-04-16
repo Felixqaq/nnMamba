@@ -36,6 +36,7 @@ def build_model(model_config, device=None) -> nn.Module:
         if key in {"mamba", "nnmamba", "nnmamba_regressor"}:
             kwargs = {
                 "in_channels": int(model_config.in_channels),
+                "num_classes": int(model_config.num_classes),
                 "base_channels": int(model_config.base_channels),
                 "depths": tuple([int(model_config.blocks)] * 3),
                 "dropout": float(model_config.dropout),
@@ -48,6 +49,7 @@ def build_model(model_config, device=None) -> nn.Module:
         }:
             kwargs = {
                 "in_channels": int(model_config.in_channels),
+                "num_classes": int(model_config.num_classes),
                 "base_channels": int(model_config.base_channels),
                 "depths": tuple([int(model_config.blocks)] * 3),
                 "head_hidden_dim": int(model_config.hidden_dim),
@@ -66,6 +68,7 @@ def build_model(model_config, device=None) -> nn.Module:
                 patch_size = tuple(int(size) for size in patch_size)
             kwargs = {
                 "in_channels": int(model_config.in_channels),
+                "num_classes": int(model_config.num_classes),
                 "feature_size": int(model_config.feature_size),
                 "head_hidden_dim": int(model_config.hidden_dim),
                 "dropout": float(model_config.dropout),

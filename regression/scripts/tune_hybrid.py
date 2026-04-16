@@ -22,7 +22,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 TRAIN_PY = ROOT / "train.py"
-DEFAULT_CONFIG = ROOT / "config.hybrid.yaml"
+DEFAULT_CONFIG = ROOT / "config.hybrid.preset.yaml"
 
 
 @dataclass(frozen=True)

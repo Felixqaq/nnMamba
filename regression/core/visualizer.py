@@ -1,4 +1,4 @@
-"""Training visualization utilities for nnMamba regression."""
+"""Training visualization utilities for nnMamba regression/classification."""
 
 from __future__ import annotations
 
@@ -39,9 +39,9 @@ def plot_training_curves(
     save_dir: Path,
     uuid: str,
     fold: int,
+    task_type: str = "angle",
 ) -> None:
-    """Generate and save regression training plots."""
-
+    """Generate and save task-aware training plots."""
     save_dir.mkdir(parents=True, exist_ok=True)
     epochs = range(1, len(train_loss) + 1)
 
@@ -58,6 +58,30 @@ def plot_training_curves(
     if not eval_epochs:
         return
 
+    if task_type == "gold":
+        metric_specs = [
+            ("accuracy", "Accuracy", "Accuracy", "#2ca02c"),
+            ("macro_f1", "Macro F1", "Macro F1", "#d62728"),
+            ("balanced_accuracy", "Balanced Accuracy", "Balanced Accuracy", "#9467bd"),
+            ("macro_recall", "Macro Recall", "Macro Recall", "#ff7f0e"),
+        ]
+        for key, title, ylabel, color in metric_specs:
+            _plot_comparison(
+                eval_epochs,
+                train_metrics.get(key, []),
+                test_metrics.get(key, []),
+                f"Train {title}",
+                f"Val {title}",
+                f"{title} Curve (Train vs Val)",
+                save_dir / f"fold{fold}_{key}.png",
+                ylabel=ylabel,
+                colors=(color, "#8c564b"),
+            )
+        _plot_classification_summary(
+            epochs, train_loss, eval_epochs, test_metrics, uuid, fold, save_dir
+        )
+        return
+
     metric_specs = [
         ("mae", "MAE", "Mean Absolute Error", "#2ca02c"),
         ("rmse", "RMSE", "Root Mean Squared Error", "#d62728"),
@@ -65,7 +89,6 @@ def plot_training_curves(
         ("pearson", "Pearson", "Pearson Correlation", "#ff7f0e"),
         ("mean_error", "Mean Error", "Prediction Bias", "#17becf"),
     ]
-
     for key, title, ylabel, color in metric_specs:
         _plot_comparison(
             eval_epochs,
@@ -78,8 +101,7 @@ def plot_training_curves(
             ylabel=ylabel,
             colors=(color, "#8c564b"),
         )
-
-    _plot_summary(epochs, train_loss, eval_epochs, test_metrics, uuid, fold, save_dir)
+    _plot_regression_summary(epochs, train_loss, eval_epochs, test_metrics, uuid, fold, save_dir)
 
 
 def _plot_single(
@@ -129,7 +151,7 @@ def _plot_comparison(
     plt.close()
 
 
-def _plot_summary(
+def _plot_regression_summary(
     epochs: range,
     train_loss: list[float],
     eval_epochs: list[int],
@@ -144,10 +166,8 @@ def _plot_summary(
         ("r2", "Test R2", "#9467bd"),
         ("pearson", "Test Pearson", "#ff7f0e"),
     ]
-
     fig, axes = plt.subplots(2, 3, figsize=(14, 8))
     axes = axes.ravel()
-
     axes[0].plot(list(epochs), train_loss, color="#1f77b4", linewidth=2)
     axes[0].set_title("Training Loss", fontweight="bold")
     axes[0].set_xlabel("Epoch")
@@ -168,14 +188,59 @@ def _plot_summary(
         0.02,
         0.88,
         f"UUID: {uuid}\nFold: {fold}\n\n"
-        f"Key metrics tracked:\n"
-        f"MAE, RMSE, R2, Pearson, Mean Error",
+        "Tracked:\nMAE, RMSE, R2,\nPearson, Mean Error",
         transform=axes[5].transAxes,
         fontsize=11,
         va="top",
         family="serif",
     )
+    plt.tight_layout()
+    plt.savefig(save_dir / f"fold{fold}_summary.png", dpi=300)
+    plt.close(fig)
 
+
+def _plot_classification_summary(
+    epochs: range,
+    train_loss: list[float],
+    eval_epochs: list[int],
+    test_metrics: dict[str, list[float]],
+    uuid: str,
+    fold: int,
+    save_dir: Path,
+) -> None:
+    metrics = [
+        ("accuracy", "Val Accuracy", "#2ca02c"),
+        ("macro_f1", "Val Macro F1", "#d62728"),
+        ("balanced_accuracy", "Val Balanced Accuracy", "#9467bd"),
+        ("macro_recall", "Val Macro Recall", "#ff7f0e"),
+    ]
+    fig, axes = plt.subplots(2, 3, figsize=(14, 8))
+    axes = axes.ravel()
+    axes[0].plot(list(epochs), train_loss, color="#1f77b4", linewidth=2)
+    axes[0].set_title("Training Loss", fontweight="bold")
+    axes[0].set_xlabel("Epoch")
+    axes[0].set_ylabel("Loss")
+
+    for ax, (key, title, color) in zip(axes[1:], metrics):
+        values = test_metrics.get(key, [])
+        if values:
+            ax.plot(eval_epochs, values, marker="o", linewidth=2, color=color)
+        ax.set_title(title, fontweight="bold")
+        ax.set_xlabel("Epoch")
+        ax.set_ylim(0.0, 1.05)
+        ax.grid(True, alpha=0.25)
+
+    axes[5].axis("off")
+    axes[5].text(
+        0.02,
+        0.88,
+        f"UUID: {uuid}\nFold: {fold}\n\n"
+        "Tracked:\nAccuracy,\nMacro F1,\nBalanced Accuracy,\nMacro Recall",
+        transform=axes[5].transAxes,
+        fontsize=11,
+        va="top",
+        family="serif",
+    )
     plt.tight_layout()
     plt.savefig(save_dir / f"fold{fold}_summary.png", dpi=300)
     plt.close(fig)
@@ -222,26 +287,33 @@ def plot_prediction_scatter(
     title_suffix: str = "",
 ) -> None:
     """Plot predicted vs. true angles."""
-
     labels_np = _to_numpy(labels)
     preds_np = _to_numpy(preds)
     stats = _regression_stats(labels_np, preds_np)
 
     plt.figure(figsize=(8, 8))
-    plt.scatter(labels_np, preds_np, s=38, alpha=0.8, color="#1f77b4", edgecolors="white", linewidths=0.5)
-
+    plt.scatter(
+        labels_np,
+        preds_np,
+        s=38,
+        alpha=0.8,
+        color="#1f77b4",
+        edgecolors="white",
+        linewidths=0.5,
+    )
     if labels_np.size:
         lo = float(min(labels_np.min(), preds_np.min()))
         hi = float(max(labels_np.max(), preds_np.max()))
-        plt.plot([lo, hi], [lo, hi], linestyle="--", color="black", linewidth=1.5, label="Identity")
-        slope, intercept = np.polyfit(labels_np, preds_np, 1) if labels_np.size >= 2 else (1.0, 0.0)
+        plt.plot([lo, hi], [lo, hi], linestyle="--", color="black", linewidth=1.5)
+        slope, intercept = (
+            np.polyfit(labels_np, preds_np, 1) if labels_np.size >= 2 else (1.0, 0.0)
+        )
         xs = np.linspace(lo, hi, 100)
-        plt.plot(xs, slope * xs + intercept, color="#d62728", linewidth=2, label="Fit line")
+        plt.plot(xs, slope * xs + intercept, color="#d62728", linewidth=2)
 
     plt.xlabel("True Angle (degrees)")
     plt.ylabel("Predicted Angle (degrees)")
     plt.title(f"Prediction Scatter - Fold {fold}{title_suffix}", fontweight="bold")
-    plt.legend()
     plt.grid(True, alpha=0.25)
     plt.text(
         0.03,
@@ -266,13 +338,20 @@ def plot_residuals(
     title_suffix: str = "",
 ) -> None:
     """Plot residuals against true values."""
-
     labels_np = _to_numpy(labels)
     preds_np = _to_numpy(preds)
     residuals = preds_np - labels_np
 
     plt.figure(figsize=(8, 6))
-    plt.scatter(labels_np, residuals, s=38, alpha=0.8, color="#9467bd", edgecolors="white", linewidths=0.5)
+    plt.scatter(
+        labels_np,
+        residuals,
+        s=38,
+        alpha=0.8,
+        color="#9467bd",
+        edgecolors="white",
+        linewidths=0.5,
+    )
     plt.axhline(0, color="black", linestyle="--", linewidth=1.5)
     plt.xlabel("True Angle (degrees)")
     plt.ylabel("Residual (Pred - True)")
@@ -291,7 +370,6 @@ def plot_error_histogram(
     title_suffix: str = "",
 ) -> None:
     """Plot histogram of prediction errors."""
-
     labels_np = _to_numpy(labels)
     preds_np = _to_numpy(preds)
     errors = preds_np - labels_np
@@ -299,14 +377,19 @@ def plot_error_histogram(
     std_error = float(np.std(errors)) if errors.size else 0.0
 
     plt.figure(figsize=(8, 6))
-    plt.hist(errors, bins=min(12, max(5, len(errors) // 2 if len(errors) > 0 else 5)), color="#17becf", edgecolor="black", alpha=0.85)
-    plt.axvline(mean_error, color="red", linestyle="-", linewidth=2, label=f"Mean Error = {mean_error:.3f}")
-    plt.axvline(mean_error + std_error, color="gray", linestyle="--", linewidth=1.5, label=f"±1 SD = {std_error:.3f}")
+    plt.hist(
+        errors,
+        bins=min(12, max(5, len(errors) // 2 if len(errors) > 0 else 5)),
+        color="#17becf",
+        edgecolor="black",
+        alpha=0.85,
+    )
+    plt.axvline(mean_error, color="red", linestyle="-", linewidth=2)
+    plt.axvline(mean_error + std_error, color="gray", linestyle="--", linewidth=1.5)
     plt.axvline(mean_error - std_error, color="gray", linestyle="--", linewidth=1.5)
     plt.xlabel("Prediction Error (Pred - True)")
     plt.ylabel("Count")
     plt.title(f"Error Histogram - Fold {fold}{title_suffix}", fontweight="bold")
-    plt.legend()
     plt.grid(True, alpha=0.25)
     plt.tight_layout()
     plt.savefig(save_dir / f"fold{fold}_error_hist.png", dpi=300)
@@ -321,7 +404,6 @@ def plot_bland_altman(
     title_suffix: str = "",
 ) -> None:
     """Plot Bland-Altman diagram."""
-
     labels_np = _to_numpy(labels)
     preds_np = _to_numpy(preds)
     means = (labels_np + preds_np) / 2.0
@@ -332,38 +414,109 @@ def plot_bland_altman(
     lower = bias - 1.96 * sd
 
     plt.figure(figsize=(8, 6))
-    plt.scatter(means, diffs, s=38, alpha=0.8, color="#8c564b", edgecolors="white", linewidths=0.5)
-    plt.axhline(bias, color="red", linestyle="-", linewidth=2, label=f"Bias = {bias:.3f}")
-    plt.axhline(upper, color="black", linestyle="--", linewidth=1.5, label=f"+1.96 SD = {upper:.3f}")
-    plt.axhline(lower, color="black", linestyle="--", linewidth=1.5, label=f"-1.96 SD = {lower:.3f}")
+    plt.scatter(
+        means,
+        diffs,
+        s=38,
+        alpha=0.8,
+        color="#8c564b",
+        edgecolors="white",
+        linewidths=0.5,
+    )
+    plt.axhline(bias, color="red", linestyle="-", linewidth=2)
+    plt.axhline(upper, color="black", linestyle="--", linewidth=1.5)
+    plt.axhline(lower, color="black", linestyle="--", linewidth=1.5)
     plt.xlabel("Mean of True and Predicted Angle")
     plt.ylabel("Prediction Difference (Pred - True)")
     plt.title(f"Bland-Altman - Fold {fold}{title_suffix}", fontweight="bold")
-    plt.legend()
     plt.grid(True, alpha=0.25)
     plt.tight_layout()
     plt.savefig(save_dir / f"fold{fold}_bland_altman.png", dpi=300)
     plt.close()
 
 
+def plot_confusion_matrix(
+    labels: torch.Tensor | np.ndarray | list[int],
+    preds: torch.Tensor | np.ndarray | list[int],
+    fold: int,
+    save_dir: Path,
+    class_names: list[str],
+    title_suffix: str = "",
+    output_name: str | None = None,
+) -> None:
+    """Plot confusion matrix for multiclass classification."""
+    labels_np = np.asarray(_to_numpy(labels), dtype=int)
+    preds_np = np.asarray(_to_numpy(preds), dtype=int)
+    num_classes = max(len(class_names), 1)
+    cm = np.zeros((num_classes, num_classes), dtype=int)
+    for true_idx, pred_idx in zip(labels_np, preds_np):
+        if 0 <= true_idx < num_classes and 0 <= pred_idx < num_classes:
+            cm[true_idx, pred_idx] += 1
+
+    fig, ax = plt.subplots(figsize=(8, 7))
+    im = ax.imshow(cm, cmap="Blues")
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    ax.set_xlabel("Predicted")
+    ax.set_ylabel("True")
+    ax.set_title(f"Confusion Matrix - Fold {fold}{title_suffix}", fontweight="bold")
+    tick_labels = class_names if class_names else [str(i) for i in range(num_classes)]
+    ax.set_xticks(np.arange(num_classes))
+    ax.set_yticks(np.arange(num_classes))
+    ax.set_xticklabels(tick_labels, rotation=20, ha="right")
+    ax.set_yticklabels(tick_labels)
+
+    max_value = cm.max() if cm.size else 0
+    threshold = max_value / 2 if max_value > 0 else 0
+    for row in range(num_classes):
+        for col in range(num_classes):
+            ax.text(
+                col,
+                row,
+                str(cm[row, col]),
+                ha="center",
+                va="center",
+                color="white" if cm[row, col] > threshold else "black",
+            )
+
+    plt.tight_layout()
+    filename = output_name or f"fold{fold}_confusion_matrix.png"
+    plt.savefig(save_dir / filename, dpi=300)
+    plt.close(fig)
+
+
 def plot_paper_results(
     test_metrics,
     fold: int,
     save_dir: Path,
+    task_type: str = "angle",
+    class_names: list[str] | None = None,
 ) -> None:
-    """Generate all advanced regression plots for a fold."""
-
+    """Generate task-specific detailed plots for a fold."""
     save_dir.mkdir(parents=True, exist_ok=True)
-    if test_metrics.labels is None or test_metrics.preds is None:
+    if getattr(test_metrics, "labels", None) is None:
         return
 
+    if task_type == "gold":
+        if getattr(test_metrics, "preds", None) is None:
+            return
+        plot_confusion_matrix(
+            test_metrics.labels,
+            test_metrics.preds,
+            fold,
+            save_dir,
+            class_names or [],
+        )
+        return
+
+    if getattr(test_metrics, "preds", None) is None:
+        return
     plot_prediction_scatter(test_metrics.labels, test_metrics.preds, fold, save_dir)
     plot_residuals(test_metrics.labels, test_metrics.preds, fold, save_dir)
     plot_error_histogram(test_metrics.labels, test_metrics.preds, fold, save_dir)
     plot_bland_altman(test_metrics.labels, test_metrics.preds, fold, save_dir)
 
 
-def _aggregate_results(all_results: list) -> tuple[np.ndarray, np.ndarray, dict[str, np.ndarray]]:
+def _aggregate_regression_results(all_results: list) -> tuple[np.ndarray, np.ndarray, dict[str, np.ndarray]]:
     labels_list = []
     preds_list = []
     metric_map: dict[str, list[float]] = {
@@ -373,7 +526,6 @@ def _aggregate_results(all_results: list) -> tuple[np.ndarray, np.ndarray, dict[
         "pearson": [],
         "mean_error": [],
     }
-
     for res in all_results:
         if getattr(res, "labels", None) is not None and getattr(res, "preds", None) is not None:
             labels_list.append(_to_numpy(res.labels))
@@ -389,10 +541,36 @@ def _aggregate_results(all_results: list) -> tuple[np.ndarray, np.ndarray, dict[
     return labels, preds, metric_arrays
 
 
-def plot_metric_boxplot(all_results: list, save_dir: Path) -> None:
-    """Plot fold-wise metric distributions."""
+def _aggregate_classification_results(
+    all_results: list,
+) -> tuple[np.ndarray, np.ndarray, dict[str, np.ndarray]]:
+    labels_list = []
+    preds_list = []
+    metric_map: dict[str, list[float]] = {
+        "accuracy": [],
+        "macro_f1": [],
+        "macro_precision": [],
+        "macro_recall": [],
+        "balanced_accuracy": [],
+    }
+    for res in all_results:
+        if getattr(res, "labels", None) is not None and getattr(res, "preds", None) is not None:
+            labels_list.append(np.asarray(_to_numpy(res.labels), dtype=int))
+            preds_list.append(np.asarray(_to_numpy(res.preds), dtype=int))
+        for key in metric_map:
+            value = getattr(res, key, None)
+            if value is not None:
+                metric_map[key].append(float(value))
 
-    _, _, metric_arrays = _aggregate_results(all_results)
+    labels = np.concatenate(labels_list) if labels_list else np.array([], dtype=int)
+    preds = np.concatenate(preds_list) if preds_list else np.array([], dtype=int)
+    metric_arrays = {k: np.asarray(v, dtype=float) for k, v in metric_map.items()}
+    return labels, preds, metric_arrays
+
+
+def plot_metric_boxplot(all_results: list, save_dir: Path) -> None:
+    """Plot fold-wise regression metric distributions."""
+    _, _, metric_arrays = _aggregate_regression_results(all_results)
     metrics = ["mae", "rmse", "r2", "pearson", "mean_error"]
     metric_labels = ["MAE", "RMSE", "R2", "Pearson", "Mean Error"]
     data = [metric_arrays[m] for m in metrics if metric_arrays[m].size > 0]
@@ -401,7 +579,6 @@ def plot_metric_boxplot(all_results: list, save_dir: Path) -> None:
         for label, metric in zip(metric_labels, metrics)
         if metric_arrays[metric].size > 0
     ]
-
     if not data:
         return
 
@@ -411,7 +588,6 @@ def plot_metric_boxplot(all_results: list, save_dir: Path) -> None:
     for patch, color in zip(bp["boxes"], palette):
         patch.set_facecolor(color)
         patch.set_alpha(0.7)
-
     for i, values in enumerate(data, start=1):
         x = np.random.normal(i, 0.04, size=len(values))
         plt.scatter(x, values, color="black", s=12, alpha=0.55, zorder=3)
@@ -425,22 +601,81 @@ def plot_metric_boxplot(all_results: list, save_dir: Path) -> None:
     plt.close()
 
 
+def plot_classification_metric_boxplot(all_results: list, save_dir: Path) -> None:
+    """Plot fold-wise classification metric distributions."""
+    _, _, metric_arrays = _aggregate_classification_results(all_results)
+    metrics = [
+        "accuracy",
+        "macro_f1",
+        "balanced_accuracy",
+        "macro_precision",
+        "macro_recall",
+    ]
+    metric_labels = [
+        "Accuracy",
+        "Macro F1",
+        "Balanced Accuracy",
+        "Macro Precision",
+        "Macro Recall",
+    ]
+    data = [metric_arrays[m] for m in metrics if metric_arrays[m].size > 0]
+    labels = [
+        label
+        for label, metric in zip(metric_labels, metrics)
+        if metric_arrays[metric].size > 0
+    ]
+    if not data:
+        return
+
+    plt.figure(figsize=(10, 6))
+    bp = plt.boxplot(data, patch_artist=True, widths=0.55)
+    palette = ["#2ca02c", "#d62728", "#9467bd", "#ff7f0e", "#17becf"]
+    for patch, color in zip(bp["boxes"], palette):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.7)
+    for i, values in enumerate(data, start=1):
+        x = np.random.normal(i, 0.04, size=len(values))
+        plt.scatter(x, values, color="black", s=12, alpha=0.55, zorder=3)
+
+    plt.xticks(range(1, len(labels) + 1), labels)
+    plt.ylabel("Score")
+    plt.title("Fold-wise Classification Metrics", fontweight="bold")
+    plt.grid(True, axis="y", alpha=0.25)
+    plt.tight_layout()
+    plt.savefig(save_dir / "metric_boxplot.png", dpi=300)
+    plt.close()
+
+
 def plot_global_summary(
     all_results: list,
     save_dir: Path,
+    task_type: str = "angle",
+    class_names: list[str] | None = None,
 ) -> None:
     """Generate aggregate plots for all folds."""
-
     save_dir.mkdir(parents=True, exist_ok=True)
-    labels, preds, _ = _aggregate_results(all_results)
 
+    if task_type == "gold":
+        labels, preds, _ = _aggregate_classification_results(all_results)
+        if labels.size > 0 and preds.size > 0:
+            plot_confusion_matrix(
+                labels,
+                preds,
+                fold=0,
+                save_dir=save_dir,
+                class_names=class_names or [],
+                title_suffix=" (All Folds)",
+                output_name="total_confusion_matrix.png",
+            )
+        plot_classification_metric_boxplot(all_results, save_dir)
+        return
+
+    labels, preds, _ = _aggregate_regression_results(all_results)
     if labels.size > 0 and preds.size > 0:
         plot_prediction_scatter(labels, preds, fold=0, save_dir=save_dir, title_suffix=" (All Folds)")
         plot_residuals(labels, preds, fold=0, save_dir=save_dir, title_suffix=" (All Folds)")
         plot_error_histogram(labels, preds, fold=0, save_dir=save_dir, title_suffix=" (All Folds)")
         plot_bland_altman(labels, preds, fold=0, save_dir=save_dir, title_suffix=" (All Folds)")
-
-        # Rename the combined outputs to explicit global filenames.
         for src_name, dst_name in [
             ("fold0_scatter.png", "total_scatter.png"),
             ("fold0_residuals.png", "total_residuals.png"),

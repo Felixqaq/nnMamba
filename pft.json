@@ -1,0 +1,280 @@
+﻿{
+    "GOLD 1 (輕度)":  [
+                        {
+                            "patient_id":  "C041635",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  87
+                        },
+                        {
+                            "patient_id":  "C543831",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  80
+                        },
+                        {
+                            "patient_id":  "E797258",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  93
+                        },
+                        {
+                            "patient_id":  "1596038",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  87
+                        },
+                        {
+                            "patient_id":  "1746380",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  92
+                        },
+                        {
+                            "patient_id":  "2094528",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  85
+                        },
+                        {
+                            "patient_id":  "2221276",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  85
+                        },
+                        {
+                            "patient_id":  "2500824",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  100
+                        },
+                        {
+                            "patient_id":  "2860903",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  83
+                        },
+                        {
+                            "patient_id":  "3097765",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  95
+                        },
+                        {
+                            "patient_id":  "3635301",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  93
+                        },
+                        {
+                            "patient_id":  "4204917",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  84
+                        },
+                        {
+                            "patient_id":  "4302294",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  104
+                        },
+                        {
+                            "patient_id":  "5046455",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  91
+                        },
+                        {
+                            "patient_id":  "5390303",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  85
+                        },
+                        {
+                            "patient_id":  "6212308",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  114
+                        },
+                        {
+                            "patient_id":  "6312603",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  91
+                        },
+                        {
+                            "patient_id":  "6858508",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  86
+                        },
+                        {
+                            "patient_id":  "7871759",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  99
+                        },
+                        {
+                            "patient_id":  "8244460",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  96
+                        },
+                        {
+                            "patient_id":  "8332556",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  114
+                        },
+                        {
+                            "patient_id":  "A754735",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  110
+                        },
+                        {
+                            "patient_id":  "C081146",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  99
+                        },
+                        {
+                            "patient_id":  "E717248",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  83
+                        }
+                    ],
+    "GOLD 2 (中度)":  [
+                        {
+                            "patient_id":  "4372708",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  51
+                        },
+                        {
+                            "patient_id":  "4710629",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  73
+                        },
+                        {
+                            "patient_id":  "4796667",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  61
+                        },
+                        {
+                            "patient_id":  "5127217",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  72
+                        },
+                        {
+                            "patient_id":  "8126939",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  61
+                        },
+                        {
+                            "patient_id":  "9075311",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  62
+                        },
+                        {
+                            "patient_id":  "9529629",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  65
+                        },
+                        {
+                            "patient_id":  "A613117",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  66
+                        },
+                        {
+                            "patient_id":  "A762364",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  58
+                        },
+                        {
+                            "patient_id":  "D132855",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  62
+                        },
+                        {
+                            "patient_id":  "D550510",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  60
+                        }
+                    ],
+    "GOLD 3 (重度)":  [
+                        {
+                            "patient_id":  "1687031",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  36
+                        },
+                        {
+                            "patient_id":  "1800944",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  32
+                        },
+                        {
+                            "patient_id":  "3647457",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  42
+                        },
+                        {
+                            "patient_id":  "5630846",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  44
+                        },
+                        {
+                            "patient_id":  "6887256",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  36
+                        },
+                        {
+                            "patient_id":  "8009284",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  31
+                        },
+                        {
+                            "patient_id":  "8404129",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  39
+                        },
+                        {
+                            "patient_id":  "8704416",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  34
+                        },
+                        {
+                            "patient_id":  "C435832",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  44
+                        },
+                        {
+                            "patient_id":  "C586742",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  33
+                        },
+                        {
+                            "patient_id":  "C905524",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  41
+                        },
+                        {
+                            "patient_id":  "E647833",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  44
+                        },
+                        {
+                            "patient_id":  "E771850",
+                            "group":  "abnormal",
+                            "post_fev1_percent_predicted":  48
+                        }
+                    ],
+    "GOLD 4 (極重度)":  [
+                         {
+                             "patient_id":  "1261736",
+                             "group":  "abnormal",
+                             "post_fev1_percent_predicted":  26
+                         },
+                         {
+                             "patient_id":  "2588424",
+                             "group":  "abnormal",
+                             "post_fev1_percent_predicted":  27
+                         },
+                         {
+                             "patient_id":  "2991621",
+                             "group":  "abnormal",
+                             "post_fev1_percent_predicted":  27
+                         },
+                         {
+                             "patient_id":  "B213449",
+                             "group":  "abnormal",
+                             "post_fev1_percent_predicted":  19
+                         },
+                         {
+                             "patient_id":  "E353272",
+                             "group":  "abnormal",
+                             "post_fev1_percent_predicted":  20
+                         },
+                         {
+                             "patient_id":  "E558113",
+                             "group":  "abnormal",
+                             "post_fev1_percent_predicted":  25
+                         }
+                     ]
+}

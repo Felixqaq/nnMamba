@@ -1,4 +1,4 @@
-"""Configuration loader for nnMamba CT angle regression."""
+"""Configuration loader for nnMamba CT regression/classification tasks."""
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -13,15 +13,17 @@ ModelType = Literal[
     "mamba",
     "swinunetr",
 ]
-LossType = Literal["smooth_l1", "mse", "mae"]
+LossType = Literal["auto", "smooth_l1", "mse", "mae", "cross_entropy"]
 InputNormType = Literal["zscore", "none"]
 TargetNormType = Literal["zscore", "none"]
+TargetMode = Literal["angle", "gold"]
 
 
 @dataclass
 class ModelConfig:
     name: ModelType = "mamba"
     in_channels: int = 1
+    num_classes: int = 1
     base_channels: int = 32
     blocks: int = 3
     hidden_dim: int = 128
@@ -52,7 +54,7 @@ class TrainingConfig:
     eval_interval: int = 5
     save_interval: int = 10
     seed: int = 42
-    loss: LossType = "smooth_l1"
+    loss: LossType = "auto"
     clip_grad_norm: float = 1.0
     amp: bool = True
     track_train_metrics: bool = False
@@ -64,6 +66,8 @@ class DataConfig:
     labels_json: Path = field(
         default_factory=lambda: Path("../patient_angle_classification_by_group.json")
     )
+    pft_json: Path = field(default_factory=lambda: Path("../pft.json"))
+    target_mode: TargetMode = "angle"
     angle_split_manifest: Path = field(
         default_factory=lambda: Path("../by_angle_all/reclassification_manifest.json")
     )
@@ -113,6 +117,10 @@ class Config:
     gpu: GPUConfig = field(default_factory=GPUConfig)
     task: str = "PFT_angle_regression"
 
+    def is_classification_task(self) -> bool:
+        """Return whether the current config runs categorical GOLD prediction."""
+        return self.data.target_mode == "gold"
+
     @classmethod
     def from_yaml(cls, path: str | Path = "config.yaml") -> "Config":
         """Load configuration from YAML file."""
@@ -124,14 +132,22 @@ class Config:
         data_section = data.get("data", {})
         paths_section = data.get("paths", {})
         gpu_section = data.get("gpu", {})
+        target_mode = data_section.get("target_mode", "angle")
         window_size = model_section.get("window_size", 4)
         if isinstance(window_size, list):
             window_size = tuple(window_size)
+        default_num_classes = 4 if target_mode == "gold" else 1
+        default_task = (
+            "GOLD_stage_classification"
+            if target_mode == "gold"
+            else "PFT_angle_regression"
+        )
 
         return cls(
             model=ModelConfig(
                 name=model_section.get("name", "mamba"),
                 in_channels=model_section.get("in_channels", 1),
+                num_classes=model_section.get("num_classes", default_num_classes),
                 base_channels=model_section.get("base_channels", 32),
                 blocks=model_section.get("blocks", 3),
                 hidden_dim=model_section.get("hidden_dim", 128),
@@ -156,6 +172,8 @@ class Config:
                         "labels_json", "../patient_angle_classification_by_group.json"
                     )
                 ),
+                pft_json=Path(data_section.get("pft_json", "../pft.json")),
+                target_mode=target_mode,
                 angle_split_manifest=Path(
                     data_section.get(
                         "angle_split_manifest",
@@ -191,5 +209,5 @@ class Config:
             ),
             resume=ResumeConfig(**data.get("resume", {})),
             gpu=GPUConfig(device_id=gpu_section.get("device_id", "0")),
-            task=data.get("task", "PFT_angle_regression"),
+            task=data.get("task", default_task),
         )

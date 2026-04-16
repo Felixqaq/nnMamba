@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Evaluate trained nnMamba regression checkpoints."""
+"""Evaluate trained nnMamba regression/classification checkpoints."""
 
 import argparse
 from pathlib import Path
@@ -22,7 +22,9 @@ def _load_fold_model(config: Config, uuid: str, fold: int, device: torch.device)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Evaluate nnMamba CT angle regressor")
+    parser = argparse.ArgumentParser(
+        description="Evaluate nnMamba CT angle regressor / GOLD classifier"
+    )
     parser.add_argument("--uuid", required=True, help="Run UUID to evaluate")
     parser.add_argument("--fold", type=int, default=None, help="Specific fold to evaluate")
     parser.add_argument("--config", default="config.yaml", help="Config file path")
@@ -46,18 +48,27 @@ def main() -> None:
             model=model,
             dataloader=test_dl,
             device=device,
+            task_type=config.data.target_mode,
             target_mean=target_mean,
             target_std=target_std,
             use_amp=bool(config.training.amp and device.type == "cuda"),
+            num_classes=int(config.model.num_classes),
         )
 
         print(f"\nFold {fold}")
         print(f"Checkpoint: {checkpoint_path}")
-        print(f"MAE:       {metrics.mae:.4f}")
-        print(f"RMSE:      {metrics.rmse:.4f}")
-        print(f"R2:        {metrics.r2:.4f}")
-        print(f"Pearson r: {metrics.pearson_r:.4f}")
-        print(f"Bias:      {metrics.mean_error:.4f}")
+        if config.is_classification_task():
+            print(f"Accuracy:          {metrics.accuracy:.4f}")
+            print(f"Macro F1:          {metrics.macro_f1:.4f}")
+            print(f"Macro Precision:   {metrics.macro_precision:.4f}")
+            print(f"Macro Recall:      {metrics.macro_recall:.4f}")
+            print(f"Balanced Accuracy: {metrics.balanced_accuracy:.4f}")
+        else:
+            print(f"MAE:       {metrics.mae:.4f}")
+            print(f"RMSE:      {metrics.rmse:.4f}")
+            print(f"R2:        {metrics.r2:.4f}")
+            print(f"Pearson r: {metrics.pearson_r:.4f}")
+            print(f"Bias:      {metrics.mean_error:.4f}")
 
 
 if __name__ == "__main__":

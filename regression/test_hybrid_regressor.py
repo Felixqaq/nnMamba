@@ -12,6 +12,7 @@ def _build_hybrid_model():
     cfg = ModelConfig(
         name="hybrid_mamba_attention",
         in_channels=1,
+        num_classes=1,
         base_channels=16,
         blocks=1,
         hidden_dim=128,
@@ -40,3 +41,21 @@ def test_hybrid_regressor_forward_pass() -> None:
 
     assert y.shape == (2,)
     assert torch.isfinite(y).all()
+
+
+def test_hybrid_classifier_head_respects_num_classes() -> None:
+    cfg = ModelConfig(
+        name="hybrid_mamba_attention",
+        in_channels=1,
+        num_classes=4,
+        base_channels=16,
+        blocks=1,
+        hidden_dim=128,
+        dropout=0.1,
+        attn_heads=4,
+        attn_layers=1,
+        attn_mlp_ratio=2.0,
+        attn_dropout=0.1,
+    )
+    model = build_model(cfg)
+    assert model.head[-1].out_features == 4

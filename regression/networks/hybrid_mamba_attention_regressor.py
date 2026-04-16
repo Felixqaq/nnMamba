@@ -72,11 +72,12 @@ class HybridAttentionBlock(nn.Module):
 
 
 class HybridMambaAttentionRegressor(nn.Module):
-    """Hybrid 3D CT regressor with Mamba stages and a global attention bridge."""
+    """Hybrid 3D CT predictor with Mamba stages and a global attention bridge."""
 
     def __init__(
         self,
         in_channels: int = 1,
+        num_classes: int = 1,
         base_channels: int = 32,
         depths: tuple[int, int, int] = (1, 1, 1),
         head_hidden_dim: int = 128,
@@ -127,7 +128,7 @@ class HybridMambaAttentionRegressor(nn.Module):
             nn.Linear(head_hidden_dim, head_mid_dim),
             nn.GELU(),
             nn.Dropout(float(dropout)),
-            nn.Linear(head_mid_dim, 1),
+            nn.Linear(head_mid_dim, int(num_classes)),
         )
         self._init_head()
 
@@ -151,4 +152,5 @@ class HybridMambaAttentionRegressor(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         features = self.forward_features(x)
-        return self.head(features).squeeze(-1)
+        output = self.head(features)
+        return output.squeeze(-1) if output.shape[-1] == 1 else output

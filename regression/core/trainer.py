@@ -1,4 +1,4 @@
-"""Training loop for nnMamba CT angle regression."""
+"""Training loop for nnMamba CT regression and GOLD classification."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 from .checkpoints import generate_uuid, save_checkpoint
 from .config import Config
-from .evaluator import evaluate, save_predictions
+from .evaluator import ClassificationMetrics, RegressionMetrics, evaluate, save_predictions
 from .visualizer import plot_global_summary, plot_paper_results, plot_training_curves
 
 ATTENTION_HEAVY_MODELS = {
@@ -37,16 +37,21 @@ def setup_seed(seed: int) -> None:
     random.seed(seed)
 
 
-def build_loss(name: str) -> nn.Module:
-    """Build regression loss by name."""
+def build_loss(name: str, is_classification: bool) -> nn.Module:
+    """Build task-specific loss by name."""
+    resolved = name
+    if resolved == "auto":
+        resolved = "cross_entropy" if is_classification else "smooth_l1"
+
     registry = {
         "smooth_l1": nn.SmoothL1Loss,
         "mse": nn.MSELoss,
         "mae": nn.L1Loss,
+        "cross_entropy": nn.CrossEntropyLoss,
     }
-    if name not in registry:
+    if resolved not in registry:
         raise ValueError(f"Unknown loss: {name}")
-    return registry[name]()
+    return registry[resolved]()
 
 
 class Trainer:
@@ -56,7 +61,7 @@ class Trainer:
         self.config = config
         self.model_factory = model_factory
         self.loader_helper = loader_helper
-        self.best_results = []
+        self.best_results: list[RegressionMetrics | ClassificationMetrics | None] = []
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.use_amp = bool(config.training.amp and self.device.type == "cuda")
         self.scaler = torch.amp.GradScaler("cuda", enabled=self.use_amp)
@@ -64,6 +69,13 @@ class Trainer:
         self.run_started_at: datetime | None = None
         self.run_finished_at: datetime | None = None
         self.total_training_seconds: float | None = None
+        self.task_type = str(config.data.target_mode)
+        self.is_classification = config.is_classification_task()
+        self.class_names = (
+            loader_helper.get_class_names()
+            if hasattr(loader_helper, "get_class_names")
+            else []
+        )
 
         os.environ["CUDA_VISIBLE_DEVICES"] = config.gpu.device_id
         setup_seed(config.training.seed)
@@ -84,8 +96,14 @@ class Trainer:
         print(f"\n{'=' * 72}")
         print(f"Training: {self.uuid}")
         print(
-            f"Model: {cfg.model.name} | Task: {cfg.task} | {cfg.training.k_folds} folds"
+            f"Model: {cfg.model.name} | Task: {cfg.task} | "
+            f"Target mode: {self.task_type} | {cfg.training.k_folds} folds"
         )
+        if self.is_classification:
+            print(
+                f"Classes: {cfg.model.num_classes} | "
+                f"Labels: {', '.join(self.class_names) if self.class_names else 'n/a'}"
+            )
         if hasattr(self.loader_helper, "batch_size") and hasattr(
             self.loader_helper, "val_batch_size"
         ):
@@ -123,7 +141,12 @@ class Trainer:
         fig_dir = self.config.paths.figures / self.config.task / self.uuid
         self.run_finished_at = datetime.now()
         self.total_training_seconds = perf_counter() - started_perf
-        plot_global_summary(self.best_results, fig_dir)
+        plot_global_summary(
+            self.best_results,
+            fig_dir,
+            task_type=self.task_type,
+            class_names=self.class_names,
+        )
         self._save_results_json(fig_dir)
         return self.uuid
 
@@ -141,15 +164,18 @@ class Trainer:
 
         optimizer = self._build_optimizer(model)
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode="min", factor=0.5, patience=2
+            optimizer,
+            mode="max" if self.is_classification else "min",
+            factor=0.5,
+            patience=2,
         )
-        loss_fn = build_loss(cfg.loss)
+        loss_fn = build_loss(cfg.loss, self.is_classification)
 
         train_loss_history: list[float] = []
         eval_epochs: list[int] = []
-        train_metrics = {"mae": [], "rmse": [], "r2": [], "pearson": [], "mean_error": []}
-        val_metrics = {"mae": [], "rmse": [], "r2": [], "pearson": [], "mean_error": []}
-        best_mae = float("inf")
+        train_metrics = self._empty_metric_history()
+        val_metrics = self._empty_metric_history()
+        best_score = float("-inf")
         best_fold_result = None
         best_epoch = 0
 
@@ -181,63 +207,56 @@ class Trainer:
                             model=model,
                             dataloader=train_dl,
                             device=self.device,
+                            task_type=self.task_type,
                             target_mean=eval_target_mean,
                             target_std=eval_target_std,
                             use_amp=self.use_amp,
+                            num_classes=int(self.config.model.num_classes),
                         )
                     val_result = evaluate(
                         model=model,
                         dataloader=test_dl,
                         device=self.device,
+                        task_type=self.task_type,
                         target_mean=eval_target_mean,
                         target_std=eval_target_std,
                         use_amp=self.use_amp,
+                        num_classes=int(self.config.model.num_classes),
                     )
 
-                    if (
-                        train_result is not None
-                        and train_result.num_invalid_samples > 0
-                    ) or val_result.num_invalid_samples > 0:
+                    invalid_train = (
+                        train_result.num_invalid_samples
+                        if train_result is not None
+                        else 0
+                    )
+                    invalid_val = getattr(val_result, "num_invalid_samples", 0)
+                    if invalid_train > 0 or invalid_val > 0:
                         warn_msg = (
                             f"Epoch {epoch}: invalid predictions detected "
-                            f"(train={train_result.num_invalid_samples if train_result is not None else 0}, "
-                            f"val={val_result.num_invalid_samples})"
+                            f"(train={invalid_train}, val={invalid_val})"
                         )
                         tqdm.write(warn_msg)
                         log_file.write(warn_msg + "\n")
 
                     if train_result is not None:
-                        train_metrics["mae"].append(self._finite_or_nan(train_result.mae))
-                        train_metrics["rmse"].append(self._finite_or_nan(train_result.rmse))
-                        train_metrics["r2"].append(self._finite_or_nan(train_result.r2))
-                        train_metrics["pearson"].append(self._finite_or_nan(train_result.pearson))
-                        train_metrics["mean_error"].append(
-                            self._finite_or_nan(train_result.mean_error)
-                        )
-                    val_metrics["mae"].append(self._finite_or_nan(val_result.mae))
-                    val_metrics["rmse"].append(self._finite_or_nan(val_result.rmse))
-                    val_metrics["r2"].append(self._finite_or_nan(val_result.r2))
-                    val_metrics["pearson"].append(self._finite_or_nan(val_result.pearson))
-                    val_metrics["mean_error"].append(
-                        self._finite_or_nan(val_result.mean_error)
-                    )
-                    if math.isfinite(val_result.mae):
-                        scheduler.step(val_result.mae)
+                        self._append_metric_snapshot(train_metrics, train_result)
+                    self._append_metric_snapshot(val_metrics, val_result)
 
-                    metric_msg = (
-                        f"Epoch {epoch}: "
-                        f"Val MAE={val_result.mae:.4f}, RMSE={val_result.rmse:.4f}, R2={val_result.r2:.4f}"
+                    current_score = self._selection_score(val_result)
+                    scheduler_value = self._scheduler_score(val_result)
+                    if math.isfinite(scheduler_value):
+                        scheduler.step(scheduler_value)
+
+                    metric_msg = self._format_metric_message(
+                        epoch=epoch,
+                        train_result=train_result,
+                        val_result=val_result,
                     )
-                    if train_result is not None:
-                        metric_msg += (
-                            f" | Train MAE={train_result.mae:.4f}, "
-                            f"RMSE={train_result.rmse:.4f}, R2={train_result.r2:.4f}"
-                        )
                     tqdm.write(metric_msg)
                     log_file.write(metric_msg + "\n")
 
-                    if val_result.mae <= best_mae:
-                        best_mae = val_result.mae
+                    if self._is_better(current_score, best_score):
+                        best_score = current_score
                         best_epoch = epoch
                         best_fold_result = val_result
 
@@ -248,35 +267,38 @@ class Trainer:
                             fold=fold + 1,
                             epoch=epoch,
                             is_best=True,
-                            extra={
-                                "fold": fold + 1,
-                                "epoch": epoch,
-                                "target_stats": {
-                                    "mean": eval_target_mean,
-                                    "std": eval_target_std,
-                                    "scope": "dataset",
-                                },
-                                "metrics": {
-                                    "mae": val_result.mae,
-                                    "rmse": val_result.rmse,
-                                    "r2": val_result.r2,
-                                    "pearson": val_result.pearson,
-                                    "mean_error": val_result.mean_error,
-                                },
-                            },
+                            extra=self._checkpoint_payload(
+                                fold=fold + 1,
+                                epoch=epoch,
+                                eval_target_mean=eval_target_mean,
+                                eval_target_std=eval_target_std,
+                                metrics=val_result,
+                            ),
                         )
 
                         fig_dir = self.config.paths.figures / self.config.task / self.uuid
-                        plot_paper_results(val_result, fold + 1, fig_dir)
+                        plot_paper_results(
+                            val_result,
+                            fold + 1,
+                            fig_dir,
+                            task_type=self.task_type,
+                            class_names=self.class_names,
+                        )
                         save_predictions(
                             metrics=val_result,
                             dataset=self.loader_helper.dataset,
                             fold_indices=self.loader_helper.fold_indices[fold][1],
                             save_path=fig_dir,
                             fold=fold + 1,
+                            task_type=self.task_type,
+                            class_names=self.class_names,
                         )
                         tqdm.write(
-                            f"New best fold {fold + 1} MAE: {val_result.mae:.4f} at epoch {epoch}"
+                            self._best_metric_message(
+                                fold=fold + 1,
+                                epoch=epoch,
+                                result=val_result,
+                            )
                         )
 
                 if epoch % cfg.save_interval == 0:
@@ -287,15 +309,13 @@ class Trainer:
                         fold=fold + 1,
                         epoch=epoch,
                         is_best=False,
-                        extra={
-                            "fold": fold + 1,
-                            "epoch": epoch,
-                            "target_stats": {
-                                "mean": eval_target_mean,
-                                "std": eval_target_std,
-                                "scope": "dataset",
-                            },
-                        },
+                        extra=self._checkpoint_payload(
+                            fold=fold + 1,
+                            epoch=epoch,
+                            eval_target_mean=eval_target_mean,
+                            eval_target_std=eval_target_std,
+                            metrics=None,
+                        ),
                     )
                     plot_training_curves(
                         train_loss=train_loss_history,
@@ -305,6 +325,7 @@ class Trainer:
                         save_dir=self.config.paths.figures / self.config.task / self.uuid,
                         uuid=self.uuid,
                         fold=fold + 1,
+                        task_type=self.task_type,
                     )
 
         if best_fold_result is not None:
@@ -318,6 +339,7 @@ class Trainer:
             "lr": self.config.training.learning_rate,
             "weight_decay": self.config.training.weight_decay,
         }
+
         if self.device.type == "cuda":
             try:
                 optimizer = optim.AdamW(model.parameters(), fused=True, **kwargs)
@@ -349,19 +371,25 @@ class Trainer:
                 if "mri" in batch
                 else batch["ct"].to(self.device, non_blocking=True)
             )
-            y = batch["angle"].to(self.device, non_blocking=True).float().view(-1)
-
             optimizer.zero_grad(set_to_none=True)
+
             with torch.autocast(
                 device_type=self.device.type,
                 dtype=torch.float16,
                 enabled=self.use_amp,
             ):
-                out = model(x).view(-1)
-                y_target = self._normalize_targets(y, target_mean, target_std)
-                loss = loss_fn(out, y_target)
+                out = model(x)
+                if self.is_classification:
+                    y = batch["label"].to(self.device, non_blocking=True).long().view(-1)
+                    loss = loss_fn(out, y)
+                else:
+                    y = batch["angle"].to(self.device, non_blocking=True).float().view(-1)
+                    y_target = self._normalize_targets(y, target_mean, target_std)
+                    loss = loss_fn(out.view(-1), y_target)
+
             if not torch.isfinite(loss):
                 raise RuntimeError("Non-finite loss encountered during training.")
+
             self.scaler.scale(loss).backward()
 
             if self.config.training.clip_grad_norm > 0:
@@ -379,37 +407,188 @@ class Trainer:
     def _normalize_targets(
         self, targets: torch.Tensor, target_mean: float, target_std: float
     ) -> torch.Tensor:
-        """Normalize targets if configured."""
+        """Normalize regression targets if configured."""
         if self.config.data.target_normalization == "zscore":
             std = target_std if abs(target_std) > 1e-8 else 1.0
             return (targets - target_mean) / std
         return targets
 
-    def _finite_or_nan(self, value: float) -> float:
-        """Keep plots numeric without letting inf blow up the axes."""
-        return float(value) if math.isfinite(value) else float("nan")
-
     def _get_eval_target_stats(
         self, target_mean: float, target_std: float
     ) -> tuple[float, float]:
-        """Return the scale needed to map model outputs back to degree units."""
+        """Return the scale needed to map regression outputs back to degree units."""
+        if self.is_classification:
+            return 0.0, 1.0
         if self.config.data.target_normalization == "zscore":
             std = target_std if abs(target_std) > 1e-8 else 1.0
             return target_mean, std
         return 0.0, 1.0
+
+    def _empty_metric_history(self) -> dict[str, list[float]]:
+        """Create the per-epoch metric history container for the active task."""
+        if self.is_classification:
+            return {
+                "accuracy": [],
+                "macro_f1": [],
+                "macro_precision": [],
+                "macro_recall": [],
+                "balanced_accuracy": [],
+            }
+        return {"mae": [], "rmse": [], "r2": [], "pearson": [], "mean_error": []}
+
+    def _append_metric_snapshot(
+        self,
+        history: dict[str, list[float]],
+        metrics: RegressionMetrics | ClassificationMetrics,
+    ) -> None:
+        """Append one evaluation snapshot into a metric history dict."""
+        for key in history:
+            history[key].append(self._finite_or_nan(getattr(metrics, key)))
+
+    def _selection_score(
+        self, metrics: RegressionMetrics | ClassificationMetrics
+    ) -> float:
+        """Return the score used for best-checkpoint selection."""
+        return (
+            float(metrics.macro_f1)
+            if self.is_classification
+            else -float(metrics.mae)
+        )
+
+    def _is_better(self, score: float, best_score: float) -> bool:
+        """Compare the current score against the best score so far."""
+        return score >= best_score
+
+    def _scheduler_score(
+        self, metrics: RegressionMetrics | ClassificationMetrics
+    ) -> float:
+        """Return the score passed into ReduceLROnPlateau."""
+        return (
+            float(metrics.macro_f1)
+            if self.is_classification
+            else float(metrics.mae)
+        )
+
+    def _format_metric_message(
+        self,
+        epoch: int,
+        train_result: RegressionMetrics | ClassificationMetrics | None,
+        val_result: RegressionMetrics | ClassificationMetrics,
+    ) -> str:
+        """Format the per-eval log line."""
+        if self.is_classification:
+            message = (
+                f"Epoch {epoch}: "
+                f"Val Acc={val_result.accuracy:.4f}, "
+                f"Macro-F1={val_result.macro_f1:.4f}, "
+                f"Bal Acc={val_result.balanced_accuracy:.4f}"
+            )
+            if train_result is not None:
+                message += (
+                    f" | Train Acc={train_result.accuracy:.4f}, "
+                    f"Macro-F1={train_result.macro_f1:.4f}, "
+                    f"Bal Acc={train_result.balanced_accuracy:.4f}"
+                )
+            return message
+
+        message = (
+            f"Epoch {epoch}: "
+            f"Val MAE={val_result.mae:.4f}, "
+            f"RMSE={val_result.rmse:.4f}, "
+            f"R2={val_result.r2:.4f}"
+        )
+        if train_result is not None:
+            message += (
+                f" | Train MAE={train_result.mae:.4f}, "
+                f"RMSE={train_result.rmse:.4f}, "
+                f"R2={train_result.r2:.4f}"
+            )
+        return message
+
+    def _best_metric_message(
+        self,
+        fold: int,
+        epoch: int,
+        result: RegressionMetrics | ClassificationMetrics,
+    ) -> str:
+        """Format the new-best checkpoint message."""
+        if self.is_classification:
+            return (
+                f"New best fold {fold} Macro-F1: "
+                f"{result.macro_f1:.4f} at epoch {epoch}"
+            )
+        return f"New best fold {fold} MAE: {result.mae:.4f} at epoch {epoch}"
+
+    def _checkpoint_payload(
+        self,
+        fold: int,
+        epoch: int,
+        eval_target_mean: float,
+        eval_target_std: float,
+        metrics: RegressionMetrics | ClassificationMetrics | None,
+    ) -> dict:
+        """Assemble checkpoint metadata."""
+        payload = {
+            "fold": fold,
+            "epoch": epoch,
+            "task_type": self.task_type,
+            "class_names": self.class_names,
+            "target_stats": {
+                "mean": eval_target_mean,
+                "std": eval_target_std,
+                "scope": "dataset",
+            },
+        }
+        if metrics is None:
+            return payload
+
+        if self.is_classification:
+            payload["metrics"] = {
+                "accuracy": metrics.accuracy,
+                "macro_f1": metrics.macro_f1,
+                "macro_precision": metrics.macro_precision,
+                "macro_recall": metrics.macro_recall,
+                "balanced_accuracy": metrics.balanced_accuracy,
+            }
+        else:
+            payload["metrics"] = {
+                "mae": metrics.mae,
+                "rmse": metrics.rmse,
+                "r2": metrics.r2,
+                "pearson": metrics.pearson,
+                "mean_error": metrics.mean_error,
+            }
+        return payload
+
+    def _finite_or_nan(self, value: float) -> float:
+        """Keep plots numeric without letting inf blow up the axes."""
+        return float(value) if math.isfinite(value) else float("nan")
 
     def _save_results_json(self, save_dir) -> None:
         """Save all fold results to a single JSON file."""
         save_dir.mkdir(parents=True, exist_ok=True)
 
         fold_entries = []
-        mae_vals, rmse_vals, r2_vals, pearson_vals = [], [], [], []
+        summary_values: dict[str, list[float]] = {
+            key: [] for key in self._empty_metric_history().keys()
+        }
 
         for idx, res in enumerate(self.best_results, start=1):
             if res is None:
                 continue
-            fold_entries.append(
-                {
+
+            if self.is_classification:
+                fold_entry = {
+                    "fold": idx,
+                    "best_epoch": getattr(res, "best_epoch", None),
+                    "accuracy": res.accuracy,
+                    "macro_f1": res.macro_f1,
+                    "macro_precision": res.macro_precision,
+                    "macro_recall": res.macro_recall,
+                    "balanced_accuracy": res.balanced_accuracy,
+                }
+            else:
+                fold_entry = {
                     "fold": idx,
                     "best_epoch": getattr(res, "best_epoch", None),
                     "mae": res.mae,
@@ -418,17 +597,28 @@ class Trainer:
                     "pearson": res.pearson,
                     "mean_error": res.mean_error,
                 }
-            )
-            mae_vals.append(res.mae)
-            rmse_vals.append(res.rmse)
-            r2_vals.append(res.r2)
-            pearson_vals.append(res.pearson)
+
+            fold_entries.append(fold_entry)
+            for key in summary_values:
+                value = fold_entry.get(key)
+                if value is not None:
+                    summary_values[key].append(value)
+
+        summary = {}
+        for key, values in summary_values.items():
+            if values:
+                summary[f"mean_{key}"] = round(float(np.mean(values)), 5)
+                summary[f"std_{key}"] = round(float(np.std(values)), 5)
+            else:
+                summary[f"mean_{key}"] = None
+                summary[f"std_{key}"] = None
 
         results = {
             "meta": {
                 "uuid": self.uuid,
                 "model": self.config.model.name,
                 "task": self.config.task,
+                "task_type": self.task_type,
                 "timestamp": datetime.now().isoformat(),
                 "training_started_at": (
                     self.run_started_at.isoformat() if self.run_started_at else None
@@ -444,6 +634,7 @@ class Trainer:
                 )
                 if self.total_training_seconds is not None
                 else None,
+                "class_names": self.class_names,
                 "config": {
                     "epochs": self.config.training.epochs,
                     "batch_size": self.config.training.batch_size,
@@ -452,24 +643,12 @@ class Trainer:
                     "k_folds": self.config.training.k_folds,
                     "seed": self.config.training.seed,
                     "loss": self.config.training.loss,
+                    "num_classes": self.config.model.num_classes,
                 },
             },
             "folds": fold_entries,
-            "summary": {
-                "mean_mae": round(float(np.mean(mae_vals)), 5) if mae_vals else None,
-                "std_mae": round(float(np.std(mae_vals)), 5) if mae_vals else None,
-                "mean_rmse": round(float(np.mean(rmse_vals)), 5) if rmse_vals else None,
-                "std_rmse": round(float(np.std(rmse_vals)), 5) if rmse_vals else None,
-                "mean_r2": round(float(np.mean(r2_vals)), 5) if r2_vals else None,
-                "std_r2": round(float(np.std(r2_vals)), 5) if r2_vals else None,
-                "mean_pearson": round(float(np.mean(pearson_vals)), 5)
-                if pearson_vals
-                else None,
-                "std_pearson": round(float(np.std(pearson_vals)), 5)
-                if pearson_vals
-                else None,
-            },
+            "summary": summary,
         }
 
         with open(save_dir / "results.json", "w", encoding="utf-8") as handle:
-            json.dump(results, handle, indent=2)
+            json.dump(results, handle, indent=2, ensure_ascii=False)

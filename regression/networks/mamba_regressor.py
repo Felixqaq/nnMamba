@@ -102,11 +102,12 @@ class DownsampleStage(nn.Module):
 
 
 class MambaAngleRegressor(nn.Module):
-    """3D CT regressor that predicts a single collapse angle."""
+    """3D CT predictor with a configurable output dimension."""
 
     def __init__(
         self,
         in_channels: int = 1,
+        num_classes: int = 1,
         base_channels: int = 32,
         depths: tuple[int, int, int] = (1, 1, 1),
         dropout: float = 0.2,
@@ -139,7 +140,7 @@ class MambaAngleRegressor(nn.Module):
             nn.Linear(base_channels * 4, base_channels * 2),
             nn.GELU(),
             nn.Dropout(dropout),
-            nn.Linear(base_channels * 2, 1),
+            nn.Linear(base_channels * 2, int(num_classes)),
         )
         self._init_head()
 
@@ -161,4 +162,5 @@ class MambaAngleRegressor(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         features = self.forward_features(x)
-        return self.head(features).squeeze(-1)
+        output = self.head(features)
+        return output.squeeze(-1) if output.shape[-1] == 1 else output

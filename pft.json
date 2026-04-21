@@ -119,6 +119,66 @@
                             "patient_id":  "E717248",
                             "group":  "normal",
                             "post_fev1_percent_predicted":  83
+                        },
+                        {
+                            "patient_id":  "0781915",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  105
+                        },
+                        {
+                            "patient_id":  "1604378",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  87
+                        },
+                        {
+                            "patient_id":  "1663485",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  116
+                        },
+                        {
+                            "patient_id":  "1814107",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  96
+                        },
+                        {
+                            "patient_id":  "2256243",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  111
+                        },
+                        {
+                            "patient_id":  "2291134",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  110
+                        },
+                        {
+                            "patient_id":  "4205212",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  93
+                        },
+                        {
+                            "patient_id":  "4230847",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  94
+                        },
+                        {
+                            "patient_id":  "4996166",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  110
+                        },
+                        {
+                            "patient_id":  "5925853",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  107
+                        },
+                        {
+                            "patient_id":  "6757504",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  138
+                        },
+                        {
+                            "patient_id":  "A267542",
+                            "group":  "normal",
+                            "post_fev1_percent_predicted":  94
                         }
                     ],
     "GOLD 2 (中度)":  [

@@ -2,16 +2,16 @@
   "source_json": "../patient_angle_classification_by_group.json",
   "data_root": "../by_angle_all",
   "counts": {
-    "total": 54,
-    "unique_patients": 54,
-    "low_angle_group": 33,
-    "high_angle_group": 21
+    "total": 66,
+    "unique_patients": 66,
+    "low_angle_group": 35,
+    "high_angle_group": 31
   },
   "missing_from_source": [],
   "extra_in_source_not_in_json": [],
   "missing_gold_labels": [],
   "gold_stage_counts": {
-    "GOLD 1 (Mild)": 24,
+    "GOLD 1 (Mild)": 36,
     "GOLD 2 (Moderate)": 11,
     "GOLD 3 (Severe)": 13,
     "GOLD 4 (Very Severe)": 6
@@ -31,6 +31,15 @@
       "gold_stage": 3,
       "gold_stage_label": "GOLD 4 (Very Severe)",
       "post_fev1_percent_predicted": 26.0
+    },
+    {
+      "patient_id": "1604378",
+      "path": "../by_angle_all/abnormal_low_angle/1604378_Insp. Phase  Lung  Br60  S3  3.00.nii.gz",
+      "angle": 166.0,
+      "source_group": "abnormal_low_angle",
+      "gold_stage": 0,
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "post_fev1_percent_predicted": 87.0
     },
     {
       "patient_id": "1687031",
@@ -139,6 +148,15 @@
       "gold_stage": 1,
       "gold_stage_label": "GOLD 2 (Moderate)",
       "post_fev1_percent_predicted": 61.0
+    },
+    {
+      "patient_id": "4996166",
+      "path": "../by_angle_all/abnormal_low_angle/4996166_Thorax Lung Br60 S2 3.00.nii.gz",
+      "angle": 166.0,
+      "source_group": "abnormal_low_angle",
+      "gold_stage": 0,
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "post_fev1_percent_predicted": 110.0
     },
     {
       "patient_id": "5127217",
@@ -321,6 +339,15 @@
       "post_fev1_percent_predicted": 44.0
     },
     {
+      "patient_id": "0781915",
+      "path": "../by_angle_all/normal_high_angle/0781915_~LUNG AX 1_1 LW.nii.gz",
+      "angle": 176.0,
+      "source_group": "normal_high_angle",
+      "gold_stage": 0,
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "post_fev1_percent_predicted": 105.0
+    },
+    {
       "patient_id": "1596038",
       "path": "../by_angle_all/normal_high_angle/1596038_Thorax Lung Br60 S2 3.00.nii.gz",
       "angle": 173.0,
@@ -330,6 +357,15 @@
       "post_fev1_percent_predicted": 87.0
     },
     {
+      "patient_id": "1663485",
+      "path": "../by_angle_all/normal_high_angle/1663485_LW  AXI 3.0  B60f.nii.gz",
+      "angle": 171.0,
+      "source_group": "normal_high_angle",
+      "gold_stage": 0,
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "post_fev1_percent_predicted": 116.0
+    },
+    {
       "patient_id": "1746380",
       "path": "../by_angle_all/normal_high_angle/1746380_Thorax Lung Br60 S2 3.00.nii.gz",
       "angle": 174.0,
@@ -337,6 +373,33 @@
       "gold_stage": 0,
       "gold_stage_label": "GOLD 1 (Mild)",
       "post_fev1_percent_predicted": 92.0
+    },
+    {
+      "patient_id": "1814107",
+      "path": "../by_angle_all/normal_high_angle/1814107_~LUNG AXL 1_1 LW.nii.gz",
+      "angle": 171.0,
+      "source_group": "normal_high_angle",
+      "gold_stage": 0,
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "post_fev1_percent_predicted": 96.0
+    },
+    {
+      "patient_id": "2256243",
+      "path": "../by_angle_all/normal_high_angle/2256243_Thorax Lung Br60 S2 3.00.nii.gz",
+      "angle": 171.0,
+      "source_group": "normal_high_angle",
+      "gold_stage": 0,
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "post_fev1_percent_predicted": 111.0
+    },
+    {
+      "patient_id": "2291134",
+      "path": "../by_angle_all/normal_high_angle/2291134_LW-insp.  AXI 3_3  B60f.nii.gz",
+      "angle": 176.0,
+      "source_group": "normal_high_angle",
+      "gold_stage": 0,
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "post_fev1_percent_predicted": 110.0
     },
     {
       "patient_id": "2500824",
@@ -366,6 +429,24 @@
       "post_fev1_percent_predicted": 93.0
     },
     {
+      "patient_id": "4205212",
+      "path": "../by_angle_all/normal_high_angle/4205212_~LUNG AXL 1_1 LW.nii.gz",
+      "angle": 178.0,
+      "source_group": "normal_high_angle",
+      "gold_stage": 0,
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "post_fev1_percent_predicted": 93.0
+    },
+    {
+      "patient_id": "4230847",
+      "path": "../by_angle_all/normal_high_angle/4230847_LW AXI 3_3  B60f.nii.gz",
+      "angle": 176.0,
+      "source_group": "normal_high_angle",
+      "gold_stage": 0,
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "post_fev1_percent_predicted": 94.0
+    },
+    {
       "patient_id": "4302294",
       "path": "../by_angle_all/normal_high_angle/4302294_Thorax Lung Br60 S2 3.00.nii.gz",
       "angle": 179.0,
@@ -393,6 +474,15 @@
       "post_fev1_percent_predicted": 85.0
     },
     {
+      "patient_id": "5925853",
+      "path": "../by_angle_all/normal_high_angle/5925853_LungLowDose  1.0  Br59  2 LW.nii.gz",
+      "angle": 173.0,
+      "source_group": "normal_high_angle",
+      "gold_stage": 0,
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "post_fev1_percent_predicted": 107.0
+    },
+    {
       "patient_id": "6212308",
       "path": "../by_angle_all/normal_high_angle/6212308_Thorax Lung Br60 S2 3.00.nii.gz",
       "angle": 178.0,
@@ -409,6 +499,15 @@
       "gold_stage": 0,
       "gold_stage_label": "GOLD 1 (Mild)",
       "post_fev1_percent_predicted": 91.0
+    },
+    {
+      "patient_id": "6757504",
+      "path": "../by_angle_all/normal_high_angle/6757504_~LUNG AX 1_1 LW.nii.gz",
+      "angle": 171.0,
+      "source_group": "normal_high_angle",
+      "gold_stage": 0,
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "post_fev1_percent_predicted": 138.0
     },
     {
       "patient_id": "6858508",
@@ -463,6 +562,15 @@
       "gold_stage": 1,
       "gold_stage_label": "GOLD 2 (Moderate)",
       "post_fev1_percent_predicted": 62.0
+    },
+    {
+      "patient_id": "A267542",
+      "path": "../by_angle_all/normal_high_angle/A267542_LW  AXI 3.0  B60f.nii.gz",
+      "angle": 178.0,
+      "source_group": "normal_high_angle",
+      "gold_stage": 0,
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "post_fev1_percent_predicted": 94.0
     },
     {
       "patient_id": "A613117",

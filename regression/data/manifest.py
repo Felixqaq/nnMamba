@@ -79,6 +79,22 @@ def _gold_stage_sort_key(stage_name: str) -> tuple[int, str]:
     return (10_000, stage_name)
 
 
+def _english_gold_label(stage_name: str) -> str:
+    """Normalize GOLD class names into English-only labels."""
+    match = re.search(r"(\d+)", stage_name)
+    if not match:
+        return stage_name
+
+    stage = int(match.group(1))
+    aliases = {
+        1: "GOLD 1 (Mild)",
+        2: "GOLD 2 (Moderate)",
+        3: "GOLD 3 (Severe)",
+        4: "GOLD 4 (Very Severe)",
+    }
+    return aliases.get(stage, f"GOLD {stage}")
+
+
 def load_gold_label_map(
     pft_json: str | Path,
 ) -> tuple[dict[str, dict[str, float | int | str]], list[str]]:
@@ -87,16 +103,18 @@ def load_gold_label_map(
     with pft_json.open("r", encoding="utf-8-sig") as f:
         data = json.load(f)
 
-    class_names = sorted((str(key) for key in data.keys()), key=_gold_stage_sort_key)
+    raw_class_names = sorted((str(key) for key in data.keys()), key=_gold_stage_sort_key)
+    class_names = [_english_gold_label(class_name) for class_name in raw_class_names]
     label_map: dict[str, dict[str, float | int | str]] = {}
 
-    for class_index, class_name in enumerate(class_names):
-        for record in data.get(class_name, []):
+    for class_index, raw_class_name in enumerate(raw_class_names):
+        english_class_name = class_names[class_index]
+        for record in data.get(raw_class_name, []):
             patient_id = str(record["patient_id"])
             fev1 = record.get("post_fev1_percent_predicted")
             label_map[patient_id] = {
                 "gold_stage": class_index,
-                "gold_stage_label": class_name,
+                "gold_stage_label": english_class_name,
                 "post_fev1_percent_predicted": (
                     float(fev1) if fev1 is not None else None
                 ),

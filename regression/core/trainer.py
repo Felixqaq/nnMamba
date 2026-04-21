@@ -37,21 +37,25 @@ def setup_seed(seed: int) -> None:
     random.seed(seed)
 
 
-def build_loss(name: str, is_classification: bool) -> nn.Module:
+def build_loss(
+    name: str,
+    is_classification: bool,
+    class_weights: torch.Tensor | None = None,
+) -> nn.Module:
     """Build task-specific loss by name."""
     resolved = name
     if resolved == "auto":
         resolved = "cross_entropy" if is_classification else "smooth_l1"
 
-    registry = {
-        "smooth_l1": nn.SmoothL1Loss,
-        "mse": nn.MSELoss,
-        "mae": nn.L1Loss,
-        "cross_entropy": nn.CrossEntropyLoss,
-    }
-    if resolved not in registry:
+    if resolved not in {"smooth_l1", "mse", "mae", "cross_entropy"}:
         raise ValueError(f"Unknown loss: {name}")
-    return registry[resolved]()
+    if resolved == "cross_entropy":
+        return nn.CrossEntropyLoss(weight=class_weights)
+    if resolved == "smooth_l1":
+        return nn.SmoothL1Loss()
+    if resolved == "mse":
+        return nn.MSELoss()
+    return nn.L1Loss()
 
 
 class Trainer:
@@ -104,6 +108,16 @@ class Trainer:
                 f"Classes: {cfg.model.num_classes} | "
                 f"Labels: {', '.join(self.class_names) if self.class_names else 'n/a'}"
             )
+            if cfg.training.class_weight_mode != "none":
+                example_weights = self._resolve_class_weights(0)
+                if example_weights is not None:
+                    weight_text = ", ".join(
+                        f"{value:.3f}" for value in example_weights.detach().cpu().tolist()
+                    )
+                    print(
+                        f"Class weighting: {cfg.training.class_weight_mode} | "
+                        f"Example weights: [{weight_text}]"
+                    )
         if hasattr(self.loader_helper, "batch_size") and hasattr(
             self.loader_helper, "val_batch_size"
         ):
@@ -161,6 +175,7 @@ class Trainer:
         eval_target_mean, eval_target_std = self._get_eval_target_stats(
             target_mean, target_std
         )
+        class_weights = self._resolve_class_weights(fold)
 
         optimizer = self._build_optimizer(model)
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
@@ -169,7 +184,11 @@ class Trainer:
             factor=0.5,
             patience=2,
         )
-        loss_fn = build_loss(cfg.loss, self.is_classification)
+        loss_fn = build_loss(
+            cfg.loss,
+            self.is_classification,
+            class_weights=class_weights,
+        )
 
         train_loss_history: list[float] = []
         eval_epochs: list[int] = []
@@ -468,6 +487,15 @@ class Trainer:
             if self.is_classification
             else float(metrics.mae)
         )
+
+    def _resolve_class_weights(self, fold: int) -> torch.Tensor | None:
+        """Build class weights from the fold's training split when enabled."""
+        if not self.is_classification:
+            return None
+        if self.config.training.class_weight_mode != "balanced":
+            return None
+        weights = self.loader_helper.get_fold_class_weights(fold)
+        return weights.to(self.device)
 
     def _format_metric_message(
         self,

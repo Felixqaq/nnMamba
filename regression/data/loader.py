@@ -224,6 +224,32 @@ class RegressionLoaderHelper:
         train_idx, val_idx = self.fold_indices[fold]
         return self.targets[train_idx], self.targets[val_idx]
 
+    def get_fold_class_weights(self, fold: int) -> torch.Tensor:
+        """Return balanced class weights computed from the training split only."""
+        if self.target_mode != "gold":
+            raise ValueError("Class weights are only defined for gold classification.")
+
+        train_idx = self.fold_indices[fold][0]
+        train_targets = self.targets[train_idx].astype(int)
+        if len(train_targets) == 0:
+            return torch.ones(1, dtype=torch.float32)
+
+        num_classes = max(
+            len(self.class_names),
+            int(train_targets.max()) + 1,
+        )
+        counts = np.bincount(train_targets, minlength=max(num_classes, 1)).astype(
+            np.float32
+        )
+        weights = np.ones_like(counts, dtype=np.float32)
+        nonzero = counts > 0
+        if np.any(nonzero):
+            weights[nonzero] = float(len(train_targets)) / (
+                float(np.count_nonzero(nonzero)) * counts[nonzero]
+            )
+            weights = weights / float(weights[nonzero].mean())
+        return torch.tensor(weights, dtype=torch.float32)
+
     def _compute_target_stats(self, targets: np.ndarray) -> tuple[float, float]:
         """Return mean/std of the provided target array."""
         mean = float(np.mean(targets)) if len(targets) else 0.0

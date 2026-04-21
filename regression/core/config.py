@@ -14,6 +14,7 @@ ModelType = Literal[
     "swinunetr",
 ]
 LossType = Literal["auto", "smooth_l1", "mse", "mae", "cross_entropy"]
+ClassWeightMode = Literal["none", "balanced"]
 InputNormType = Literal["zscore", "none"]
 TargetNormType = Literal["zscore", "none"]
 TargetMode = Literal["angle", "gold"]
@@ -58,6 +59,7 @@ class TrainingConfig:
     clip_grad_norm: float = 1.0
     amp: bool = True
     track_train_metrics: bool = False
+    class_weight_mode: ClassWeightMode = "none"
 
 
 @dataclass

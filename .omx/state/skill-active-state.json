@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "active": true,
+  "skill": "cancel",
+  "keyword": "stop",
+  "phase": "planning",
+  "activated_at": "2026-04-22T05:22:24.748Z",
+  "updated_at": "2026-04-22T05:22:24.772Z",
+  "source": "keyword-detector",
+  "input_lock": null
+}

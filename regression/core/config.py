@@ -63,6 +63,20 @@ class TrainingConfig:
 
 
 @dataclass
+class AugmentationConfig:
+    enabled: bool = False
+    balance_to_majority: bool = False
+    probability: float = 0.8
+    gold_stages: tuple[int, ...] = (2, 3, 4)
+    rotation_degrees: float = 7.0
+    translation_fraction: float = 0.05
+    scale_range: tuple[float, float] = (0.95, 1.05)
+    intensity_scale_range: tuple[float, float] = (0.95, 1.05)
+    intensity_shift_range: tuple[float, float] = (-25.0, 25.0)
+    noise_std: float = 8.0
+
+
+@dataclass
 class DataConfig:
     source_dir: Path = field(default_factory=lambda: Path("../by_angle_all"))
     labels_json: Path = field(
@@ -85,6 +99,8 @@ class DataConfig:
     pin_memory: bool = True
     prefetch_factor: int = 2
     angle_bin_count: int = 5
+    balanced_sampling: bool = False
+    augmentation: AugmentationConfig = field(default_factory=AugmentationConfig)
 
 
 @dataclass
@@ -132,6 +148,7 @@ class Config:
 
         model_section = data.get("model", {})
         data_section = data.get("data", {})
+        augmentation_section = data_section.get("augmentation", {})
         paths_section = data.get("paths", {})
         gpu_section = data.get("gpu", {})
         target_mode = data_section.get("target_mode", "angle")
@@ -202,6 +219,35 @@ class Config:
                 pin_memory=data_section.get("pin_memory", True),
                 prefetch_factor=data_section.get("prefetch_factor", 2),
                 angle_bin_count=data_section.get("angle_bin_count", 5),
+                balanced_sampling=data_section.get("balanced_sampling", False),
+                augmentation=AugmentationConfig(
+                    enabled=augmentation_section.get("enabled", False),
+                    balance_to_majority=augmentation_section.get(
+                        "balance_to_majority", False
+                    ),
+                    probability=augmentation_section.get("probability", 0.8),
+                    gold_stages=tuple(
+                        augmentation_section.get("gold_stages", [2, 3, 4])
+                    ),
+                    rotation_degrees=augmentation_section.get("rotation_degrees", 7.0),
+                    translation_fraction=augmentation_section.get(
+                        "translation_fraction", 0.05
+                    ),
+                    scale_range=tuple(
+                        augmentation_section.get("scale_range", [0.95, 1.05])
+                    ),
+                    intensity_scale_range=tuple(
+                        augmentation_section.get(
+                            "intensity_scale_range", [0.95, 1.05]
+                        )
+                    ),
+                    intensity_shift_range=tuple(
+                        augmentation_section.get(
+                            "intensity_shift_range", [-25.0, 25.0]
+                        )
+                    ),
+                    noise_std=augmentation_section.get("noise_std", 8.0),
+                ),
             ),
             paths=PathConfig(
                 weights=Path(paths_section.get("weights", "./weights")),

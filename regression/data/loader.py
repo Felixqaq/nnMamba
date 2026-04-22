@@ -8,12 +8,12 @@ from typing import Any
 import numpy as np
 from sklearn.model_selection import KFold, StratifiedKFold
 import torch
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader, Dataset, Subset
 from torchvision import transforms
 
 from .dataset import AngleRegressionDataset, DEFAULT_IMAGE_SIZE
 from .manifest import build_angle_manifest
-from .transforms import ToTensor
+from .transforms import RandomCTAugmentation, ToTensor
 
 
 ATTENTION_HEAVY_MODELS = {
@@ -23,6 +23,41 @@ ATTENTION_HEAVY_MODELS = {
     "mamba_hybrid",
     "swinunetr",
 }
+
+
+class AugmentedSubset(Dataset):
+    """Subset wrapper that applies train-only transforms after base loading."""
+
+    def __init__(
+        self,
+        dataset: Dataset,
+        indices: list[int],
+        augmentation=None,
+        augment_flags: list[bool] | None = None,
+    ):
+        self.dataset = dataset
+        self.indices = list(indices)
+        self.augmentation = augmentation
+        self.augment_flags = (
+            list(augment_flags) if augment_flags is not None else None
+        )
+        if self.augment_flags is not None and len(self.augment_flags) != len(
+            self.indices
+        ):
+            raise ValueError("augment_flags must match indices length.")
+
+    def __len__(self) -> int:
+        return len(self.indices)
+
+    def __getitem__(self, idx: int) -> dict:
+        sample = self.dataset[self.indices[idx]]
+        if self.augmentation is None:
+            return sample
+        if self.augment_flags is not None and not self.augment_flags[idx]:
+            output = dict(sample)
+            output["augmented"] = False
+            return output
+        return self.augmentation(sample)
 
 
 class RegressionLoaderHelper:
@@ -47,6 +82,8 @@ class RegressionLoaderHelper:
         input_normalization: str = "zscore",
         pin_memory: bool = True,
         prefetch_factor: int = 2,
+        augmentation_config: Any | None = None,
+        balanced_sampling: bool = False,
     ):
         if hasattr(data_root, "data") and hasattr(data_root, "training"):
             config = data_root
@@ -71,6 +108,8 @@ class RegressionLoaderHelper:
             input_normalization = config.data.input_normalization
             pin_memory = config.data.pin_memory
             prefetch_factor = config.data.prefetch_factor
+            augmentation_config = config.data.augmentation
+            balanced_sampling = config.data.balanced_sampling
 
         self.data_root = Path(data_root)
         self.labels_json = Path(labels_json)
@@ -89,6 +128,9 @@ class RegressionLoaderHelper:
         self.input_normalization = input_normalization
         self.pin_memory = pin_memory
         self.prefetch_factor = prefetch_factor
+        self.augmentation_config = augmentation_config
+        self.balanced_sampling = bool(balanced_sampling and self.target_mode == "gold")
+        self.train_augmentation = self._build_train_augmentation()
 
         manifest = build_angle_manifest(
             self.data_root,
@@ -273,14 +315,93 @@ class RegressionLoaderHelper:
         """Return classification label names when available."""
         return list(self.class_names)
 
+    def _build_train_augmentation(self):
+        """Create train-only augmentation for GOLD minority classes."""
+        cfg = self.augmentation_config
+        if (
+            self.target_mode != "gold"
+            or cfg is None
+            or not getattr(cfg, "enabled", False)
+        ):
+            return None
+        return RandomCTAugmentation(
+            enabled=True,
+            probability=getattr(cfg, "probability", 0.8),
+            gold_stages=tuple(getattr(cfg, "gold_stages", (2, 3, 4))),
+            rotation_degrees=getattr(cfg, "rotation_degrees", 7.0),
+            translation_fraction=getattr(cfg, "translation_fraction", 0.05),
+            scale_range=tuple(getattr(cfg, "scale_range", (0.95, 1.05))),
+            intensity_scale_range=tuple(
+                getattr(cfg, "intensity_scale_range", (0.95, 1.05))
+            ),
+            intensity_shift_range=tuple(
+                getattr(cfg, "intensity_shift_range", (-25.0, 25.0))
+            ),
+            noise_std=getattr(cfg, "noise_std", 8.0),
+        )
+
+    def _should_balance_with_augmentation(self) -> bool:
+        """Return whether the train fold should be expanded with augmented samples."""
+        cfg = self.augmentation_config
+        return bool(
+            self.target_mode == "gold"
+            and self.train_augmentation is not None
+            and cfg is not None
+            and getattr(cfg, "balance_to_majority", False)
+        )
+
+    def _build_augmented_train_indices(
+        self, indices: list[int]
+    ) -> tuple[list[int], list[bool] | None]:
+        """Add virtual augmented copies so GOLD minority classes match fold majority."""
+        if not self._should_balance_with_augmentation():
+            return list(indices), None
+
+        fold_targets = self.targets[indices].astype(int)
+        if len(fold_targets) == 0:
+            return list(indices), None
+        num_classes = max(len(self.class_names), int(fold_targets.max()) + 1)
+        counts = np.bincount(fold_targets, minlength=num_classes)
+        nonzero_counts = counts[counts > 0]
+        if len(nonzero_counts) <= 1:
+            return list(indices), None
+
+        target_count = int(nonzero_counts.max())
+        augmented_stage_indices = self.train_augmentation.gold_stage_indices
+        output_indices = list(indices)
+        augment_flags = [False] * len(output_indices)
+
+        for class_idx, count in enumerate(counts):
+            if count == 0 or class_idx not in augmented_stage_indices:
+                continue
+            needed = target_count - int(count)
+            if needed <= 0:
+                continue
+            class_indices = [
+                index
+                for index, target in zip(indices, fold_targets, strict=True)
+                if int(target) == class_idx
+            ]
+            for offset in range(needed):
+                output_indices.append(class_indices[offset % len(class_indices)])
+                augment_flags.append(True)
+
+        return output_indices, augment_flags
+
     def _build_loader(
         self,
         indices: list[int],
         batch_size: int,
         shuffle: bool,
         drop_last: bool,
+        augmentation=None,
+        augment_flags: list[bool] | None = None,
     ) -> DataLoader:
-        subset = Subset(self.train_ds, indices)
+        subset = (
+            AugmentedSubset(self.train_ds, indices, augmentation, augment_flags)
+            if augmentation is not None
+            else Subset(self.train_ds, indices)
+        )
         loader_kwargs = dict(
             dataset=subset,
             batch_size=batch_size,
@@ -297,11 +418,14 @@ class RegressionLoaderHelper:
     def get_train_dl(self, fold: int, shuffle: bool = True) -> DataLoader:
         """Get the training loader for a given fold."""
         train_idx = self.fold_indices[fold][0]
+        train_idx, augment_flags = self._build_augmented_train_indices(train_idx)
         return self._build_loader(
             train_idx,
             batch_size=self.batch_size,
             shuffle=shuffle,
             drop_last=True,
+            augmentation=self.train_augmentation,
+            augment_flags=augment_flags,
         )
 
     def get_val_dl(self, fold: int, shuffle: bool = False) -> DataLoader:
@@ -312,6 +436,7 @@ class RegressionLoaderHelper:
             batch_size=self.val_batch_size,
             shuffle=shuffle,
             drop_last=False,
+            augmentation=None,
         )
 
     def get_test_dl(self, fold: int, shuffle: bool = False) -> DataLoader:

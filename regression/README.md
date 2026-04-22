@@ -101,8 +101,11 @@ conda run -n nnMamba python train.py --config config.gold.yaml
 資料前處理相關設定在 `data:` 區塊：
 
 - `intensity_window`: 先對 CT 做 HU clipping，預設 `[-1000, 400]`
-- `input_normalization`: CT 輸入正規化方式
+- `input_normalization`: CT 輸入正規化方式；GOLD 範例使用 `zscore`，避免 raw HU 在 AMP 訓練時造成數值不穩
 - `target_normalization`: 只對 regression target 生效
+- `balanced_sampling`: GOLD 範例預設關閉，不用 replacement sampler 補曝光次數
+- `augmentation.balance_to_majority`: 只在 training fold 內把 `GOLD 2/3/4` 用 augmented copies 補到該 fold 的最多類別數；validation/test 不做 augmentation。
+- `augmentation`: 預設 GOLD 範例只對 `GOLD 2/3/4` 做小角度旋轉、平移、縮放，以及 z-score 尺度的小幅 intensity jitter 和 Gaussian noise。
 
 ## 6. 評估模型
 

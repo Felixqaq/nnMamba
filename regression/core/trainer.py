@@ -197,6 +197,7 @@ class Trainer:
         best_score = float("-inf")
         best_fold_result = None
         best_epoch = 0
+        stale_eval_count = 0
 
         log_dir = self.config.paths.logs / self.config.task / self.uuid
         log_dir.mkdir(parents=True, exist_ok=True)
@@ -274,10 +275,12 @@ class Trainer:
                     tqdm.write(metric_msg)
                     log_file.write(metric_msg + "\n")
 
-                    if self._is_better(current_score, best_score):
+                    improved = self._is_better(current_score, best_score)
+                    if improved:
                         best_score = current_score
                         best_epoch = epoch
                         best_fold_result = val_result
+                        stale_eval_count = 0
 
                         weight_path = self.config.paths.weights / self.config.task / self.uuid
                         save_checkpoint(
@@ -319,6 +322,18 @@ class Trainer:
                                 result=val_result,
                             )
                         )
+                    else:
+                        stale_eval_count += 1
+
+                    if self._should_stop_early(stale_eval_count):
+                        stop_msg = (
+                            f"Early stopping fold {fold + 1} at epoch {epoch}: "
+                            f"no improvement for {stale_eval_count} evals "
+                            f"(best epoch {best_epoch}, best score {best_score:.4f})"
+                        )
+                        tqdm.write(stop_msg)
+                        log_file.write(stop_msg + "\n")
+                        break
 
                 if epoch % cfg.save_interval == 0:
                     weight_path = self.config.paths.weights / self.config.task / self.uuid
@@ -392,22 +407,36 @@ class Trainer:
             )
             optimizer.zero_grad(set_to_none=True)
 
-            with torch.autocast(
-                device_type=self.device.type,
-                dtype=torch.float16,
-                enabled=self.use_amp,
-            ):
-                out = model(x)
-                if self.is_classification:
-                    y = batch["label"].to(self.device, non_blocking=True).long().view(-1)
-                    loss = loss_fn(out, y)
-                else:
-                    y = batch["angle"].to(self.device, non_blocking=True).float().view(-1)
+            y = (
+                batch["label"].to(self.device, non_blocking=True).long().view(-1)
+                if self.is_classification
+                else batch["angle"].to(self.device, non_blocking=True).float().view(-1)
+            )
+
+            def compute_loss(amp_enabled: bool) -> torch.Tensor:
+                with torch.autocast(
+                    device_type=self.device.type,
+                    dtype=torch.float16,
+                    enabled=amp_enabled,
+                ):
+                    out = model(x)
+                    if self.is_classification:
+                        return loss_fn(out, y)
                     y_target = self._normalize_targets(y, target_mean, target_std)
-                    loss = loss_fn(out.view(-1), y_target)
+                    return loss_fn(out.view(-1), y_target)
+
+            loss = compute_loss(self.use_amp)
+            if not torch.isfinite(loss) and self.use_amp:
+                tqdm.write(
+                    "Non-finite loss encountered under AMP; retrying the batch in full precision."
+                )
+                loss = compute_loss(False)
 
             if not torch.isfinite(loss):
-                raise RuntimeError("Non-finite loss encountered during training.")
+                raise RuntimeError(
+                    "Non-finite loss encountered during training "
+                    "even after retrying in full precision."
+                )
 
             self.scaler.scale(loss).backward()
 
@@ -476,7 +505,18 @@ class Trainer:
 
     def _is_better(self, score: float, best_score: float) -> bool:
         """Compare the current score against the best score so far."""
-        return score >= best_score
+        if not math.isfinite(score):
+            return False
+        if best_score == float("-inf"):
+            return True
+        if not self.config.early_stopping.enabled:
+            return score >= best_score
+        return score > best_score + float(self.config.early_stopping.min_delta)
+
+    def _should_stop_early(self, stale_eval_count: int) -> bool:
+        """Return whether validation has stalled long enough to stop this fold."""
+        cfg = self.config.early_stopping
+        return bool(cfg.enabled and stale_eval_count >= max(1, int(cfg.patience)))
 
     def _scheduler_score(
         self, metrics: RegressionMetrics | ClassificationMetrics

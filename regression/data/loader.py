@@ -205,12 +205,10 @@ class RegressionLoaderHelper:
         """Create fold indices using stratified binning when possible."""
         indices = np.arange(len(self.records))
         if self.target_mode == "gold":
-            splitter = StratifiedKFold(
-                n_splits=self.k_folds, shuffle=True, random_state=self.seed
-            )
-            splits = splitter.split(indices, self.targets)
-            self.split_strategy = "stratified_gold"
-        elif len(np.unique(self.strata)) > 1 and np.bincount(self.strata).min() >= self.k_folds:
+            self._setup_gold_patient_folds(indices)
+            self._print_fold_distribution()
+            return
+        if len(np.unique(self.strata)) > 1 and np.bincount(self.strata).min() >= self.k_folds:
             splitter = StratifiedKFold(
                 n_splits=self.k_folds, shuffle=True, random_state=self.seed
             )
@@ -227,6 +225,65 @@ class RegressionLoaderHelper:
         ]
 
         self._print_fold_distribution()
+
+    def _setup_gold_patient_folds(self, indices: np.ndarray) -> None:
+        """Split GOLD patients once, keeping augmented copies out of validation."""
+        original_indices = np.asarray(
+            [
+                int(index)
+                for index in indices
+                if not self._is_augmented_record(self.records[int(index)].path)
+            ],
+            dtype=int,
+        )
+        if len(original_indices) == 0:
+            original_indices = indices.astype(int)
+
+        original_targets = self.targets[original_indices]
+        unique_original_patients = {
+            self.patient_ids[int(index)] for index in original_indices
+        }
+        if len(unique_original_patients) != len(original_indices):
+            raise ValueError(
+                "GOLD patient-level splitting expects one non-augmented record per "
+                "patient. Check augmented filenames and source_dir."
+            )
+
+        if (
+            len(np.unique(original_targets)) > 1
+            and np.bincount(original_targets).min() >= self.k_folds
+        ):
+            splitter = StratifiedKFold(
+                n_splits=self.k_folds, shuffle=True, random_state=self.seed
+            )
+            splits = splitter.split(original_indices, original_targets)
+            self.split_strategy = "patient_stratified_gold"
+        else:
+            splitter = KFold(n_splits=self.k_folds, shuffle=True, random_state=self.seed)
+            splits = splitter.split(original_indices)
+            self.split_strategy = "patient_kfold_gold"
+
+        self.fold_indices = []
+        for train_positions, val_positions in splits:
+            train_original = original_indices[train_positions]
+            val_original = original_indices[val_positions]
+            train_patients = {self.patient_ids[int(index)] for index in train_original}
+            val_patients = {self.patient_ids[int(index)] for index in val_original}
+            if train_patients & val_patients:
+                raise ValueError("Patient leakage detected between train and validation.")
+
+            train_idx = [
+                int(index)
+                for index in indices
+                if self.patient_ids[int(index)] in train_patients
+            ]
+            val_idx = [int(index) for index in val_original]
+            self.fold_indices.append((train_idx, val_idx))
+
+    @staticmethod
+    def _is_augmented_record(path: str | Path) -> bool:
+        """Return whether a filename is an augmented materialized CT."""
+        return "_aug" in Path(path).name
 
     def _print_fold_distribution(self) -> None:
         """Print fold-level label statistics for sanity checking."""

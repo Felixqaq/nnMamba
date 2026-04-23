@@ -41,13 +41,18 @@ training:
   track_train_metrics: false
   class_weight_mode: balanced
 
+early_stopping:
+  enabled: true
+  patience: 6
+  min_delta: 0.005
+
 data:
   target_mode: gold
-  source_dir: ../by_angle_all
+  source_dir: ../by_angle_all_gold_augmented
   labels_json: ../patient_angle_classification_by_group.json
   pft_json: ../pft.json
   angle_split_manifest: ../by_angle_all/reclassification_manifest.json
-  manifest: ./datasets/generated/gold_manifest.json
+  manifest: ./datasets/generated/gold_manifest.augmented.json
   image_size: [112, 136, 112]
   intensity_window: [-1000.0, 400.0]
   input_normalization: zscore
@@ -59,8 +64,8 @@ data:
   angle_bin_count: 5
   balanced_sampling: false
   augmentation:
-    enabled: true
-    balance_to_majority: true
+    enabled: false
+    balance_to_majority: false
     probability: 1.0
     gold_stages: [2, 3, 4]
     rotation_degrees: 7.0

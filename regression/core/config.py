@@ -63,6 +63,13 @@ class TrainingConfig:
 
 
 @dataclass
+class EarlyStoppingConfig:
+    enabled: bool = False
+    patience: int = 6
+    min_delta: float = 0.005
+
+
+@dataclass
 class AugmentationConfig:
     enabled: bool = False
     balance_to_majority: bool = False
@@ -129,6 +136,7 @@ class Config:
 
     model: ModelConfig = field(default_factory=ModelConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
+    early_stopping: EarlyStoppingConfig = field(default_factory=EarlyStoppingConfig)
     data: DataConfig = field(default_factory=DataConfig)
     paths: PathConfig = field(default_factory=PathConfig)
     resume: ResumeConfig = field(default_factory=ResumeConfig)
@@ -184,6 +192,9 @@ class Config:
                 attn_dropout=model_section.get("attn_dropout", 0.1),
             ),
             training=TrainingConfig(**data.get("training", {})),
+            early_stopping=EarlyStoppingConfig(
+                **(data.get("early_stopping", {}) or {})
+            ),
             data=DataConfig(
                 source_dir=Path(data_section.get("source_dir", "../by_angle_all")),
                 labels_json=Path(

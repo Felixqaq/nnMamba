@@ -1,10 +1,9 @@
-"""Tests for train-only GOLD data augmentation helpers."""
+"""Tests for materialized GOLD data augmentation helpers."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-import numpy as np
 import torch
 from torch.utils.data import RandomSampler, Subset
 
@@ -46,30 +45,26 @@ def test_random_ct_augmentation_targets_configured_gold_stages() -> None:
     assert applied["mri"] is applied["ct"]
 
 
-def test_gold_config_enables_balanced_train_augmentation() -> None:
-    config_path = Path(__file__).with_name("config.gold.yaml")
-    config = Config.from_yaml(config_path)
+def test_gold_config_uses_materialized_augmented_dataset() -> None:
+    config = Config.from_yaml(Path(__file__).with_name("config.gold.yaml"))
 
+    assert config.data.source_dir == Path("../by_angle_all_gold_augmented")
+    assert config.data.manifest == Path("./datasets/generated/gold_manifest.augmented.json")
     assert config.data.balanced_sampling is False
     assert config.data.input_normalization == "zscore"
-    assert config.data.augmentation.enabled is True
-    assert config.data.augmentation.balance_to_majority is True
-    assert config.data.augmentation.probability == 1.0
-    assert config.data.augmentation.gold_stages == (2, 3, 4)
-    assert config.data.augmentation.intensity_shift_range == (-0.1, 0.1)
-    assert config.data.augmentation.noise_std == 0.03
-    assert config.training.class_weight_mode == "none"
+    assert config.data.augmentation.enabled is False
+    assert config.data.augmentation.balance_to_majority is False
+    assert config.training.class_weight_mode == "balanced"
 
 
-def test_gold_train_loader_balances_with_train_only_augmentation() -> None:
-    config_path = Path(__file__).with_name("config.gold.yaml")
-    config = Config.from_yaml(config_path)
-    repo_root = Path(__file__).resolve().parents[1]
+def test_gold_augmented_dataset_uses_patient_level_validation_split() -> None:
+    config = Config.from_yaml(Path(__file__).with_name("config.gold.yaml"))
+    regression_root = Path(__file__).resolve().parent
 
     loader = RegressionLoaderHelper(
-        data_root=repo_root / "by_angle_all",
-        labels_json=repo_root / "patient_angle_classification_by_group.json",
-        pft_json=repo_root / "pft.json",
+        data_root=regression_root / config.data.source_dir,
+        labels_json=regression_root / config.data.labels_json,
+        pft_json=regression_root / config.data.pft_json,
         target_mode="gold",
         k_folds=config.training.k_folds,
         seed=config.training.seed,
@@ -78,42 +73,28 @@ def test_gold_train_loader_balances_with_train_only_augmentation() -> None:
         num_workers=0,
         cache_data=False,
         manifest_path=None,
+        intensity_window=config.data.intensity_window,
+        input_normalization=config.data.input_normalization,
         augmentation_config=config.data.augmentation,
         balanced_sampling=config.data.balanced_sampling,
     )
 
-    train_idx, _ = loader.fold_indices[0]
-    fold_targets = loader.targets[train_idx].astype(int)
-    class_counts = np.bincount(fold_targets, minlength=len(loader.class_names))
-    nonzero_counts = class_counts[class_counts > 0]
-    expected_samples = int(nonzero_counts.max() * len(nonzero_counts))
-    expected_augmented = expected_samples - len(train_idx)
-
+    train_idx, val_idx = loader.fold_indices[0]
     train_dl = loader.get_train_dl(0)
     val_dl = loader.get_val_dl(0)
 
-    assert len(loader.records) == 66
+    assert len(loader.records) == 144
+    assert len(set(loader.patient_ids)) == 66
     assert isinstance(train_dl.sampler, RandomSampler)
-    assert isinstance(train_dl.dataset, AugmentedSubset)
-    assert train_dl.dataset.augmentation is loader.train_augmentation
-    assert len(train_dl.dataset) == expected_samples
-    assert train_dl.dataset.augment_flags is not None
-    assert sum(train_dl.dataset.augment_flags) == expected_augmented
-    assert train_dl.dataset.augment_flags[: len(train_idx)] == [False] * len(train_idx)
-    augmented_targets = [
-        int(loader.targets[index])
-        for index, should_augment in zip(
-            train_dl.dataset.indices,
-            train_dl.dataset.augment_flags,
-            strict=True,
-        )
-        if should_augment
-    ]
-    assert augmented_targets
-    assert set(augmented_targets).issubset({1, 2, 3})
-    assert loader.train_augmentation is not None
-    assert loader.train_augmentation.probability == 1.0
+    assert isinstance(train_dl.dataset, Subset)
+    assert not isinstance(train_dl.dataset, AugmentedSubset)
+
+    train_patients = {loader.patient_ids[index] for index in train_idx}
+    val_patients = {loader.patient_ids[index] for index in val_idx}
+    assert train_patients.isdisjoint(val_patients)
+    assert any("_aug" in Path(loader.records[index].path).name for index in train_idx)
+    assert all("_aug" not in Path(loader.records[index].path).name for index in val_idx)
 
     assert isinstance(val_dl.dataset, Subset)
     assert not isinstance(val_dl.dataset, AugmentedSubset)
-    assert len(val_dl.dataset) == len(loader.fold_indices[0][1])
+    assert len(val_dl.dataset) == len(val_idx)

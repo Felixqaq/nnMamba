@@ -34,6 +34,7 @@ conda run -n nnMamba python --version
 其中：
 
 - `by_angle_all/` 放 CT 影像
+- `by_angle_all_gold_augmented/` 是 GOLD 訓練用的實體增強資料集，由 `regression/scripts/generate_gold_augmented_dataset.py` 產生
 - `patient_angle_classification_by_group.json` 放每位病人的角度標註
 - `pft.json` 放每位病人的 GOLD 分級
 - 程式會從 CT 檔名抓病人 ID，再去 JSON 對應 target
@@ -55,6 +56,14 @@ conda run -n nnMamba python regression/scripts/plot_dataset_overview.py
 ```
 
 這三個指令主要還是做 regression 資料完整性檢查。
+
+GOLD 若要重產實體增強資料集：
+
+```bash
+conda run -n nnMamba python regression/scripts/generate_gold_augmented_dataset.py --overwrite
+```
+
+這會建立 `by_angle_all_gold_augmented/`，保留原始 66 筆，再把 `GOLD 2/3/4` 補到每類 36 筆，輸出 `regression/datasets/generated/gold_manifest.augmented.json`。
 
 ## 4. 如何用 yaml 切換任務
 
@@ -104,8 +113,9 @@ conda run -n nnMamba python train.py --config config.gold.yaml
 - `input_normalization`: CT 輸入正規化方式；GOLD 範例使用 `zscore`，避免 raw HU 在 AMP 訓練時造成數值不穩
 - `target_normalization`: 只對 regression target 生效
 - `balanced_sampling`: GOLD 範例預設關閉，不用 replacement sampler 補曝光次數
-- `augmentation.balance_to_majority`: 只在 training fold 內把 `GOLD 2/3/4` 用 augmented copies 補到該 fold 的最多類別數；validation/test 不做 augmentation。
-- `augmentation`: 預設 GOLD 範例只對 `GOLD 2/3/4` 做小角度旋轉、平移、縮放，以及 z-score 尺度的小幅 intensity jitter 和 Gaussian noise。
+- `augmentation`: GOLD 範例預設關閉 train-time augmentation，改用 `by_angle_all_gold_augmented/` 裡已寫出的 `.nii.gz`
+- validation/test 仍只使用原始病人 CT；augmented 檔只會進 training fold，避免同病人資料洩漏。
+- `early_stopping`: GOLD 範例預設用 validation Macro-F1；連續 6 次 evaluation 沒有至少 `0.005` 的進步就停止該 fold。
 
 ## 6. 評估模型
 

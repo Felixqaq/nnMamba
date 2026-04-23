@@ -1,0 +1,569 @@
+{
+  "source_root": "/home/felix/Research/nnMamba/by_angle_all",
+  "output_root": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented",
+  "manifest": "/home/felix/Research/nnMamba/regression/datasets/generated/gold_manifest.augmented.json",
+  "target_count_per_gold_stage": 36,
+  "source_gold_stage_counts": {
+    "GOLD 1 (Mild)": 36,
+    "GOLD 2 (Moderate)": 11,
+    "GOLD 3 (Severe)": 13,
+    "GOLD 4 (Very Severe)": 6
+  },
+  "augmented_gold_stage_counts": {
+    "GOLD 1 (Mild)": 36,
+    "GOLD 2 (Moderate)": 36,
+    "GOLD 3 (Severe)": 36,
+    "GOLD 4 (Very Severe)": 36
+  },
+  "total_records": 144,
+  "unique_patients": 66,
+  "generated_count": 78,
+  "generated_records": [
+    {
+      "patient_id": "4372708",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4372708_LW-insp.  AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/4372708_aug001_LW-insp.  AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "4710629",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4710629_LW  AXI 3.0  I70f  2.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/4710629_aug001_LW  AXI 3.0  I70f  2.nii.gz"
+    },
+    {
+      "patient_id": "4796667",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4796667_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/4796667_aug001_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "5127217",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5127217_Thorax 1_1 Br40 S3 1.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/5127217_aug001_Thorax 1_1 Br40 S3 1.00.nii.gz"
+    },
+    {
+      "patient_id": "8126939",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/8126939_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/8126939_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "9529629",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/9529629_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/9529629_aug001_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "A762364",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/A762364_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/A762364_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "D132855",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/D132855_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/D132855_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "D550510",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/D550510_Thorax CM Lung Br60 S3 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/D550510_aug001_Thorax CM Lung Br60 S3 3.00.nii.gz"
+    },
+    {
+      "patient_id": "9075311",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/normal_high_angle/9075311_Thorax  5.0  B30f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/normal_high_angle/9075311_aug001_Thorax  5.0  B30f.nii.gz"
+    },
+    {
+      "patient_id": "A613117",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/normal_high_angle/A613117_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/normal_high_angle/A613117_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "4372708",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4372708_LW-insp.  AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/4372708_aug002_LW-insp.  AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "4710629",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4710629_LW  AXI 3.0  I70f  2.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/4710629_aug002_LW  AXI 3.0  I70f  2.nii.gz"
+    },
+    {
+      "patient_id": "4796667",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4796667_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/4796667_aug002_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "5127217",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5127217_Thorax 1_1 Br40 S3 1.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/5127217_aug002_Thorax 1_1 Br40 S3 1.00.nii.gz"
+    },
+    {
+      "patient_id": "8126939",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/8126939_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/8126939_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "9529629",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/9529629_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/9529629_aug002_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "A762364",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/A762364_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/A762364_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "D132855",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/D132855_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/D132855_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "D550510",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/D550510_Thorax CM Lung Br60 S3 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/D550510_aug002_Thorax CM Lung Br60 S3 3.00.nii.gz"
+    },
+    {
+      "patient_id": "9075311",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/normal_high_angle/9075311_Thorax  5.0  B30f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/normal_high_angle/9075311_aug002_Thorax  5.0  B30f.nii.gz"
+    },
+    {
+      "patient_id": "A613117",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/normal_high_angle/A613117_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/normal_high_angle/A613117_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "4372708",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4372708_LW-insp.  AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/4372708_aug003_LW-insp.  AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "4710629",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4710629_LW  AXI 3.0  I70f  2.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/4710629_aug003_LW  AXI 3.0  I70f  2.nii.gz"
+    },
+    {
+      "patient_id": "4796667",
+      "gold_stage": 1,
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4796667_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/4796667_aug003_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "1687031",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1687031_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/1687031_aug001_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "1800944",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1800944_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/1800944_aug001_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "3647457",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/3647457_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/3647457_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "5630846",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5630846_Aorta C+  5.0  B30f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/5630846_aug001_Aorta C+  5.0  B30f.nii.gz"
+    },
+    {
+      "patient_id": "6887256",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/6887256_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/6887256_aug001_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "8404129",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/8404129_Chest C-  5.0  B31f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/8404129_aug001_Chest C-  5.0  B31f.nii.gz"
+    },
+    {
+      "patient_id": "8704416",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/8704416_Thorax Lung Br60 S3 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/8704416_aug001_Thorax Lung Br60 S3 3.00.nii.gz"
+    },
+    {
+      "patient_id": "C435832",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/C435832_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/C435832_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "C586742",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/C586742_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/C586742_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "C905524",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/C905524_Thorax_No CM  3_3  Br60  S2  3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/C905524_aug001_Thorax_No CM  3_3  Br60  S2  3.00.nii.gz"
+    },
+    {
+      "patient_id": "E647833",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E647833_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/E647833_aug001_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "8009284",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/normal_high_angle/8009284_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/normal_high_angle/8009284_aug001_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "E771850",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/normal_high_angle/E771850_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/normal_high_angle/E771850_aug001_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "1687031",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1687031_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/1687031_aug002_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "1800944",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1800944_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/1800944_aug002_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "3647457",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/3647457_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/3647457_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "5630846",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5630846_Aorta C+  5.0  B30f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/5630846_aug002_Aorta C+  5.0  B30f.nii.gz"
+    },
+    {
+      "patient_id": "6887256",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/6887256_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/6887256_aug002_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "8404129",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/8404129_Chest C-  5.0  B31f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/8404129_aug002_Chest C-  5.0  B31f.nii.gz"
+    },
+    {
+      "patient_id": "8704416",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/8704416_Thorax Lung Br60 S3 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/8704416_aug002_Thorax Lung Br60 S3 3.00.nii.gz"
+    },
+    {
+      "patient_id": "C435832",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/C435832_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/C435832_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "C586742",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/C586742_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/C586742_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "C905524",
+      "gold_stage": 2,
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/C905524_Thorax_No CM  3_3  Br60  S2  3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/C905524_aug002_Thorax_No CM  3_3  Br60  S2  3.00.nii.gz"
+    },
+    {
+      "patient_id": "1261736",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1261736_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/1261736_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "2588424",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/2588424_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/2588424_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "2991621",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/2991621_LW  AXI 3.0  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/2991621_aug001_LW  AXI 3.0  B60f.nii.gz"
+    },
+    {
+      "patient_id": "B213449",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/B213449_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/B213449_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "E353272",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E353272_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/E353272_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "E558113",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E558113_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/E558113_aug001_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "1261736",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1261736_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/1261736_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "2588424",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/2588424_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/2588424_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "2991621",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/2991621_LW  AXI 3.0  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/2991621_aug002_LW  AXI 3.0  B60f.nii.gz"
+    },
+    {
+      "patient_id": "B213449",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/B213449_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/B213449_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "E353272",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E353272_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/E353272_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "E558113",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E558113_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/E558113_aug002_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "1261736",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1261736_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/1261736_aug003_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "2588424",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/2588424_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/2588424_aug003_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "2991621",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/2991621_LW  AXI 3.0  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/2991621_aug003_LW  AXI 3.0  B60f.nii.gz"
+    },
+    {
+      "patient_id": "B213449",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/B213449_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/B213449_aug003_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "E353272",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E353272_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/E353272_aug003_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "E558113",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E558113_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/E558113_aug003_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "1261736",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1261736_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/1261736_aug004_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "2588424",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/2588424_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/2588424_aug004_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "2991621",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/2991621_LW  AXI 3.0  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/2991621_aug004_LW  AXI 3.0  B60f.nii.gz"
+    },
+    {
+      "patient_id": "B213449",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/B213449_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/B213449_aug004_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "E353272",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E353272_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/E353272_aug004_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "E558113",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E558113_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/E558113_aug004_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "1261736",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1261736_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/1261736_aug005_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "2588424",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/2588424_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/2588424_aug005_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "2991621",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/2991621_LW  AXI 3.0  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/2991621_aug005_LW  AXI 3.0  B60f.nii.gz"
+    },
+    {
+      "patient_id": "B213449",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/B213449_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/B213449_aug005_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "E353272",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E353272_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/E353272_aug005_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "E558113",
+      "gold_stage": 3,
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E558113_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_gold_augmented/abnormal_low_angle/E558113_aug005_Thorax Lung Br60 S2 3.00.nii.gz"
+    }
+  ]
+}

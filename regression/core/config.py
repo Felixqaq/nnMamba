@@ -17,7 +17,8 @@ LossType = Literal["auto", "smooth_l1", "mse", "mae", "cross_entropy"]
 ClassWeightMode = Literal["none", "balanced"]
 InputNormType = Literal["zscore", "none"]
 TargetNormType = Literal["zscore", "none"]
-TargetMode = Literal["angle", "gold"]
+TargetMode = Literal["angle", "gold", "angle_3class"]
+CLASSIFICATION_TARGET_MODES = {"gold", "angle_3class"}
 
 
 @dataclass
@@ -144,8 +145,8 @@ class Config:
     task: str = "PFT_angle_regression"
 
     def is_classification_task(self) -> bool:
-        """Return whether the current config runs categorical GOLD prediction."""
-        return self.data.target_mode == "gold"
+        """Return whether the current config runs categorical prediction."""
+        return self.data.target_mode in CLASSIFICATION_TARGET_MODES
 
     @classmethod
     def from_yaml(cls, path: str | Path = "config.yaml") -> "Config":
@@ -163,12 +164,15 @@ class Config:
         window_size = model_section.get("window_size", 4)
         if isinstance(window_size, list):
             window_size = tuple(window_size)
-        default_num_classes = 4 if target_mode == "gold" else 1
-        default_task = (
-            "GOLD_stage_classification"
-            if target_mode == "gold"
-            else "PFT_angle_regression"
-        )
+        if target_mode == "gold":
+            default_num_classes = 4
+            default_task = "GOLD_stage_classification"
+        elif target_mode == "angle_3class":
+            default_num_classes = 3
+            default_task = "Angle_3class_classification"
+        else:
+            default_num_classes = 1
+            default_task = "PFT_angle_regression"
 
         return cls(
             model=ModelConfig(

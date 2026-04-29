@@ -11,6 +11,8 @@ import torch
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+CLASSIFICATION_TASK_TYPES = {"gold", "angle_3class"}
+
 
 plt.rcParams.update(
     {
@@ -58,7 +60,7 @@ def plot_training_curves(
     if not eval_epochs:
         return
 
-    if task_type == "gold":
+    if task_type in CLASSIFICATION_TASK_TYPES:
         metric_specs = [
             ("accuracy", "Accuracy", "Accuracy", "#2ca02c"),
             ("macro_f1", "Macro F1", "Macro F1", "#d62728"),
@@ -496,7 +498,7 @@ def plot_paper_results(
     if getattr(test_metrics, "labels", None) is None:
         return
 
-    if task_type == "gold":
+    if task_type in CLASSIFICATION_TASK_TYPES:
         if getattr(test_metrics, "preds", None) is None:
             return
         plot_confusion_matrix(
@@ -655,7 +657,7 @@ def plot_global_summary(
     """Generate aggregate plots for all folds."""
     save_dir.mkdir(parents=True, exist_ok=True)
 
-    if task_type == "gold":
+    if task_type in CLASSIFICATION_TASK_TYPES:
         labels, preds, _ = _aggregate_classification_results(all_results)
         if labels.size > 0 and preds.size > 0:
             plot_confusion_matrix(

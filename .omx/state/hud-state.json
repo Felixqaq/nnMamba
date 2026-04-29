@@ -1,5 +1,5 @@
 {
-  "last_turn_at": "2026-04-23T05:39:01.598Z",
-  "turn_count": 103,
-  "last_agent_output": "這很合理，甚至我會預期「原始 66 + 不夠強的 train-time augmentation」可能會比較差。\n\n因為現在這版其實不是單純 augmentation，它同時做了**類別平衡**：\n\n"
+  "last_turn_at": "2026-04-29T04:56:52.894Z",
+  "turn_count": 113,
+  "last_agent_output": "不是「每個 fold 只抽一次固定名單」。\n\n比較精準是：\n\n- **每個 fold 建立一次 sampler**：`get_train_dl(fold)` 會用該 fold 的 train indi"
 }

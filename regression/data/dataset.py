@@ -16,6 +16,7 @@ from .manifest import AngleRecord, build_angle_manifest
 
 DEFAULT_IMAGE_SIZE = (112, 136, 112)
 InputNormalization = Literal["zscore", "none"]
+CLASSIFICATION_TARGET_MODES = {"gold", "angle_3class"}
 
 
 def _resize_volume(volume: np.ndarray, target_shape: tuple[int, int, int]) -> np.ndarray:
@@ -121,12 +122,13 @@ class AngleRegressionDataset(Dataset):
 
     def _build_sample(self, record: AngleRecord) -> dict:
         """Load and assemble a sample dictionary for one CT volume."""
-        if self.target_mode == "gold":
-            if record.gold_stage is None:
+        if self.target_mode in CLASSIFICATION_TARGET_MODES:
+            if record.class_index is None:
                 raise ValueError(
-                    f"Missing GOLD stage for patient {record.patient_id} in gold mode."
+                    f"Missing class label for patient {record.patient_id} "
+                    f"in {self.target_mode} mode."
                 )
-            target = np.array(record.gold_stage, dtype=np.int64)
+            target = np.array(record.class_index, dtype=np.int64)
         else:
             target = np.array(record.angle, dtype=np.float32)
 
@@ -140,12 +142,13 @@ class AngleRegressionDataset(Dataset):
             "target": target,
             "angle": np.array(record.angle, dtype=np.float32),
             "label": (
-                np.array(record.gold_stage, dtype=np.int64)
-                if record.gold_stage is not None
+                np.array(record.class_index, dtype=np.int64)
+                if record.class_index is not None
                 else None
             ),
             "patient_id": record.patient_id,
             "source_group": record.source_group,
+            "class_label": record.class_label,
             "gold_stage_label": record.gold_stage_label,
             "post_fev1_percent_predicted": record.post_fev1_percent_predicted,
             "path": record.path,

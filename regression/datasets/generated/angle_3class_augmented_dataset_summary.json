@@ -1,0 +1,546 @@
+{
+  "source_root": "/home/felix/Research/nnMamba/by_angle_all",
+  "output_root": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented",
+  "manifest": "/home/felix/Research/nnMamba/regression/datasets/generated/angle_3class_manifest.augmented.json",
+  "target_count_per_class": 47,
+  "source_class_counts": {
+    "Emphysema/Abnormal (<=131 deg)": 14,
+    "Intermediate (132-151 deg)": 5,
+    "Normal (>=152 deg)": 47
+  },
+  "augmented_class_counts": {
+    "Emphysema/Abnormal (<=131 deg)": 47,
+    "Intermediate (132-151 deg)": 47,
+    "Normal (>=152 deg)": 47
+  },
+  "total_records": 141,
+  "unique_patients": 66,
+  "generated_count": 75,
+  "generated_records": [
+    {
+      "patient_id": "1261736",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1261736_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/1261736_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "1687031",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1687031_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/1687031_aug001_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "1800944",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1800944_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/1800944_aug001_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "2588424",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/2588424_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/2588424_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "2991621",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/2991621_LW  AXI 3.0  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/2991621_aug001_LW  AXI 3.0  B60f.nii.gz"
+    },
+    {
+      "patient_id": "4372708",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4372708_LW-insp.  AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4372708_aug001_LW-insp.  AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "6887256",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/6887256_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/6887256_aug001_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "8404129",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/8404129_Chest C-  5.0  B31f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/8404129_aug001_Chest C-  5.0  B31f.nii.gz"
+    },
+    {
+      "patient_id": "B213449",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/B213449_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/B213449_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "C435832",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/C435832_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/C435832_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "D132855",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/D132855_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/D132855_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "E353272",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E353272_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/E353272_aug001_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "E558113",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E558113_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/E558113_aug001_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "E647833",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E647833_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/E647833_aug001_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "1261736",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1261736_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/1261736_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "1687031",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1687031_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/1687031_aug002_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "1800944",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1800944_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/1800944_aug002_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "2588424",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/2588424_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/2588424_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "2991621",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/2991621_LW  AXI 3.0  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/2991621_aug002_LW  AXI 3.0  B60f.nii.gz"
+    },
+    {
+      "patient_id": "4372708",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4372708_LW-insp.  AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4372708_aug002_LW-insp.  AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "6887256",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/6887256_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/6887256_aug002_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "8404129",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/8404129_Chest C-  5.0  B31f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/8404129_aug002_Chest C-  5.0  B31f.nii.gz"
+    },
+    {
+      "patient_id": "B213449",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/B213449_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/B213449_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "C435832",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/C435832_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/C435832_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "D132855",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/D132855_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/D132855_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "E353272",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E353272_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/E353272_aug002_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "E558113",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E558113_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/E558113_aug002_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "E647833",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/E647833_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/E647833_aug002_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "1261736",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1261736_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/1261736_aug003_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "1687031",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1687031_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/1687031_aug003_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "1800944",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/1800944_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/1800944_aug003_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "2588424",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/2588424_LW AXI 3_3  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/2588424_aug003_LW AXI 3_3  B60f.nii.gz"
+    },
+    {
+      "patient_id": "2991621",
+      "class_index": 0,
+      "class_label": "Emphysema/Abnormal (<=131 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/2991621_LW  AXI 3.0  B60f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/2991621_aug003_LW  AXI 3.0  B60f.nii.gz"
+    },
+    {
+      "patient_id": "4204917",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4204917_LW AXI 3_3  I70f  2.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4204917_aug001_LW AXI 3_3  I70f  2.nii.gz"
+    },
+    {
+      "patient_id": "4796667",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4796667_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4796667_aug001_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "5127217",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5127217_Thorax 1_1 Br40 S3 1.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/5127217_aug001_Thorax 1_1 Br40 S3 1.00.nii.gz"
+    },
+    {
+      "patient_id": "5630846",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5630846_Aorta C+  5.0  B30f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/5630846_aug001_Aorta C+  5.0  B30f.nii.gz"
+    },
+    {
+      "patient_id": "8704416",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/8704416_Thorax Lung Br60 S3 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/8704416_aug001_Thorax Lung Br60 S3 3.00.nii.gz"
+    },
+    {
+      "patient_id": "4204917",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4204917_LW AXI 3_3  I70f  2.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4204917_aug002_LW AXI 3_3  I70f  2.nii.gz"
+    },
+    {
+      "patient_id": "4796667",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4796667_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4796667_aug002_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "5127217",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5127217_Thorax 1_1 Br40 S3 1.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/5127217_aug002_Thorax 1_1 Br40 S3 1.00.nii.gz"
+    },
+    {
+      "patient_id": "5630846",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5630846_Aorta C+  5.0  B30f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/5630846_aug002_Aorta C+  5.0  B30f.nii.gz"
+    },
+    {
+      "patient_id": "8704416",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/8704416_Thorax Lung Br60 S3 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/8704416_aug002_Thorax Lung Br60 S3 3.00.nii.gz"
+    },
+    {
+      "patient_id": "4204917",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4204917_LW AXI 3_3  I70f  2.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4204917_aug003_LW AXI 3_3  I70f  2.nii.gz"
+    },
+    {
+      "patient_id": "4796667",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4796667_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4796667_aug003_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "5127217",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5127217_Thorax 1_1 Br40 S3 1.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/5127217_aug003_Thorax 1_1 Br40 S3 1.00.nii.gz"
+    },
+    {
+      "patient_id": "5630846",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5630846_Aorta C+  5.0  B30f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/5630846_aug003_Aorta C+  5.0  B30f.nii.gz"
+    },
+    {
+      "patient_id": "8704416",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/8704416_Thorax Lung Br60 S3 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/8704416_aug003_Thorax Lung Br60 S3 3.00.nii.gz"
+    },
+    {
+      "patient_id": "4204917",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4204917_LW AXI 3_3  I70f  2.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4204917_aug004_LW AXI 3_3  I70f  2.nii.gz"
+    },
+    {
+      "patient_id": "4796667",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4796667_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4796667_aug004_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "5127217",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5127217_Thorax 1_1 Br40 S3 1.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/5127217_aug004_Thorax 1_1 Br40 S3 1.00.nii.gz"
+    },
+    {
+      "patient_id": "5630846",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5630846_Aorta C+  5.0  B30f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/5630846_aug004_Aorta C+  5.0  B30f.nii.gz"
+    },
+    {
+      "patient_id": "8704416",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/8704416_Thorax Lung Br60 S3 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/8704416_aug004_Thorax Lung Br60 S3 3.00.nii.gz"
+    },
+    {
+      "patient_id": "4204917",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4204917_LW AXI 3_3  I70f  2.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4204917_aug005_LW AXI 3_3  I70f  2.nii.gz"
+    },
+    {
+      "patient_id": "4796667",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4796667_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4796667_aug005_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "5127217",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5127217_Thorax 1_1 Br40 S3 1.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/5127217_aug005_Thorax 1_1 Br40 S3 1.00.nii.gz"
+    },
+    {
+      "patient_id": "5630846",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5630846_Aorta C+  5.0  B30f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/5630846_aug005_Aorta C+  5.0  B30f.nii.gz"
+    },
+    {
+      "patient_id": "8704416",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/8704416_Thorax Lung Br60 S3 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/8704416_aug005_Thorax Lung Br60 S3 3.00.nii.gz"
+    },
+    {
+      "patient_id": "4204917",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4204917_LW AXI 3_3  I70f  2.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4204917_aug006_LW AXI 3_3  I70f  2.nii.gz"
+    },
+    {
+      "patient_id": "4796667",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4796667_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4796667_aug006_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "5127217",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5127217_Thorax 1_1 Br40 S3 1.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/5127217_aug006_Thorax 1_1 Br40 S3 1.00.nii.gz"
+    },
+    {
+      "patient_id": "5630846",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5630846_Aorta C+  5.0  B30f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/5630846_aug006_Aorta C+  5.0  B30f.nii.gz"
+    },
+    {
+      "patient_id": "8704416",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/8704416_Thorax Lung Br60 S3 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/8704416_aug006_Thorax Lung Br60 S3 3.00.nii.gz"
+    },
+    {
+      "patient_id": "4204917",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4204917_LW AXI 3_3  I70f  2.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4204917_aug007_LW AXI 3_3  I70f  2.nii.gz"
+    },
+    {
+      "patient_id": "4796667",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4796667_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4796667_aug007_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "5127217",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5127217_Thorax 1_1 Br40 S3 1.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/5127217_aug007_Thorax 1_1 Br40 S3 1.00.nii.gz"
+    },
+    {
+      "patient_id": "5630846",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5630846_Aorta C+  5.0  B30f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/5630846_aug007_Aorta C+  5.0  B30f.nii.gz"
+    },
+    {
+      "patient_id": "8704416",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/8704416_Thorax Lung Br60 S3 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/8704416_aug007_Thorax Lung Br60 S3 3.00.nii.gz"
+    },
+    {
+      "patient_id": "4204917",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4204917_LW AXI 3_3  I70f  2.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4204917_aug008_LW AXI 3_3  I70f  2.nii.gz"
+    },
+    {
+      "patient_id": "4796667",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4796667_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4796667_aug008_Thorax Lung Br60 S2 3.00.nii.gz"
+    },
+    {
+      "patient_id": "5127217",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5127217_Thorax 1_1 Br40 S3 1.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/5127217_aug008_Thorax 1_1 Br40 S3 1.00.nii.gz"
+    },
+    {
+      "patient_id": "5630846",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/5630846_Aorta C+  5.0  B30f.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/5630846_aug008_Aorta C+  5.0  B30f.nii.gz"
+    },
+    {
+      "patient_id": "8704416",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/8704416_Thorax Lung Br60 S3 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/8704416_aug008_Thorax Lung Br60 S3 3.00.nii.gz"
+    },
+    {
+      "patient_id": "4204917",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4204917_LW AXI 3_3  I70f  2.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4204917_aug009_LW AXI 3_3  I70f  2.nii.gz"
+    },
+    {
+      "patient_id": "4796667",
+      "class_index": 1,
+      "class_label": "Intermediate (132-151 deg)",
+      "source_path": "/home/felix/Research/nnMamba/by_angle_all/abnormal_low_angle/4796667_Thorax Lung Br60 S2 3.00.nii.gz",
+      "output_path": "/home/felix/Research/nnMamba/by_angle_all_angle_3class_augmented/abnormal_low_angle/4796667_aug009_Thorax Lung Br60 S2 3.00.nii.gz"
+    }
+  ]
+}

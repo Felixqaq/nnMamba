@@ -21,6 +21,8 @@ The regression scripts can generate a manifest and overview figures into this ar
 ```text
 regression/datasets/generated/
 ├── regression_manifest.json
+├── angle_3class_manifest.augmented.json
+├── angle_3class_augmented_dataset_summary.json
 └── figures/
 ```
 
@@ -31,4 +33,3 @@ Recommended workflow:
 3. Generate overview figures before training.
 
 Do not commit raw CT volumes, generated checkpoints, or large temporary outputs here.
-

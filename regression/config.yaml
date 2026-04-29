@@ -41,7 +41,7 @@ training:
   track_train_metrics: false
 
 data:
-  target_mode: angle  # angle | gold
+  target_mode: angle  # angle | gold | angle_3class
   source_dir: ../by_angle_all
   labels_json: ../patient_angle_classification_by_group.json
   pft_json: ../pft.json

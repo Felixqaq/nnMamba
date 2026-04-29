@@ -1,9 +1,10 @@
 # CT Regression / GOLD 分類 使用說明
 
-這個資料夾現在支援兩種任務，而且共用同一套 CT 輸入 pipeline 與三個模型：
+這個資料夾現在支援三種任務，而且共用同一套 CT 輸入 pipeline 與三個模型：
 
 - `angle`：原本的 regression，從 CT 預測 PFT 塌陷角度
 - `gold`：新的四分類，從 CT 預測 `GOLD 1 ~ 4`
+- `angle_3class`：用 131° / 152° 門檻做三分類，從 CT 預測 `Emphysema/Abnormal`、`Intermediate`、`Normal`
 
 你可以直接改 yaml 切換，不需要換 `train.py` / `evaluate.py` 入口。
 
@@ -35,6 +36,7 @@ conda run -n nnMamba python --version
 
 - `by_angle_all/` 放 CT 影像
 - `by_angle_all_gold_augmented/` 是 GOLD 訓練用的實體增強資料集，由 `regression/scripts/generate_gold_augmented_dataset.py` 產生
+- `by_angle_all_angle_3class_augmented/` 是 131° / 152° 三分類訓練用的實體增強資料集，由 `regression/scripts/generate_angle_3class_augmented_dataset.py` 產生
 - `patient_angle_classification_by_group.json` 放每位病人的角度標註
 - `pft.json` 放每位病人的 GOLD 分級
 - 程式會從 CT 檔名抓病人 ID，再去 JSON 對應 target
@@ -65,24 +67,34 @@ conda run -n nnMamba python regression/scripts/generate_gold_augmented_dataset.p
 
 這會建立 `by_angle_all_gold_augmented/`，保留原始 66 筆，再把 `GOLD 2/3/4` 補到每類 36 筆，輸出 `regression/datasets/generated/gold_manifest.augmented.json`。
 
+131° / 152° 三分類若要重產實體增強資料集：
+
+```bash
+conda run -n nnMamba python regression/scripts/generate_angle_3class_augmented_dataset.py --overwrite
+```
+
+這會建立 `by_angle_all_angle_3class_augmented/`，保留原始 66 筆，再把 `<=131°` 和 `132-151°` 補到每類 47 筆，輸出 `regression/datasets/generated/angle_3class_manifest.augmented.json`。
+
 ## 4. 如何用 yaml 切換任務
 
 你只要改這幾個欄位：
 
-- `data.target_mode: angle | gold`
-- `task: PFT_angle_regression | GOLD_stage_classification`
+- `data.target_mode: angle | gold | angle_3class`
+- `task: PFT_angle_regression | GOLD_stage_classification | Angle_3class_classification`
 - `model.name: mamba | hybrid_mamba_attention | swinunetr`
 
 `training.loss` 已經支援 `auto`：
 
 - `angle` 時會自動用 regression loss
 - `gold` 時會自動用 `cross_entropy`
+- `angle_3class` 時會自動用 `cross_entropy`
 
 已經附一份可直接使用的 GOLD 範例設定：
 
 - [config.yaml](/home/felix/Research/nnMamba/regression/config.yaml)：原本 regression
 - [config.hybrid.preset.yaml](/home/felix/Research/nnMamba/regression/config.hybrid.preset.yaml)：hybrid 的可選 preset
 - [config.gold.yaml](/home/felix/Research/nnMamba/regression/config.gold.yaml)：GOLD 四分類範例
+- [config.angle_3class.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.yaml)：131° / 152° 三分類範例
 
 ## 5. 開始訓練
 
@@ -92,6 +104,7 @@ conda run -n nnMamba python regression/scripts/generate_gold_augmented_dataset.p
 cd /home/felix/Research/nnMamba/regression
 conda run -n nnMamba python train.py --config config.yaml
 conda run -n nnMamba python train.py --config config.gold.yaml
+conda run -n nnMamba python train.py --config config.angle_3class.yaml
 ```
 
 目前三個模型都支援同一套切換方式：
@@ -112,10 +125,19 @@ conda run -n nnMamba python train.py --config config.gold.yaml
 - `intensity_window`: 先對 CT 做 HU clipping，預設 `[-1000, 400]`
 - `input_normalization`: CT 輸入正規化方式；GOLD 範例使用 `zscore`，避免 raw HU 在 AMP 訓練時造成數值不穩
 - `target_normalization`: 只對 regression target 生效
-- `balanced_sampling`: GOLD 範例預設關閉，不用 replacement sampler 補曝光次數
+- `balanced_sampling`: classification task 可啟用每個 epoch 重新隨機下採樣，多數類會抽到和該 fold 少數類一樣的數量
 - `augmentation`: GOLD 範例預設關閉 train-time augmentation，改用 `by_angle_all_gold_augmented/` 裡已寫出的 `.nii.gz`
 - validation/test 仍只使用原始病人 CT；augmented 檔只會進 training fold，避免同病人資料洩漏。
 - `early_stopping`: GOLD 範例預設用 validation Macro-F1；連續 6 次 evaluation 沒有至少 `0.005` 的進步就停止該 fold。
+
+如果是 `angle_3class` 模式：
+
+- class 0: `Emphysema/Abnormal (<=131°)`
+- class 1: `Intermediate (132-151°)`
+- class 2: `Normal (>=152°)`
+- 範例 config 使用原始 `by_angle_all/`，總樣本數為 66，三類分布為 14 / 5 / 47。
+- `balanced_sampling: true` 會在每個 train epoch 以該 fold 的少數類數量為基準，重新隨機抽取多數類樣本。
+- 範例 config 關閉 class weights，避免「已平衡抽樣」後又重複加權少數類。
 
 ## 6. 評估模型
 
@@ -125,6 +147,7 @@ conda run -n nnMamba python train.py --config config.gold.yaml
 cd /home/felix/Research/nnMamba/regression
 conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.yaml
 conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.gold.yaml
+conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_3class.yaml
 ```
 
 如果只想看某一個 fold：
@@ -192,4 +215,12 @@ conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.yaml
 cd /home/felix/Research/nnMamba/regression
 conda run -n nnMamba python train.py --config config.gold.yaml
 conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.gold.yaml
+```
+
+如果你要跑 131° / 152° 三分類：
+
+```bash
+cd /home/felix/Research/nnMamba/regression
+conda run -n nnMamba python train.py --config config.angle_3class.yaml
+conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_3class.yaml
 ```

@@ -18,6 +18,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+CLASSIFICATION_TASK_TYPES = {"gold", "angle_3class"}
+
 
 @dataclass
 class RegressionMetrics:
@@ -416,7 +418,7 @@ def evaluate(
     num_classes: int = 1,
 ) -> RegressionMetrics | ClassificationMetrics:
     """Evaluate model on a dataloader."""
-    if task_type == "gold":
+    if task_type in CLASSIFICATION_TASK_TYPES:
         labels, preds, probs, indices = get_classification_predictions(
             model=model,
             dataloader=dataloader,
@@ -455,7 +457,7 @@ def save_predictions(
     save_path.mkdir(parents=True, exist_ok=True)
     class_names = class_names or []
 
-    if task_type == "gold":
+    if task_type in CLASSIFICATION_TASK_TYPES:
         if (
             getattr(metrics, "labels", None) is None
             or getattr(metrics, "preds", None) is None
@@ -481,6 +483,7 @@ def save_predictions(
                     "patient_id": record.patient_id,
                     "path": str(record.path),
                     "source_group": record.source_group,
+                    "class_label": getattr(record, "class_label", None),
                     "gold_stage_label": record.gold_stage_label,
                     "true_label_index": true_idx,
                     "true_label": (

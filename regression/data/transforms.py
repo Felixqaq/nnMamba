@@ -164,6 +164,7 @@ class ToTensor:
             "angle": torch.tensor(sample["angle"], dtype=torch.float32),
             "patient_id": sample.get("patient_id"),
             "source_group": sample.get("source_group"),
+            "class_label": sample.get("class_label"),
             "gold_stage_label": sample.get("gold_stage_label"),
             "post_fev1_percent_predicted": sample.get("post_fev1_percent_predicted"),
             "path": sample.get("path"),

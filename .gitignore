@@ -62,6 +62,7 @@ Abnormal_aug_ori/
 classification/datasets/
 /by_angle_all/
 /by_angle_all_gold_augmented/
+/by_angle_all_angle_3class_augmented/
 
 # 臨時檔案
 *.log

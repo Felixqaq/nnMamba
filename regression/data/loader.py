@@ -1,4 +1,4 @@
-"""DataLoader helper for regression and GOLD-stage classification."""
+"""DataLoader helper for regression and classification tasks."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 from sklearn.model_selection import KFold, StratifiedKFold
 import torch
-from torch.utils.data import DataLoader, Dataset, Subset
+from torch.utils.data import DataLoader, Dataset, Sampler, Subset
 from torchvision import transforms
 
 from .dataset import AngleRegressionDataset, DEFAULT_IMAGE_SIZE
@@ -23,6 +23,51 @@ ATTENTION_HEAVY_MODELS = {
     "mamba_hybrid",
     "swinunetr",
 }
+CLASSIFICATION_TARGET_MODES = {"gold", "angle_3class"}
+
+
+class BalancedClassSampler(Sampler):
+    """Randomly undersample each class to the minority count on every epoch."""
+
+    def __init__(self, targets: np.ndarray, seed: int = 42):
+        targets = np.asarray(targets, dtype=int)
+        if targets.ndim != 1:
+            raise ValueError("BalancedClassSampler expects a 1D target array.")
+        if len(targets) == 0:
+            raise ValueError("BalancedClassSampler requires at least one sample.")
+
+        self.targets = targets
+        self.seed = int(seed)
+        self.rng = np.random.default_rng(self.seed)
+        self.class_positions = {
+            int(class_idx): np.flatnonzero(targets == class_idx).astype(int)
+            for class_idx in np.unique(targets)
+        }
+        nonzero_counts = [
+            len(positions)
+            for positions in self.class_positions.values()
+            if len(positions) > 0
+        ]
+        if not nonzero_counts:
+            raise ValueError("BalancedClassSampler requires at least one class.")
+
+        self.samples_per_class = int(min(nonzero_counts))
+        self.num_samples = int(self.samples_per_class * len(self.class_positions))
+
+    def __iter__(self):
+        sampled_positions: list[int] = []
+        for positions in self.class_positions.values():
+            selected = self.rng.choice(
+                positions,
+                size=self.samples_per_class,
+                replace=False,
+            )
+            sampled_positions.extend(int(position) for position in selected)
+        self.rng.shuffle(sampled_positions)
+        return iter(sampled_positions)
+
+    def __len__(self) -> int:
+        return self.num_samples
 
 
 class AugmentedSubset(Dataset):
@@ -113,7 +158,7 @@ class RegressionLoaderHelper:
 
         self.data_root = Path(data_root)
         self.labels_json = Path(labels_json)
-        self.pft_json = Path(pft_json)
+        self.pft_json = Path(pft_json) if pft_json is not None else None
         self.target_mode = str(target_mode)
         self.image_size = image_size
         self.k_folds = k_folds
@@ -129,7 +174,9 @@ class RegressionLoaderHelper:
         self.pin_memory = pin_memory
         self.prefetch_factor = prefetch_factor
         self.augmentation_config = augmentation_config
-        self.balanced_sampling = bool(balanced_sampling and self.target_mode == "gold")
+        self.balanced_sampling = bool(
+            balanced_sampling and self.target_mode in CLASSIFICATION_TARGET_MODES
+        )
         self.train_augmentation = self._build_train_augmentation()
 
         manifest = build_angle_manifest(
@@ -141,9 +188,9 @@ class RegressionLoaderHelper:
         self.manifest = manifest
         self.records = list(manifest.records)
         self.class_names = list(manifest.class_names)
-        if self.target_mode == "gold":
+        if self.target_mode in CLASSIFICATION_TARGET_MODES:
             self.targets = np.asarray(
-                [int(record.gold_stage) for record in self.records],
+                [int(record.class_index) for record in self.records],
                 dtype=np.int64,
             )
         else:
@@ -168,7 +215,7 @@ class RegressionLoaderHelper:
         )
         self.dataset = self.train_ds
 
-        if self.target_mode == "gold":
+        if self.target_mode in CLASSIFICATION_TARGET_MODES:
             self.bin_edges = None
             self.strata = self.targets.astype(int)
         else:
@@ -204,8 +251,8 @@ class RegressionLoaderHelper:
     def _setup_folds(self) -> None:
         """Create fold indices using stratified binning when possible."""
         indices = np.arange(len(self.records))
-        if self.target_mode == "gold":
-            self._setup_gold_patient_folds(indices)
+        if self.target_mode in CLASSIFICATION_TARGET_MODES:
+            self._setup_classification_patient_folds(indices)
             self._print_fold_distribution()
             return
         if len(np.unique(self.strata)) > 1 and np.bincount(self.strata).min() >= self.k_folds:
@@ -226,8 +273,8 @@ class RegressionLoaderHelper:
 
         self._print_fold_distribution()
 
-    def _setup_gold_patient_folds(self, indices: np.ndarray) -> None:
-        """Split GOLD patients once, keeping augmented copies out of validation."""
+    def _setup_classification_patient_folds(self, indices: np.ndarray) -> None:
+        """Split classification patients once, keeping augmented copies out of validation."""
         original_indices = np.asarray(
             [
                 int(index)
@@ -245,7 +292,7 @@ class RegressionLoaderHelper:
         }
         if len(unique_original_patients) != len(original_indices):
             raise ValueError(
-                "GOLD patient-level splitting expects one non-augmented record per "
+                "Classification patient-level splitting expects one non-augmented record per "
                 "patient. Check augmented filenames and source_dir."
             )
 
@@ -257,11 +304,11 @@ class RegressionLoaderHelper:
                 n_splits=self.k_folds, shuffle=True, random_state=self.seed
             )
             splits = splitter.split(original_indices, original_targets)
-            self.split_strategy = "patient_stratified_gold"
+            self.split_strategy = "patient_stratified_classification"
         else:
             splitter = KFold(n_splits=self.k_folds, shuffle=True, random_state=self.seed)
             splits = splitter.split(original_indices)
-            self.split_strategy = "patient_kfold_gold"
+            self.split_strategy = "patient_kfold_classification"
 
         self.fold_indices = []
         for train_positions, val_positions in splits:
@@ -287,9 +334,9 @@ class RegressionLoaderHelper:
 
     def _print_fold_distribution(self) -> None:
         """Print fold-level label statistics for sanity checking."""
-        if self.target_mode == "gold":
+        if self.target_mode in CLASSIFICATION_TARGET_MODES:
             print(
-                f"\n📊 GOLD classification folds ({self.k_folds}) using "
+                f"\n📊 Classification folds ({self.k_folds}) using "
                 f"{self.split_strategy}: {len(self.records)} samples"
             )
             for fold_idx, (_, val_idx) in enumerate(self.fold_indices, start=1):
@@ -325,8 +372,8 @@ class RegressionLoaderHelper:
 
     def get_fold_class_weights(self, fold: int) -> torch.Tensor:
         """Return balanced class weights computed from the training split only."""
-        if self.target_mode != "gold":
-            raise ValueError("Class weights are only defined for gold classification.")
+        if self.target_mode not in CLASSIFICATION_TARGET_MODES:
+            raise ValueError("Class weights are only defined for classification tasks.")
 
         train_idx = self.fold_indices[fold][0]
         train_targets = self.targets[train_idx].astype(int)
@@ -359,7 +406,7 @@ class RegressionLoaderHelper:
 
     def get_target_stats(self) -> tuple[float, float]:
         """Return global mean/std of all regression targets in the dataset."""
-        if self.target_mode == "gold":
+        if self.target_mode in CLASSIFICATION_TARGET_MODES:
             return 0.0, 1.0
         return self.target_mean, self.target_std
 
@@ -453,6 +500,7 @@ class RegressionLoaderHelper:
         drop_last: bool,
         augmentation=None,
         augment_flags: list[bool] | None = None,
+        sampler: Sampler[int] | None = None,
     ) -> DataLoader:
         subset = (
             AugmentedSubset(self.train_ds, indices, augmentation, augment_flags)
@@ -462,7 +510,8 @@ class RegressionLoaderHelper:
         loader_kwargs = dict(
             dataset=subset,
             batch_size=batch_size,
-            shuffle=shuffle,
+            shuffle=False if sampler is not None else shuffle,
+            sampler=sampler,
             num_workers=self.num_workers,
             pin_memory=self.pin_memory and torch.cuda.is_available(),
             drop_last=drop_last,
@@ -472,10 +521,24 @@ class RegressionLoaderHelper:
             loader_kwargs["prefetch_factor"] = self.prefetch_factor
         return DataLoader(**loader_kwargs)
 
+    def _build_balanced_sampler(self, indices: list[int]) -> BalancedClassSampler | None:
+        """Build a fold-local undersampling sampler when classification balancing is enabled."""
+        if not self.balanced_sampling:
+            return None
+        fold_targets = self.targets[indices].astype(int)
+        if len(fold_targets) == 0:
+            return None
+        counts = np.bincount(fold_targets)
+        nonzero_counts = counts[counts > 0]
+        if len(nonzero_counts) <= 1:
+            return None
+        return BalancedClassSampler(fold_targets, seed=self.seed)
+
     def get_train_dl(self, fold: int, shuffle: bool = True) -> DataLoader:
         """Get the training loader for a given fold."""
         train_idx = self.fold_indices[fold][0]
         train_idx, augment_flags = self._build_augmented_train_indices(train_idx)
+        sampler = self._build_balanced_sampler(train_idx)
         return self._build_loader(
             train_idx,
             batch_size=self.batch_size,
@@ -483,6 +546,7 @@ class RegressionLoaderHelper:
             drop_last=True,
             augmentation=self.train_augmentation,
             augment_flags=augment_flags,
+            sampler=sampler,
         )
 
     def get_val_dl(self, fold: int, shuffle: bool = False) -> DataLoader:

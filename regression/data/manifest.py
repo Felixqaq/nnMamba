@@ -13,6 +13,12 @@ from pathlib import Path
 import json
 import re
 
+ANGLE_3CLASS_NAMES = [
+    "Emphysema/Abnormal (<=131 deg)",
+    "Intermediate (132-151 deg)",
+    "Normal (>=152 deg)",
+]
+
 
 @dataclass(frozen=True)
 class AngleRecord:
@@ -22,6 +28,8 @@ class AngleRecord:
     path: str
     angle: float
     source_group: str
+    class_index: int | None = None
+    class_label: str | None = None
     gold_stage: int | None = None
     gold_stage_label: str | None = None
     post_fev1_percent_predicted: float | None = None
@@ -39,6 +47,7 @@ class AngleManifest:
     extra_in_source_not_in_json: list[str]
     missing_gold_labels: list[str]
     gold_stage_counts: dict[str, int]
+    class_counts: dict[str, int]
     class_names: list[str]
 
     def to_dict(self) -> dict:
@@ -50,6 +59,7 @@ class AngleManifest:
             "extra_in_source_not_in_json": self.extra_in_source_not_in_json,
             "missing_gold_labels": self.missing_gold_labels,
             "gold_stage_counts": self.gold_stage_counts,
+            "class_counts": self.class_counts,
             "class_names": self.class_names,
             "records": [asdict(record) for record in self.records],
         }
@@ -62,13 +72,35 @@ def load_angle_label_map(labels_json: str | Path) -> dict[str, float]:
         data = json.load(f)
 
     label_map: dict[str, float] = {}
+    if all(isinstance(value, (int, float)) for value in data.values()):
+        return {str(patient_id): float(angle) for patient_id, angle in data.items()}
+
+    patients = data.get("patients")
+    if isinstance(patients, dict):
+        for patient_id, meta in patients.items():
+            if isinstance(meta, dict) and "angle" in meta:
+                label_map[str(patient_id)] = float(meta["angle"])
+        if label_map:
+            return label_map
+
     for group in data.values():
+        if not isinstance(group, dict):
+            continue
         by_angle = group.get("by_angle", {})
         for bucket in by_angle.values():
             for patient_id, angle in bucket.items():
                 label_map[str(patient_id)] = float(angle)
 
     return label_map
+
+
+def angle_3class_label(angle: float) -> tuple[int, str]:
+    """Map a PFT angle into the fixed 131/152 degree three-class target."""
+    if angle <= 131.0:
+        return 0, ANGLE_3CLASS_NAMES[0]
+    if angle < 152.0:
+        return 1, ANGLE_3CLASS_NAMES[1]
+    return 2, ANGLE_3CLASS_NAMES[2]
 
 
 def _gold_stage_sort_key(stage_name: str) -> tuple[int, str]:
@@ -150,13 +182,20 @@ def build_angle_manifest(
     labels_json = Path(labels_json)
     label_map = load_angle_label_map(labels_json)
     gold_label_map: dict[str, dict[str, float | int | str]] = {}
-    class_names: list[str] = []
-    if pft_json is not None:
-        gold_label_map, class_names = load_gold_label_map(pft_json)
+    gold_class_names: list[str] = []
+    pft_path = Path(pft_json) if pft_json is not None else None
+    if pft_path is not None and (target_mode == "gold" or pft_path.exists()):
+        gold_label_map, gold_class_names = load_gold_label_map(pft_path)
     if target_mode == "gold" and not gold_label_map:
         raise ValueError(
             "target_mode='gold' requires a valid pft_json with GOLD stage labels."
         )
+    if target_mode == "gold":
+        class_names = list(gold_class_names)
+    elif target_mode == "angle_3class":
+        class_names = list(ANGLE_3CLASS_NAMES)
+    else:
+        class_names = []
 
     records: list[AngleRecord] = []
     source_ids: set[str] = set()
@@ -176,6 +215,14 @@ def build_angle_manifest(
             missing_gold_labels.append(patient_id)
             continue
 
+        class_index = None
+        class_label = None
+        if target_mode == "gold" and gold_meta is not None:
+            class_index = int(gold_meta["gold_stage"])
+            class_label = str(gold_meta["gold_stage_label"])
+        elif target_mode == "angle_3class":
+            class_index, class_label = angle_3class_label(float(angle))
+
         source_group = ct_path.parent.name
         records.append(
             AngleRecord(
@@ -183,6 +230,8 @@ def build_angle_manifest(
                 path=str(ct_path),
                 angle=float(angle),
                 source_group=source_group,
+                class_index=class_index,
+                class_label=class_label,
                 gold_stage=(
                     int(gold_meta["gold_stage"]) if gold_meta is not None else None
                 ),
@@ -212,6 +261,10 @@ def build_angle_manifest(
     }
     gold_stage_counts = {
         class_name: sum(1 for record in records if record.gold_stage_label == class_name)
+        for class_name in gold_class_names
+    }
+    class_counts = {
+        class_name: sum(1 for record in records if record.class_label == class_name)
         for class_name in class_names
     }
 
@@ -224,6 +277,7 @@ def build_angle_manifest(
         extra_in_source_not_in_json=extra_in_source_not_in_json,
         missing_gold_labels=sorted(set(missing_gold_labels)),
         gold_stage_counts=gold_stage_counts,
+        class_counts=class_counts,
         class_names=class_names,
     )
 

@@ -80,6 +80,7 @@ class Trainer:
             if hasattr(loader_helper, "get_class_names")
             else []
         )
+        self.method_label = config.experiment.name
 
         os.environ["CUDA_VISIBLE_DEVICES"] = config.gpu.device_id
         setup_seed(config.training.seed)
@@ -87,7 +88,7 @@ class Trainer:
         self.uuid = (
             config.resume.uuid
             if config.resume.enabled and config.resume.uuid
-            else generate_uuid(str(config.model.name))
+            else generate_uuid(str(config.model.name), config.experiment.name)
         )
 
     def train(self) -> str:
@@ -103,6 +104,8 @@ class Trainer:
             f"Model: {cfg.model.name} | Task: {cfg.task} | "
             f"Target mode: {self.task_type} | {cfg.training.k_folds} folds"
         )
+        if cfg.experiment.name:
+            print(f"Method: {cfg.experiment.name}")
         if self.is_classification:
             print(
                 f"Classes: {cfg.model.num_classes} | "
@@ -160,6 +163,7 @@ class Trainer:
             fig_dir,
             task_type=self.task_type,
             class_names=self.class_names,
+            method_label=self.method_label,
         )
         self._save_results_json(fig_dir)
         return self.uuid
@@ -305,6 +309,7 @@ class Trainer:
                             fig_dir,
                             task_type=self.task_type,
                             class_names=self.class_names,
+                            method_label=self.method_label,
                         )
                         save_predictions(
                             metrics=val_result,
@@ -360,6 +365,7 @@ class Trainer:
                         uuid=self.uuid,
                         fold=fold + 1,
                         task_type=self.task_type,
+                        method_label=self.method_label,
                     )
 
         if best_fold_result is not None:
@@ -599,6 +605,10 @@ class Trainer:
         payload = {
             "fold": fold,
             "epoch": epoch,
+            "experiment": {
+                "name": self.config.experiment.name,
+                "description": self.config.experiment.description,
+            },
             "task_type": self.task_type,
             "class_names": self.class_names,
             "target_stats": {
@@ -685,6 +695,10 @@ class Trainer:
             "meta": {
                 "uuid": self.uuid,
                 "model": self.config.model.name,
+                "experiment": {
+                    "name": self.config.experiment.name,
+                    "description": self.config.experiment.description,
+                },
                 "task": self.config.task,
                 "task_type": self.task_type,
                 "timestamp": datetime.now().isoformat(),

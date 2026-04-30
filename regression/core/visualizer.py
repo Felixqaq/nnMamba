@@ -33,6 +33,14 @@ plt.rcParams.update(
 )
 
 
+def _with_method(title: str, method_label: str | None) -> str:
+    return f"{title}\nMethod: {method_label}" if method_label else title
+
+
+def _method_note(method_label: str | None) -> str:
+    return f"Method: {method_label}\n" if method_label else ""
+
+
 def plot_training_curves(
     train_loss: list[float],
     test_metrics: dict[str, list[float]],
@@ -42,6 +50,7 @@ def plot_training_curves(
     uuid: str,
     fold: int,
     task_type: str = "angle",
+    method_label: str | None = None,
 ) -> None:
     """Generate and save task-aware training plots."""
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -55,6 +64,7 @@ def plot_training_curves(
         "Loss",
         save_dir / f"fold{fold}_loss.png",
         color="#1f77b4",
+        method_label=method_label,
     )
 
     if not eval_epochs:
@@ -78,9 +88,17 @@ def plot_training_curves(
                 save_dir / f"fold{fold}_{key}.png",
                 ylabel=ylabel,
                 colors=(color, "#8c564b"),
+                method_label=method_label,
             )
         _plot_classification_summary(
-            epochs, train_loss, eval_epochs, test_metrics, uuid, fold, save_dir
+            epochs,
+            train_loss,
+            eval_epochs,
+            test_metrics,
+            uuid,
+            fold,
+            save_dir,
+            method_label=method_label,
         )
         return
 
@@ -102,8 +120,18 @@ def plot_training_curves(
             save_dir / f"fold{fold}_{key}.png",
             ylabel=ylabel,
             colors=(color, "#8c564b"),
+            method_label=method_label,
         )
-    _plot_regression_summary(epochs, train_loss, eval_epochs, test_metrics, uuid, fold, save_dir)
+    _plot_regression_summary(
+        epochs,
+        train_loss,
+        eval_epochs,
+        test_metrics,
+        uuid,
+        fold,
+        save_dir,
+        method_label=method_label,
+    )
 
 
 def _plot_single(
@@ -114,12 +142,13 @@ def _plot_single(
     ylabel: str,
     path: Path,
     color: str = "#1f77b4",
+    method_label: str | None = None,
 ) -> None:
     plt.figure(figsize=(10, 6))
     plt.plot(list(x), y, linewidth=2.2, color=color)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    plt.title(title, fontweight="bold")
+    plt.title(_with_method(title, method_label), fontweight="bold")
     plt.grid(True, alpha=0.25)
     plt.tight_layout()
     plt.savefig(path, dpi=300)
@@ -136,6 +165,7 @@ def _plot_comparison(
     path: Path,
     ylabel: str = "Score",
     colors: tuple[str, str] = ("#2ca02c", "#d62728"),
+    method_label: str | None = None,
 ) -> None:
     if not y1 or not y2:
         return
@@ -145,7 +175,7 @@ def _plot_comparison(
     plt.plot(x, y2, marker="s", linewidth=2, label=label2, color=colors[1])
     plt.xlabel("Epoch")
     plt.ylabel(ylabel)
-    plt.title(title, fontweight="bold")
+    plt.title(_with_method(title, method_label), fontweight="bold")
     plt.legend()
     plt.grid(True, alpha=0.25)
     plt.tight_layout()
@@ -161,6 +191,7 @@ def _plot_regression_summary(
     uuid: str,
     fold: int,
     save_dir: Path,
+    method_label: str | None = None,
 ) -> None:
     metrics = [
         ("mae", "Test MAE", "#2ca02c"),
@@ -189,7 +220,7 @@ def _plot_regression_summary(
     axes[5].text(
         0.02,
         0.88,
-        f"UUID: {uuid}\nFold: {fold}\n\n"
+        f"{_method_note(method_label)}UUID: {uuid}\nFold: {fold}\n\n"
         "Tracked:\nMAE, RMSE, R2,\nPearson, Mean Error",
         transform=axes[5].transAxes,
         fontsize=11,
@@ -209,6 +240,7 @@ def _plot_classification_summary(
     uuid: str,
     fold: int,
     save_dir: Path,
+    method_label: str | None = None,
 ) -> None:
     metrics = [
         ("accuracy", "Val Accuracy", "#2ca02c"),
@@ -236,7 +268,7 @@ def _plot_classification_summary(
     axes[5].text(
         0.02,
         0.88,
-        f"UUID: {uuid}\nFold: {fold}\n\n"
+        f"{_method_note(method_label)}UUID: {uuid}\nFold: {fold}\n\n"
         "Tracked:\nAccuracy,\nMacro F1,\nBalanced Accuracy,\nMacro Recall",
         transform=axes[5].transAxes,
         fontsize=11,
@@ -445,6 +477,7 @@ def plot_confusion_matrix(
     class_names: list[str],
     title_suffix: str = "",
     output_name: str | None = None,
+    method_label: str | None = None,
 ) -> None:
     """Plot confusion matrix for multiclass classification."""
     labels_np = np.asarray(_to_numpy(labels), dtype=int)
@@ -460,7 +493,10 @@ def plot_confusion_matrix(
     fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     ax.set_xlabel("Predicted")
     ax.set_ylabel("True")
-    ax.set_title(f"Confusion Matrix - Fold {fold}{title_suffix}", fontweight="bold")
+    ax.set_title(
+        _with_method(f"Confusion Matrix - Fold {fold}{title_suffix}", method_label),
+        fontweight="bold",
+    )
     tick_labels = class_names if class_names else [str(i) for i in range(num_classes)]
     ax.set_xticks(np.arange(num_classes))
     ax.set_yticks(np.arange(num_classes))
@@ -492,6 +528,7 @@ def plot_paper_results(
     save_dir: Path,
     task_type: str = "angle",
     class_names: list[str] | None = None,
+    method_label: str | None = None,
 ) -> None:
     """Generate task-specific detailed plots for a fold."""
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -507,6 +544,7 @@ def plot_paper_results(
             fold,
             save_dir,
             class_names or [],
+            method_label=method_label,
         )
         return
 
@@ -570,7 +608,11 @@ def _aggregate_classification_results(
     return labels, preds, metric_arrays
 
 
-def plot_metric_boxplot(all_results: list, save_dir: Path) -> None:
+def plot_metric_boxplot(
+    all_results: list,
+    save_dir: Path,
+    method_label: str | None = None,
+) -> None:
     """Plot fold-wise regression metric distributions."""
     _, _, metric_arrays = _aggregate_regression_results(all_results)
     metrics = ["mae", "rmse", "r2", "pearson", "mean_error"]
@@ -596,14 +638,21 @@ def plot_metric_boxplot(all_results: list, save_dir: Path) -> None:
 
     plt.xticks(range(1, len(labels) + 1), labels)
     plt.ylabel("Score")
-    plt.title("Fold-wise Regression Metrics", fontweight="bold")
+    plt.title(
+        _with_method("Fold-wise Regression Metrics", method_label),
+        fontweight="bold",
+    )
     plt.grid(True, axis="y", alpha=0.25)
     plt.tight_layout()
     plt.savefig(save_dir / "metric_boxplot.png", dpi=300)
     plt.close()
 
 
-def plot_classification_metric_boxplot(all_results: list, save_dir: Path) -> None:
+def plot_classification_metric_boxplot(
+    all_results: list,
+    save_dir: Path,
+    method_label: str | None = None,
+) -> None:
     """Plot fold-wise classification metric distributions."""
     _, _, metric_arrays = _aggregate_classification_results(all_results)
     metrics = [
@@ -641,7 +690,10 @@ def plot_classification_metric_boxplot(all_results: list, save_dir: Path) -> Non
 
     plt.xticks(range(1, len(labels) + 1), labels)
     plt.ylabel("Score")
-    plt.title("Fold-wise Classification Metrics", fontweight="bold")
+    plt.title(
+        _with_method("Fold-wise Classification Metrics", method_label),
+        fontweight="bold",
+    )
     plt.grid(True, axis="y", alpha=0.25)
     plt.tight_layout()
     plt.savefig(save_dir / "metric_boxplot.png", dpi=300)
@@ -653,6 +705,7 @@ def plot_global_summary(
     save_dir: Path,
     task_type: str = "angle",
     class_names: list[str] | None = None,
+    method_label: str | None = None,
 ) -> None:
     """Generate aggregate plots for all folds."""
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -668,8 +721,13 @@ def plot_global_summary(
                 class_names=class_names or [],
                 title_suffix=" (All Folds)",
                 output_name="total_confusion_matrix.png",
+                method_label=method_label,
             )
-        plot_classification_metric_boxplot(all_results, save_dir)
+        plot_classification_metric_boxplot(
+            all_results,
+            save_dir,
+            method_label=method_label,
+        )
         return
 
     labels, preds, _ = _aggregate_regression_results(all_results)
@@ -689,4 +747,4 @@ def plot_global_summary(
             if src.exists():
                 src.replace(dst)
 
-    plot_metric_boxplot(all_results, save_dir)
+    plot_metric_boxplot(all_results, save_dir, method_label=method_label)

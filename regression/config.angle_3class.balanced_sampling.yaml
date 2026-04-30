@@ -1,9 +1,9 @@
-# nnMamba Angle Three-Class Classification Configuration
-# ======================================================
+# nnMamba Angle Three-Class Classification with Per-Epoch Undersampling
+# =====================================================================
 
 experiment:
-  name: Materialized aug47 + class weights
-  description: Original 47-per-class materialized augmented dataset with balanced CrossEntropy.
+  name: Per-epoch minority undersampling
+  description: Original dataset with each training epoch downsampling all classes to the fold minority count.
 
 model:
   name: hybrid_mamba_attention  # options: mamba | hybrid_mamba_attention | swinunetr
@@ -44,7 +44,7 @@ training:
   clip_grad_norm: 1.0
   amp: true
   track_train_metrics: false
-  class_weight_mode: balanced
+  class_weight_mode: none
 
 early_stopping:
   enabled: true
@@ -53,11 +53,11 @@ early_stopping:
 
 data:
   target_mode: angle_3class
-  source_dir: ../by_angle_all_angle_3class_augmented
+  source_dir: ../by_angle_all
   labels_json: ../patient_angle_classification_by_group.json
   pft_json: ../pft.json
   angle_split_manifest: ../by_angle_all/reclassification_manifest.json
-  manifest: ./datasets/generated/angle_3class_manifest.augmented.json
+  manifest: ./datasets/generated/angle_3class_manifest.json
   image_size: [112, 136, 112]
   intensity_window: [-1000.0, 400.0]
   input_normalization: zscore
@@ -67,7 +67,7 @@ data:
   pin_memory: true
   prefetch_factor: 4
   angle_bin_count: 5
-  balanced_sampling: false
+  balanced_sampling: true
   augmentation:
     enabled: false
     balance_to_majority: false

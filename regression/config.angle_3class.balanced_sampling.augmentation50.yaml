@@ -1,9 +1,9 @@
-# nnMamba Angle Three-Class Classification Configuration
-# ======================================================
+# nnMamba Angle Three-Class Classification with 50/Class Augmentation
+# ==================================================================
 
 experiment:
-  name: Materialized aug47 + class weights
-  description: Original 47-per-class materialized augmented dataset with balanced CrossEntropy.
+  name: Balanced sampling + aug50/class
+  description: Virtual train-fold augmentation brings all three classes to 50 samples before per-epoch balanced sampling.
 
 model:
   name: hybrid_mamba_attention  # options: mamba | hybrid_mamba_attention | swinunetr
@@ -32,8 +32,8 @@ training:
   epochs: 160
   batch_size: 12
   eval_batch_size: 12
-  swin_batch_size: 5
-  swin_eval_batch_size: 6
+  swin_batch_size: 8
+  swin_eval_batch_size: 8
   learning_rate: 0.0001
   weight_decay: 0.001
   k_folds: 5
@@ -42,9 +42,9 @@ training:
   seed: 42
   loss: auto
   clip_grad_norm: 1.0
-  amp: true
+  amp: false
   track_train_metrics: false
-  class_weight_mode: balanced
+  class_weight_mode: none
 
 early_stopping:
   enabled: true
@@ -53,11 +53,11 @@ early_stopping:
 
 data:
   target_mode: angle_3class
-  source_dir: ../by_angle_all_angle_3class_augmented
+  source_dir: ../by_angle_all
   labels_json: ../patient_angle_classification_by_group.json
   pft_json: ../pft.json
   angle_split_manifest: ../by_angle_all/reclassification_manifest.json
-  manifest: ./datasets/generated/angle_3class_manifest.augmented.json
+  manifest: ./datasets/generated/angle_3class_manifest.json
   image_size: [112, 136, 112]
   intensity_window: [-1000.0, 400.0]
   input_normalization: zscore
@@ -67,10 +67,20 @@ data:
   pin_memory: true
   prefetch_factor: 4
   angle_bin_count: 5
-  balanced_sampling: false
+  balanced_sampling: true
   augmentation:
-    enabled: false
+    enabled: true
     balance_to_majority: false
+    target_per_class: 50
+    probability: 1.0
+    # Zero-based angle_3class labels: 0=Abnormal, 1=Intermediate, 2=Normal.
+    class_indices: [0, 1, 2]
+    rotation_degrees: 5.0
+    translation_fraction: 0.03
+    scale_range: [0.97, 1.03]
+    intensity_scale_range: [0.98, 1.02]
+    intensity_shift_range: [-0.05, 0.05]
+    noise_std: 0.02
 
 paths:
   weights: ./weights

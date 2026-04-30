@@ -420,10 +420,10 @@ class RegressionLoaderHelper:
         return list(self.class_names)
 
     def _build_train_augmentation(self):
-        """Create train-only augmentation for GOLD minority classes."""
+        """Create train-only augmentation for supported classification tasks."""
         cfg = self.augmentation_config
         if (
-            self.target_mode != "gold"
+            self.target_mode not in CLASSIFICATION_TARGET_MODES
             or cfg is None
             or not getattr(cfg, "enabled", False)
         ):
@@ -432,6 +432,7 @@ class RegressionLoaderHelper:
             enabled=True,
             probability=getattr(cfg, "probability", 0.8),
             gold_stages=tuple(getattr(cfg, "gold_stages", (2, 3, 4))),
+            class_indices=getattr(cfg, "class_indices", None),
             rotation_degrees=getattr(cfg, "rotation_degrees", 7.0),
             translation_fraction=getattr(cfg, "translation_fraction", 0.05),
             scale_range=tuple(getattr(cfg, "scale_range", (0.95, 1.05))),
@@ -445,19 +446,22 @@ class RegressionLoaderHelper:
         )
 
     def _should_balance_with_augmentation(self) -> bool:
-        """Return whether the train fold should be expanded with augmented samples."""
+        """Return whether the train fold should add virtual augmented samples."""
         cfg = self.augmentation_config
         return bool(
-            self.target_mode == "gold"
+            self.target_mode in CLASSIFICATION_TARGET_MODES
             and self.train_augmentation is not None
             and cfg is not None
-            and getattr(cfg, "balance_to_majority", False)
+            and (
+                getattr(cfg, "balance_to_majority", False)
+                or getattr(cfg, "target_per_class", None) is not None
+            )
         )
 
     def _build_augmented_train_indices(
         self, indices: list[int]
     ) -> tuple[list[int], list[bool] | None]:
-        """Add virtual augmented copies so GOLD minority classes match fold majority."""
+        """Add virtual augmented copies for configured classification classes."""
         if not self._should_balance_with_augmentation():
             return list(indices), None
 
@@ -470,13 +474,22 @@ class RegressionLoaderHelper:
         if len(nonzero_counts) <= 1:
             return list(indices), None
 
-        target_count = int(nonzero_counts.max())
-        augmented_stage_indices = self.train_augmentation.gold_stage_indices
+        cfg = self.augmentation_config
+        configured_target = getattr(cfg, "target_per_class", None)
+        target_count = (
+            int(configured_target)
+            if configured_target is not None
+            else int(nonzero_counts.max())
+        )
+        if target_count <= 0:
+            return list(indices), None
+
+        augmented_class_indices = self.train_augmentation.target_class_indices
         output_indices = list(indices)
         augment_flags = [False] * len(output_indices)
 
         for class_idx, count in enumerate(counts):
-            if count == 0 or class_idx not in augmented_stage_indices:
+            if count == 0 or class_idx not in augmented_class_indices:
                 continue
             needed = target_count - int(count)
             if needed <= 0:

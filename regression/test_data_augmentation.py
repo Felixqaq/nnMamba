@@ -45,6 +45,28 @@ def test_random_ct_augmentation_targets_configured_gold_stages() -> None:
     assert applied["mri"] is applied["ct"]
 
 
+def test_random_ct_augmentation_can_target_zero_based_class_indices() -> None:
+    augment = RandomCTAugmentation(
+        enabled=True,
+        probability=1.0,
+        class_indices=(0, 2),
+        rotation_degrees=0.0,
+        translation_fraction=0.0,
+        scale_range=(1.0, 1.0),
+        intensity_scale_range=(1.0, 1.0),
+        intensity_shift_range=(5.0, 5.0),
+        noise_std=0.0,
+    )
+
+    skipped = augment(_sample(label=1))
+    applied = augment(_sample(label=2))
+
+    assert skipped["augmented"] is False
+    assert torch.allclose(skipped["ct"], torch.ones(1, 8, 8, 8))
+    assert applied["augmented"] is True
+    assert torch.allclose(applied["ct"], torch.full((1, 8, 8, 8), 6.0))
+
+
 def test_gold_config_uses_materialized_augmented_dataset() -> None:
     config = Config.from_yaml(Path(__file__).with_name("config.gold.yaml"))
 

@@ -17,6 +17,7 @@ class RandomCTAugmentation:
         enabled: bool = False,
         probability: float = 0.8,
         gold_stages: tuple[int, ...] = (2, 3, 4),
+        class_indices: tuple[int, ...] | None = None,
         rotation_degrees: float = 7.0,
         translation_fraction: float = 0.05,
         scale_range: tuple[float, float] = (0.95, 1.05),
@@ -26,7 +27,11 @@ class RandomCTAugmentation:
     ):
         self.enabled = enabled
         self.probability = float(probability)
-        self.gold_stage_indices = {int(stage) - 1 for stage in gold_stages}
+        if class_indices is None:
+            self.target_class_indices = {int(stage) - 1 for stage in gold_stages}
+        else:
+            self.target_class_indices = {int(class_idx) for class_idx in class_indices}
+        self.gold_stage_indices = self.target_class_indices
         self.rotation_degrees = float(rotation_degrees)
         self.translation_fraction = float(translation_fraction)
         self.scale_range = tuple(float(value) for value in scale_range)
@@ -61,7 +66,7 @@ class RandomCTAugmentation:
         if label is None:
             return False
         label_index = int(label.item() if torch.is_tensor(label) else label)
-        if self.gold_stage_indices and label_index not in self.gold_stage_indices:
+        if self.target_class_indices and label_index not in self.target_class_indices:
             return False
         return float(torch.rand(()).item()) < self.probability
 

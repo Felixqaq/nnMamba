@@ -94,7 +94,12 @@ conda run -n nnMamba python regression/scripts/generate_angle_3class_augmented_d
 - [config.yaml](/home/felix/Research/nnMamba/regression/config.yaml)：原本 regression
 - [config.hybrid.preset.yaml](/home/felix/Research/nnMamba/regression/config.hybrid.preset.yaml)：hybrid 的可選 preset
 - [config.gold.yaml](/home/felix/Research/nnMamba/regression/config.gold.yaml)：GOLD 四分類範例
-- [config.angle_3class.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.yaml)：131° / 152° 三分類範例
+- [config.angle_3class.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.yaml)：131° / 152° 三分類，沿用實體增強資料集
+- [config.angle_3class.balanced_sampling.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.balanced_sampling.yaml)：131° / 152° 三分類，使用原始資料並每個 epoch 隨機下採樣多數類
+- [config.angle_3class.balanced_sampling.augmentation.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.balanced_sampling.augmentation.yaml)：131° / 152° 三分類，training fold 內把 class 0/1 virtual augmentation 補到 20，再做每 epoch 少類平衡
+- [config.angle_3class.balanced_sampling.augmentation100.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.balanced_sampling.augmentation100.yaml)：131° / 152° 三分類，training fold 內把三個 class 都 virtual augmentation 補到 100，再做每 epoch 少類平衡
+
+這些比較方法都有 `experiment.name`，新的 run id、`results.json` metadata、summary/confusion matrix 圖表標題都會顯示方法名稱。之後資料夾會像 `hybrid_mamba_attention_balanced_sampling_aug100_class_<timestamp>`，不用再只靠時間猜是哪個方法。
 
 ## 5. 開始訓練
 
@@ -105,6 +110,9 @@ cd /home/felix/Research/nnMamba/regression
 conda run -n nnMamba python train.py --config config.yaml
 conda run -n nnMamba python train.py --config config.gold.yaml
 conda run -n nnMamba python train.py --config config.angle_3class.yaml
+conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.yaml
+conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation.yaml
+conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation100.yaml
 ```
 
 目前三個模型都支援同一套切換方式：
@@ -135,9 +143,12 @@ conda run -n nnMamba python train.py --config config.angle_3class.yaml
 - class 0: `Emphysema/Abnormal (<=131°)`
 - class 1: `Intermediate (132-151°)`
 - class 2: `Normal (>=152°)`
-- 範例 config 使用原始 `by_angle_all/`，總樣本數為 66，三類分布為 14 / 5 / 47。
-- `balanced_sampling: true` 會在每個 train epoch 以該 fold 的少數類數量為基準，重新隨機抽取多數類樣本。
-- 範例 config 關閉 class weights，避免「已平衡抽樣」後又重複加權少數類。
+- `config.angle_3class.yaml` 保留原本方法：使用 `by_angle_all_angle_3class_augmented/`，總樣本數為 141，三類各 47 筆，並保留 balanced CrossEntropy。
+- `config.angle_3class.balanced_sampling.yaml` 是新增方法：使用原始 `by_angle_all/`，總樣本數為 66，三類分布為 14 / 5 / 47。
+- 新增方法的 `balanced_sampling: true` 會在每個 train epoch 以該 fold 的少數類數量為基準，重新隨機抽取多數類樣本。
+- `config.angle_3class.balanced_sampling.augmentation.yaml` 會在每個 training fold 內把 class 0/1 用 virtual augmented copies 補到 20，再做少類平衡；fold 1 會從 11/4/37 變成 20/20/37，每 epoch 抽 20/20/20。
+- `config.angle_3class.balanced_sampling.augmentation100.yaml` 會在每個 training fold 內把 class 0/1/2 都補到 100，再做少類平衡；fold 1 會變成 100/100/100，每 epoch 抽 300 張。
+- 新增方法關閉 class weights，避免「已平衡抽樣」後又重複加權少數類。
 
 ## 6. 評估模型
 
@@ -164,6 +175,15 @@ conda run -n nnMamba python evaluate.py --uuid <run_uuid> --fold 1 --config conf
 regression/weights/<task>/<run_uuid>/
 regression/train_log/<task>/<run_uuid>/
 regression/figures/<task>/<run_uuid>/
+```
+
+`run_uuid` 會包含模型與方法名稱，例如：
+
+```text
+hybrid_mamba_attention_materialized_aug47_class_weights_2026-04-29_15:30:00
+hybrid_mamba_attention_per_epoch_minority_undersampling_2026-04-29_15:30:00
+hybrid_mamba_attention_balanced_sampling_aug20_class_2026-04-29_15:30:00
+hybrid_mamba_attention_balanced_sampling_aug100_class_2026-04-29_15:30:00
 ```
 
 regression 模式圖表包含：
@@ -223,4 +243,28 @@ conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.gold.y
 cd /home/felix/Research/nnMamba/regression
 conda run -n nnMamba python train.py --config config.angle_3class.yaml
 conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_3class.yaml
+```
+
+如果你要跑 131° / 152° 三分類的每 epoch 隨機下採樣版本：
+
+```bash
+cd /home/felix/Research/nnMamba/regression
+conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.yaml
+conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_3class.balanced_sampling.yaml
+```
+
+如果你要跑 131° / 152° 三分類的 20/class virtual augmentation + 每 epoch 隨機下採樣版本：
+
+```bash
+cd /home/felix/Research/nnMamba/regression
+conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation.yaml
+conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_3class.balanced_sampling.augmentation.yaml
+```
+
+如果你要跑 131° / 152° 三分類的 100/class virtual augmentation + 每 epoch 隨機下採樣版本：
+
+```bash
+cd /home/felix/Research/nnMamba/regression
+conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation100.yaml
+conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_3class.balanced_sampling.augmentation100.yaml
 ```

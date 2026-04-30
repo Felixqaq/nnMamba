@@ -2,15 +2,27 @@
 
 from datetime import datetime
 from pathlib import Path
+import re
 from typing import Any
 
 import torch
 import torch.nn as nn
 
 
-def generate_uuid(model_name: str = "nnMambaReg") -> str:
+def _slugify_run_part(value: str) -> str:
+    slug = re.sub(r"[^A-Za-z0-9]+", "_", value.strip()).strip("_").lower()
+    return slug or "run"
+
+
+def generate_uuid(
+    model_name: str = "nnMambaReg",
+    experiment_name: str | None = None,
+) -> str:
     """Generate a unique run identifier with timestamp."""
-    return f"{model_name}_{datetime.now():%Y-%m-%d_%H:%M:%S}"
+    parts = [_slugify_run_part(model_name)]
+    if experiment_name:
+        parts.append(_slugify_run_part(experiment_name))
+    return f"{'_'.join(parts)}_{datetime.now():%Y-%m-%d_%H:%M:%S}"
 
 
 def _checkpoint_name(fold: int, epoch: int | None = None, is_best: bool = False) -> str:

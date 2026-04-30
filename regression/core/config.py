@@ -74,8 +74,10 @@ class EarlyStoppingConfig:
 class AugmentationConfig:
     enabled: bool = False
     balance_to_majority: bool = False
+    target_per_class: int | None = None
     probability: float = 0.8
     gold_stages: tuple[int, ...] = (2, 3, 4)
+    class_indices: tuple[int, ...] | None = None
     rotation_degrees: float = 7.0
     translation_fraction: float = 0.05
     scale_range: tuple[float, float] = (0.95, 1.05)
@@ -132,6 +134,12 @@ class GPUConfig:
 
 
 @dataclass
+class ExperimentConfig:
+    name: str | None = None
+    description: str | None = None
+
+
+@dataclass
 class Config:
     """Main configuration container."""
 
@@ -142,6 +150,7 @@ class Config:
     paths: PathConfig = field(default_factory=PathConfig)
     resume: ResumeConfig = field(default_factory=ResumeConfig)
     gpu: GPUConfig = field(default_factory=GPUConfig)
+    experiment: ExperimentConfig = field(default_factory=ExperimentConfig)
     task: str = "PFT_angle_regression"
 
     def is_classification_task(self) -> bool:
@@ -160,6 +169,7 @@ class Config:
         augmentation_section = data_section.get("augmentation", {})
         paths_section = data.get("paths", {})
         gpu_section = data.get("gpu", {})
+        experiment_section = data.get("experiment", {}) or {}
         target_mode = data_section.get("target_mode", "angle")
         window_size = model_section.get("window_size", 4)
         if isinstance(window_size, list):
@@ -240,9 +250,15 @@ class Config:
                     balance_to_majority=augmentation_section.get(
                         "balance_to_majority", False
                     ),
+                    target_per_class=augmentation_section.get("target_per_class"),
                     probability=augmentation_section.get("probability", 0.8),
                     gold_stages=tuple(
                         augmentation_section.get("gold_stages", [2, 3, 4])
+                    ),
+                    class_indices=(
+                        tuple(augmentation_section["class_indices"])
+                        if augmentation_section.get("class_indices") is not None
+                        else None
                     ),
                     rotation_degrees=augmentation_section.get("rotation_degrees", 7.0),
                     translation_fraction=augmentation_section.get(
@@ -272,5 +288,9 @@ class Config:
             ),
             resume=ResumeConfig(**data.get("resume", {})),
             gpu=GPUConfig(device_id=gpu_section.get("device_id", "0")),
+            experiment=ExperimentConfig(
+                name=experiment_section.get("name"),
+                description=experiment_section.get("description"),
+            ),
             task=data.get("task", default_task),
         )

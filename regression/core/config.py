@@ -17,8 +17,8 @@ LossType = Literal["auto", "smooth_l1", "mse", "mae", "cross_entropy"]
 ClassWeightMode = Literal["none", "balanced"]
 InputNormType = Literal["zscore", "none"]
 TargetNormType = Literal["zscore", "none"]
-TargetMode = Literal["angle", "gold", "angle_3class"]
-CLASSIFICATION_TARGET_MODES = {"gold", "angle_3class"}
+TargetMode = Literal["angle", "gold", "angle_3class", "angle_binary_extreme"]
+CLASSIFICATION_TARGET_MODES = {"gold", "angle_3class", "angle_binary_extreme"}
 
 
 @dataclass
@@ -75,6 +75,8 @@ class AugmentationConfig:
     enabled: bool = False
     balance_to_majority: bool = False
     target_per_class: int | None = None
+    balance_then_augment: bool = False
+    views_per_sample: int = 1
     probability: float = 0.8
     gold_stages: tuple[int, ...] = (2, 3, 4)
     class_indices: tuple[int, ...] | None = None
@@ -180,6 +182,9 @@ class Config:
         elif target_mode == "angle_3class":
             default_num_classes = 3
             default_task = "Angle_3class_classification"
+        elif target_mode == "angle_binary_extreme":
+            default_num_classes = 2
+            default_task = "Angle_extreme_binary_classification"
         else:
             default_num_classes = 1
             default_task = "PFT_angle_regression"
@@ -251,6 +256,10 @@ class Config:
                         "balance_to_majority", False
                     ),
                     target_per_class=augmentation_section.get("target_per_class"),
+                    balance_then_augment=augmentation_section.get(
+                        "balance_then_augment", False
+                    ),
+                    views_per_sample=augmentation_section.get("views_per_sample", 1),
                     probability=augmentation_section.get("probability", 0.8),
                     gold_stages=tuple(
                         augmentation_section.get("gold_stages", [2, 3, 4])

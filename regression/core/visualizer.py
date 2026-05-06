@@ -11,7 +11,7 @@ import torch
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-CLASSIFICATION_TASK_TYPES = {"gold", "angle_3class"}
+CLASSIFICATION_TASK_TYPES = {"gold", "angle_3class", "angle_binary_extreme"}
 
 
 plt.rcParams.update(

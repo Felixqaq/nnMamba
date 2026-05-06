@@ -16,7 +16,7 @@ from .manifest import AngleRecord, build_angle_manifest
 
 DEFAULT_IMAGE_SIZE = (112, 136, 112)
 InputNormalization = Literal["zscore", "none"]
-CLASSIFICATION_TARGET_MODES = {"gold", "angle_3class"}
+CLASSIFICATION_TARGET_MODES = {"gold", "angle_3class", "angle_binary_extreme"}
 
 
 def _resize_volume(volume: np.ndarray, target_shape: tuple[int, int, int]) -> np.ndarray:

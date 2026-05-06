@@ -23,7 +23,7 @@ ATTENTION_HEAVY_MODELS = {
     "mamba_hybrid",
     "swinunetr",
 }
-CLASSIFICATION_TARGET_MODES = {"gold", "angle_3class"}
+CLASSIFICATION_TARGET_MODES = {"gold", "angle_3class", "angle_binary_extreme"}
 
 
 class BalancedClassSampler(Sampler):
@@ -63,6 +63,67 @@ class BalancedClassSampler(Sampler):
                 replace=False,
             )
             sampled_positions.extend(int(position) for position in selected)
+        self.rng.shuffle(sampled_positions)
+        return iter(sampled_positions)
+
+    def __len__(self) -> int:
+        return self.num_samples
+
+
+class BalancedClassViewSampler(Sampler):
+    """Undersample classes first, then emit multiple views of each selected sample."""
+
+    def __init__(
+        self,
+        targets: np.ndarray,
+        views_per_sample: int,
+        seed: int = 42,
+    ):
+        targets = np.asarray(targets, dtype=int)
+        if targets.ndim != 1:
+            raise ValueError("BalancedClassViewSampler expects a 1D target array.")
+        if len(targets) == 0:
+            raise ValueError("BalancedClassViewSampler requires at least one sample.")
+
+        self.targets = targets
+        self.views_per_sample = int(views_per_sample)
+        if self.views_per_sample < 1:
+            raise ValueError("views_per_sample must be at least 1.")
+
+        self.seed = int(seed)
+        self.rng = np.random.default_rng(self.seed)
+        self.class_positions = {
+            int(class_idx): np.flatnonzero(targets == class_idx).astype(int)
+            for class_idx in np.unique(targets)
+        }
+        nonzero_counts = [
+            len(positions)
+            for positions in self.class_positions.values()
+            if len(positions) > 0
+        ]
+        if not nonzero_counts:
+            raise ValueError("BalancedClassViewSampler requires at least one class.")
+
+        self.samples_per_class = int(min(nonzero_counts))
+        self.num_samples = int(
+            self.samples_per_class
+            * len(self.class_positions)
+            * self.views_per_sample
+        )
+
+    def __iter__(self):
+        sampled_positions: list[int] = []
+        for positions in self.class_positions.values():
+            selected = self.rng.choice(
+                positions,
+                size=self.samples_per_class,
+                replace=False,
+            )
+            for base_position in selected:
+                start = int(base_position) * self.views_per_sample
+                sampled_positions.extend(
+                    range(start, start + self.views_per_sample)
+                )
         self.rng.shuffle(sampled_positions)
         return iter(sampled_positions)
 
@@ -452,10 +513,28 @@ class RegressionLoaderHelper:
             self.target_mode in CLASSIFICATION_TARGET_MODES
             and self.train_augmentation is not None
             and cfg is not None
+            and not getattr(cfg, "balance_then_augment", False)
             and (
                 getattr(cfg, "balance_to_majority", False)
                 or getattr(cfg, "target_per_class", None) is not None
             )
+        )
+
+    def _views_per_sample(self) -> int:
+        """Return how many train-time views to emit per balanced base sample."""
+        cfg = self.augmentation_config
+        return max(1, int(getattr(cfg, "views_per_sample", 1)))
+
+    def _should_balance_then_augment(self) -> bool:
+        """Return whether each epoch should undersample before view expansion."""
+        cfg = self.augmentation_config
+        return bool(
+            self.target_mode in CLASSIFICATION_TARGET_MODES
+            and self.balanced_sampling
+            and self.train_augmentation is not None
+            and cfg is not None
+            and getattr(cfg, "balance_then_augment", False)
+            and self._views_per_sample() > 1
         )
 
     def _build_augmented_train_indices(
@@ -505,6 +584,21 @@ class RegressionLoaderHelper:
 
         return output_indices, augment_flags
 
+    def _build_balanced_view_train_indices(
+        self, indices: list[int]
+    ) -> tuple[list[int], list[bool]]:
+        """Repeat each train sample into original+augmented views for epoch sampling."""
+        views_per_sample = self._views_per_sample()
+        output_indices: list[int] = []
+        augment_flags: list[bool] = []
+        for index in indices:
+            output_indices.append(index)
+            augment_flags.append(False)
+            for _ in range(views_per_sample - 1):
+                output_indices.append(index)
+                augment_flags.append(True)
+        return output_indices, augment_flags
+
     def _build_loader(
         self,
         indices: list[int],
@@ -547,11 +641,31 @@ class RegressionLoaderHelper:
             return None
         return BalancedClassSampler(fold_targets, seed=self.seed)
 
+    def _build_balanced_view_sampler(
+        self, indices: list[int]
+    ) -> BalancedClassViewSampler | None:
+        """Build a sampler that balances base samples before emitting their views."""
+        fold_targets = self.targets[indices].astype(int)
+        if len(fold_targets) == 0:
+            return None
+        return BalancedClassViewSampler(
+            fold_targets,
+            views_per_sample=self._views_per_sample(),
+            seed=self.seed,
+        )
+
     def get_train_dl(self, fold: int, shuffle: bool = True) -> DataLoader:
         """Get the training loader for a given fold."""
         train_idx = self.fold_indices[fold][0]
-        train_idx, augment_flags = self._build_augmented_train_indices(train_idx)
-        sampler = self._build_balanced_sampler(train_idx)
+        if self._should_balance_then_augment():
+            base_train_idx = list(train_idx)
+            train_idx, augment_flags = self._build_balanced_view_train_indices(
+                base_train_idx
+            )
+            sampler = self._build_balanced_view_sampler(base_train_idx)
+        else:
+            train_idx, augment_flags = self._build_augmented_train_indices(train_idx)
+            sampler = self._build_balanced_sampler(train_idx)
         return self._build_loader(
             train_idx,
             batch_size=self.batch_size,

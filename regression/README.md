@@ -1,10 +1,11 @@
 # CT Regression / GOLD 分類 使用說明
 
-這個資料夾現在支援三種任務，而且共用同一套 CT 輸入 pipeline 與三個模型：
+這個資料夾現在支援四種任務，而且共用同一套 CT 輸入 pipeline 與三個模型：
 
 - `angle`：原本的 regression，從 CT 預測 PFT 塌陷角度
 - `gold`：新的四分類，從 CT 預測 `GOLD 1 ~ 4`
 - `angle_3class`：用 131° / 152° 門檻做三分類，從 CT 預測 `Emphysema/Abnormal`、`Intermediate`、`Normal`
+- `angle_binary_extreme`：排除 132°-151° 灰區，只用 `AC <=131°` 與 `AC >=152°` 做二分類
 
 你可以直接改 yaml 切換，不需要換 `train.py` / `evaluate.py` 入口。
 
@@ -79,8 +80,8 @@ conda run -n nnMamba python regression/scripts/generate_angle_3class_augmented_d
 
 你只要改這幾個欄位：
 
-- `data.target_mode: angle | gold | angle_3class`
-- `task: PFT_angle_regression | GOLD_stage_classification | Angle_3class_classification`
+- `data.target_mode: angle | gold | angle_3class | angle_binary_extreme`
+- `task: PFT_angle_regression | GOLD_stage_classification | Angle_3class_classification | Angle_extreme_binary_classification`
 - `model.name: mamba | hybrid_mamba_attention | swinunetr`
 
 `training.loss` 已經支援 `auto`：
@@ -88,6 +89,7 @@ conda run -n nnMamba python regression/scripts/generate_angle_3class_augmented_d
 - `angle` 時會自動用 regression loss
 - `gold` 時會自動用 `cross_entropy`
 - `angle_3class` 時會自動用 `cross_entropy`
+- `angle_binary_extreme` 時會自動用 `cross_entropy`
 
 已經附一份可直接使用的 GOLD 範例設定：
 
@@ -95,9 +97,14 @@ conda run -n nnMamba python regression/scripts/generate_angle_3class_augmented_d
 - [config.hybrid.preset.yaml](/home/felix/Research/nnMamba/regression/config.hybrid.preset.yaml)：hybrid 的可選 preset
 - [config.gold.yaml](/home/felix/Research/nnMamba/regression/config.gold.yaml)：GOLD 四分類範例
 - [config.angle_3class.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.yaml)：131° / 152° 三分類，沿用實體增強資料集
+- [config.angle_binary_extreme.yaml](/home/felix/Research/nnMamba/regression/config.angle_binary_extreme.yaml)：文獻式極端二分類，排除 `132-151°` 灰區，保留 `14/47` 筆
+- [config.angle_binary_extreme.balanced_sampling.augmentation100.yaml](/home/felix/Research/nnMamba/regression/config.angle_binary_extreme.balanced_sampling.augmentation100.yaml)：極端二分類，training fold 內 virtual augmentation 到每類 100，再做每 epoch 少類平衡
+- [docs/angle_binary_extreme_report.md](/home/felix/Research/nnMamba/regression/docs/angle_binary_extreme_report.md)：給教授看的文獻依據、分類規則、資料分布與建議實驗說明
 - [config.angle_3class.balanced_sampling.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.balanced_sampling.yaml)：131° / 152° 三分類，使用原始資料並每個 epoch 隨機下採樣多數類
 - [config.angle_3class.balanced_sampling.augmentation.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.balanced_sampling.augmentation.yaml)：131° / 152° 三分類，training fold 內把 class 0/1 virtual augmentation 補到 20，再做每 epoch 少類平衡
 - [config.angle_3class.balanced_sampling.augmentation100.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.balanced_sampling.augmentation100.yaml)：131° / 152° 三分類，training fold 內把三個 class 都 virtual augmentation 補到 100，再做每 epoch 少類平衡
+- [config.angle_3class.balanced_sampling.augmentation300.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.balanced_sampling.augmentation300.yaml)：131° / 152° 三分類，training fold 內把三個 class 都 virtual augmentation 補到 300，再做每 epoch 少類平衡
+- [config.angle_3class.balanced_sampling.augmentation_x12.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.balanced_sampling.augmentation_x12.yaml)：131° / 152° 三分類，每個 epoch 先抽少類平衡 base set，再把每筆 base sample 展開成 12 個 train-time views
 
 這些比較方法都有 `experiment.name`，新的 run id、`results.json` metadata、summary/confusion matrix 圖表標題都會顯示方法名稱。之後資料夾會像 `hybrid_mamba_attention_balanced_sampling_aug100_class_<timestamp>`，不用再只靠時間猜是哪個方法。
 
@@ -110,9 +117,13 @@ cd /home/felix/Research/nnMamba/regression
 conda run -n nnMamba python train.py --config config.yaml
 conda run -n nnMamba python train.py --config config.gold.yaml
 conda run -n nnMamba python train.py --config config.angle_3class.yaml
+conda run -n nnMamba python train.py --config config.angle_binary_extreme.yaml
+conda run -n nnMamba python train.py --config config.angle_binary_extreme.balanced_sampling.augmentation100.yaml
 conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.yaml
 conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation.yaml
 conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation100.yaml
+conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation300.yaml
+conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation_x12.yaml
 ```
 
 目前三個模型都支援同一套切換方式：
@@ -138,6 +149,16 @@ conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampl
 - validation/test 仍只使用原始病人 CT；augmented 檔只會進 training fold，避免同病人資料洩漏。
 - `early_stopping`: GOLD 範例預設用 validation Macro-F1；連續 6 次 evaluation 沒有至少 `0.005` 的進步就停止該 fold。
 
+如果是 `angle_binary_extreme` 模式：
+
+- class 0: `Abnormal/emphysema-like (AC <=131°)`
+- 排除: `132° <= AC < 152°`
+- class 1: `Normal-like (AC >=152°)`
+- 這個設定來自 Topalovic et al. 的 Angle of Collapse (AC) 文獻：`AC < 131°` 是 heavy smokers 中預測 emphysema 的 high-specificity cut-off；但 sensitivity 不高，所以不能把所有 `>131°` 都解釋成 normal。
+- 因此 `132-151°` 直接當灰區排除，留下 61 筆，分布為 `14/47`。
+- `config.angle_binary_extreme.yaml` 是 baseline，不做 augmentation / balanced sampling。
+- `config.angle_binary_extreme.balanced_sampling.augmentation100.yaml` 是正式比較用設定，會在每個 training fold 內把兩類都補到 100，再做少類平衡。
+
 如果是 `angle_3class` 模式：
 
 - class 0: `Emphysema/Abnormal (<=131°)`
@@ -148,6 +169,8 @@ conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampl
 - 新增方法的 `balanced_sampling: true` 會在每個 train epoch 以該 fold 的少數類數量為基準，重新隨機抽取多數類樣本。
 - `config.angle_3class.balanced_sampling.augmentation.yaml` 會在每個 training fold 內把 class 0/1 用 virtual augmented copies 補到 20，再做少類平衡；fold 1 會從 11/4/37 變成 20/20/37，每 epoch 抽 20/20/20。
 - `config.angle_3class.balanced_sampling.augmentation100.yaml` 會在每個 training fold 內把 class 0/1/2 都補到 100，再做少類平衡；fold 1 會變成 100/100/100，每 epoch 抽 300 張。
+- `config.angle_3class.balanced_sampling.augmentation300.yaml` 會在每個 training fold 內把 class 0/1/2 都補到 300，再做少類平衡；fold 1 會變成 300/300/300，每 epoch 抽 900 張。
+- `config.angle_3class.balanced_sampling.augmentation_x12.yaml` 會在每個 epoch 先從 fold 內隨機抽少類平衡 base set；fold 1 會先抽成 4/4/4，再把每筆 base sample 展開成 12 個 views，所以每 epoch 會訓練 48/48/48。
 - 新增方法關閉 class weights，避免「已平衡抽樣」後又重複加權少數類。
 
 ## 6. 評估模型
@@ -159,6 +182,8 @@ cd /home/felix/Research/nnMamba/regression
 conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.yaml
 conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.gold.yaml
 conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_3class.yaml
+conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_binary_extreme.yaml
+conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_binary_extreme.balanced_sampling.augmentation100.yaml
 ```
 
 如果只想看某一個 fold：
@@ -267,4 +292,20 @@ conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_
 cd /home/felix/Research/nnMamba/regression
 conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation100.yaml
 conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_3class.balanced_sampling.augmentation100.yaml
+```
+
+如果你要跑 131° / 152° 三分類的 300/class virtual augmentation + 每 epoch 隨機下採樣版本：
+
+```bash
+cd /home/felix/Research/nnMamba/regression
+conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation300.yaml
+conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_3class.balanced_sampling.augmentation300.yaml
+```
+
+如果你要跑 131° / 152° 三分類的「先每 epoch 少類平衡，再 x12 train-time augmentation」版本：
+
+```bash
+cd /home/felix/Research/nnMamba/regression
+conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation_x12.yaml
+conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_3class.balanced_sampling.augmentation_x12.yaml
 ```

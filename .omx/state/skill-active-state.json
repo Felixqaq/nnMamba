@@ -3,9 +3,9 @@
   "active": true,
   "skill": "cancel",
   "keyword": "stop",
-  "phase": "planning",
+  "phase": "reviewing",
   "activated_at": "2026-04-22T05:22:24.748Z",
-  "updated_at": "2026-04-30T07:27:26.025Z",
+  "updated_at": "2026-05-06T06:55:38.605Z",
   "source": "keyword-detector",
   "input_lock": null
 }

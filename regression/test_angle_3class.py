@@ -9,7 +9,12 @@ from torch.utils.data import Subset
 
 from core.checkpoints import generate_uuid
 from core.config import Config
-from data.loader import AugmentedSubset, BalancedClassSampler, RegressionLoaderHelper
+from data.loader import (
+    AugmentedSubset,
+    BalancedClassSampler,
+    BalancedClassViewSampler,
+    RegressionLoaderHelper,
+)
 from data.manifest import ANGLE_3CLASS_NAMES, build_angle_manifest
 
 
@@ -94,6 +99,54 @@ def test_angle_3class_balanced_sampling_augmentation100_config_is_additive() -> 
     assert config.data.augmentation.target_per_class == 100
     assert config.data.augmentation.class_indices == (0, 1, 2)
     assert config.experiment.name == "Balanced sampling + aug100/class"
+    assert config.task == "Angle_3class_classification"
+
+
+def test_angle_3class_balanced_sampling_augmentation300_config_is_additive() -> None:
+    config = Config.from_yaml(
+        Path(__file__).with_name(
+            "config.angle_3class.balanced_sampling.augmentation300.yaml"
+        )
+    )
+
+    assert config.data.target_mode == "angle_3class"
+    assert config.is_classification_task() is True
+    assert config.model.num_classes == 3
+    assert config.data.source_dir == Path("../by_angle_all")
+    assert config.data.manifest == Path(
+        "./datasets/generated/angle_3class_manifest.json"
+    )
+    assert config.training.class_weight_mode == "none"
+    assert config.data.balanced_sampling is True
+    assert config.data.augmentation.enabled is True
+    assert config.data.augmentation.target_per_class == 300
+    assert config.data.augmentation.class_indices == (0, 1, 2)
+    assert config.experiment.name == "Balanced sampling + aug300/class"
+    assert config.task == "Angle_3class_classification"
+
+
+def test_angle_3class_balanced_sampling_augmentation_x12_config_is_additive() -> None:
+    config = Config.from_yaml(
+        Path(__file__).with_name(
+            "config.angle_3class.balanced_sampling.augmentation_x12.yaml"
+        )
+    )
+
+    assert config.data.target_mode == "angle_3class"
+    assert config.is_classification_task() is True
+    assert config.model.num_classes == 3
+    assert config.data.source_dir == Path("../by_angle_all")
+    assert config.data.manifest == Path(
+        "./datasets/generated/angle_3class_manifest.json"
+    )
+    assert config.training.class_weight_mode == "none"
+    assert config.data.balanced_sampling is True
+    assert config.data.augmentation.enabled is True
+    assert config.data.augmentation.balance_then_augment is True
+    assert config.data.augmentation.views_per_sample == 12
+    assert config.data.augmentation.target_per_class is None
+    assert config.data.augmentation.class_indices == (0, 1, 2)
+    assert config.experiment.name == "Balanced sampling + augx12/epoch"
     assert config.task == "Angle_3class_classification"
 
 
@@ -338,6 +391,97 @@ def test_angle_3class_balanced_sampling_can_augment_all_classes_to_100() -> None
     assert np.bincount(train_subset_targets, minlength=3).tolist() == [100, 100, 100]
     assert train_dl.dataset.augment_flags is not None
     assert sum(train_dl.dataset.augment_flags) == 248
+
+
+def test_angle_3class_balanced_sampling_augments_x12_after_epoch_balance() -> None:
+    config = Config.from_yaml(
+        Path(__file__).with_name(
+            "config.angle_3class.balanced_sampling.augmentation_x12.yaml"
+        )
+    )
+    regression_root = Path(__file__).resolve().parent
+
+    loader = RegressionLoaderHelper(
+        data_root=regression_root / config.data.source_dir,
+        labels_json=regression_root / config.data.labels_json,
+        pft_json=None,
+        target_mode="angle_3class",
+        k_folds=config.training.k_folds,
+        seed=config.training.seed,
+        batch_size=12,
+        val_batch_size=12,
+        num_workers=0,
+        cache_data=False,
+        manifest_path=None,
+        intensity_window=config.data.intensity_window,
+        input_normalization=config.data.input_normalization,
+        augmentation_config=config.data.augmentation,
+        balanced_sampling=config.data.balanced_sampling,
+    )
+
+    train_idx, _ = loader.fold_indices[0]
+    train_dl = loader.get_train_dl(0)
+    val_dl = loader.get_val_dl(0)
+
+    assert isinstance(train_dl.dataset, AugmentedSubset)
+    assert isinstance(train_dl.sampler, BalancedClassViewSampler)
+    assert train_dl.dataset.augmentation is not None
+    assert train_dl.dataset.augmentation.target_class_indices == {0, 1, 2}
+    assert len(train_dl.dataset) == len(train_idx) * 12
+    assert len(train_dl.sampler) == 144
+
+    train_targets = loader.targets[train_idx].astype(int)
+    assert np.bincount(train_targets, minlength=3).tolist() == [11, 4, 37]
+    assert train_dl.dataset.augment_flags is not None
+    assert sum(train_dl.dataset.augment_flags) == len(train_idx) * 11
+
+    first_epoch_positions = list(iter(train_dl.sampler))
+    second_epoch_positions = list(iter(train_dl.sampler))
+
+    first_epoch_indices = [
+        train_dl.dataset.indices[position] for position in first_epoch_positions
+    ]
+    second_epoch_indices = [
+        train_dl.dataset.indices[position] for position in second_epoch_positions
+    ]
+    assert np.bincount(loader.targets[first_epoch_indices], minlength=3).tolist() == [
+        48,
+        48,
+        48,
+    ]
+    assert np.bincount(loader.targets[second_epoch_indices], minlength=3).tolist() == [
+        48,
+        48,
+        48,
+    ]
+
+    first_base_positions = {position // 12 for position in first_epoch_positions}
+    second_base_positions = {position // 12 for position in second_epoch_positions}
+    first_base_indices = [train_idx[position] for position in first_base_positions]
+    assert np.bincount(loader.targets[first_base_indices], minlength=3).tolist() == [
+        4,
+        4,
+        4,
+    ]
+
+    first_epoch_flags = [
+        train_dl.dataset.augment_flags[position] for position in first_epoch_positions
+    ]
+    assert sum(first_epoch_flags) == 132
+
+    first_majority_indices = {
+        train_idx[position]
+        for position in first_base_positions
+        if int(loader.targets[train_idx[position]]) == 2
+    }
+    second_majority_indices = {
+        train_idx[position]
+        for position in second_base_positions
+        if int(loader.targets[train_idx[position]]) == 2
+    }
+    assert first_majority_indices != second_majority_indices
+    assert isinstance(val_dl.dataset, Subset)
+    assert not isinstance(val_dl.dataset, AugmentedSubset)
 
 
 def test_angle_3class_augmented_manifest_balances_minority_classes() -> None:

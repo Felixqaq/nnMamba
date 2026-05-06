@@ -58,3 +58,5 @@ Macro-F1 和 Balanced Accuracy，也保留較好的 class 0/class 1 recall。
 200/class 可能只是把少數幾位病人的 CT 重複變形更多次，資訊增益有限，
 所以建議先在 50 附近測 40/class 和 60/class，再決定是否需要跑 200/class。
 ```
+
+python train.py --config config.angle_3class.balanced_sampling.augmentation300.yaml

@@ -691,6 +691,26 @@ class Trainer:
                 summary[f"mean_{key}"] = None
                 summary[f"std_{key}"] = None
 
+        config_meta = {
+            "epochs": self.config.training.epochs,
+            "batch_size": self.config.training.batch_size,
+            "learning_rate": self.config.training.learning_rate,
+            "weight_decay": self.config.training.weight_decay,
+            "k_folds": self.config.training.k_folds,
+            "seed": self.config.training.seed,
+            "loss": self.config.training.loss,
+            "num_classes": self.config.model.num_classes,
+            "target_mode": self.config.data.target_mode,
+        }
+        if self.config.data.target_mode == "angle_binary_extreme":
+            config_meta.update(
+                {
+                    "abnormal_rule": "AC <= 131 deg",
+                    "excluded_gray_zone": "132 <= AC < 152 deg",
+                    "normal_rule": "AC >= 152 deg",
+                }
+            )
+
         results = {
             "meta": {
                 "uuid": self.uuid,
@@ -717,16 +737,7 @@ class Trainer:
                 if self.total_training_seconds is not None
                 else None,
                 "class_names": self.class_names,
-                "config": {
-                    "epochs": self.config.training.epochs,
-                    "batch_size": self.config.training.batch_size,
-                    "learning_rate": self.config.training.learning_rate,
-                    "weight_decay": self.config.training.weight_decay,
-                    "k_folds": self.config.training.k_folds,
-                    "seed": self.config.training.seed,
-                    "loss": self.config.training.loss,
-                    "num_classes": self.config.model.num_classes,
-                },
+                "config": config_meta,
             },
             "folds": fold_entries,
             "summary": summary,

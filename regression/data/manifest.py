@@ -18,6 +18,12 @@ ANGLE_3CLASS_NAMES = [
     "Intermediate (132-151 deg)",
     "Normal (>=152 deg)",
 ]
+ANGLE_BINARY_EXTREME_LOW_MAX = 131.0
+ANGLE_BINARY_EXTREME_HIGH_MIN = 152.0
+ANGLE_BINARY_EXTREME_NAMES = [
+    "Abnormal/emphysema-like (AC <=131 deg)",
+    "Normal-like (AC >=152 deg)",
+]
 
 
 @dataclass(frozen=True)
@@ -101,6 +107,16 @@ def angle_3class_label(angle: float) -> tuple[int, str]:
     if angle < 152.0:
         return 1, ANGLE_3CLASS_NAMES[1]
     return 2, ANGLE_3CLASS_NAMES[2]
+
+
+def angle_binary_extreme_label(angle: float) -> tuple[int, str] | None:
+    """Map clear AC endpoints into a two-class target and drop the gray zone."""
+    angle = float(angle)
+    if angle <= ANGLE_BINARY_EXTREME_LOW_MAX:
+        return 0, ANGLE_BINARY_EXTREME_NAMES[0]
+    if angle >= ANGLE_BINARY_EXTREME_HIGH_MIN:
+        return 1, ANGLE_BINARY_EXTREME_NAMES[1]
+    return None
 
 
 def _gold_stage_sort_key(stage_name: str) -> tuple[int, str]:
@@ -194,6 +210,8 @@ def build_angle_manifest(
         class_names = list(gold_class_names)
     elif target_mode == "angle_3class":
         class_names = list(ANGLE_3CLASS_NAMES)
+    elif target_mode == "angle_binary_extreme":
+        class_names = list(ANGLE_BINARY_EXTREME_NAMES)
     else:
         class_names = []
 
@@ -222,6 +240,11 @@ def build_angle_manifest(
             class_label = str(gold_meta["gold_stage_label"])
         elif target_mode == "angle_3class":
             class_index, class_label = angle_3class_label(float(angle))
+        elif target_mode == "angle_binary_extreme":
+            extreme_label = angle_binary_extreme_label(float(angle))
+            if extreme_label is None:
+                continue
+            class_index, class_label = extreme_label
 
         source_group = ct_path.parent.name
         records.append(

@@ -18,7 +18,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-CLASSIFICATION_TASK_TYPES = {"gold", "angle_3class"}
+CLASSIFICATION_TASK_TYPES = {"gold", "angle_3class", "angle_binary_extreme"}
 
 
 @dataclass

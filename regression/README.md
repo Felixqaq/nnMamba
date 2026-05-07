@@ -95,7 +95,7 @@ conda run -n nnMamba python regression/scripts/generate_angle_3class_augmented_d
 
 - [config.yaml](/home/felix/Research/nnMamba/regression/config.yaml)：原本 regression
 - [config.hybrid.preset.yaml](/home/felix/Research/nnMamba/regression/config.hybrid.preset.yaml)：hybrid 的可選 preset
-- [config.gold.yaml](/home/felix/Research/nnMamba/regression/config.gold.yaml)：GOLD 四分類範例
+- [config.gold.yaml](/home/felix/Research/nnMamba/regression/config.gold.yaml)：GOLD 四分類，training fold 內把四個 GOLD class 都 virtual augmentation 補到 200，再做每 epoch 少類平衡
 - [config.angle_3class.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.yaml)：131° / 152° 三分類，沿用實體增強資料集
 - [config.angle_binary_extreme.yaml](/home/felix/Research/nnMamba/regression/config.angle_binary_extreme.yaml)：文獻式極端二分類，排除 `132-151°` 灰區，保留 `14/47` 筆
 - [config.angle_binary_extreme.balanced_sampling.augmentation100.yaml](/home/felix/Research/nnMamba/regression/config.angle_binary_extreme.balanced_sampling.augmentation100.yaml)：極端二分類，training fold 內 virtual augmentation 到每類 100，再做每 epoch 少類平衡
@@ -145,8 +145,8 @@ conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampl
 - `input_normalization`: CT 輸入正規化方式；GOLD 範例使用 `zscore`，避免 raw HU 在 AMP 訓練時造成數值不穩
 - `target_normalization`: 只對 regression target 生效
 - `balanced_sampling`: classification task 可啟用每個 epoch 重新隨機下採樣，多數類會抽到和該 fold 少數類一樣的數量
-- `augmentation`: GOLD 範例預設關閉 train-time augmentation，改用 `by_angle_all_gold_augmented/` 裡已寫出的 `.nii.gz`
-- validation/test 仍只使用原始病人 CT；augmented 檔只會進 training fold，避免同病人資料洩漏。
+- `augmentation`: GOLD 範例使用原始 `by_angle_all/`，並在每個 training fold 內把四個 GOLD class 都 virtual augmentation 補到 200。
+- validation/test 仍只使用原始病人 CT；virtual augmented copies 只會進 training fold，避免同病人資料洩漏。
 - `early_stopping`: GOLD 範例預設用 validation Macro-F1；連續 6 次 evaluation 沒有至少 `0.005` 的進步就停止該 fold。
 
 如果是 `angle_binary_extreme` 模式：

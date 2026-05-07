@@ -2,8 +2,8 @@
 # ===============================================
 
 experiment:
-  name: GOLD balanced sampling + aug200/class
-  description: Virtual train-fold augmentation brings all four GOLD classes to 200 samples before per-epoch balanced sampling.
+  name: GOLD balanced sampling + aug36/class
+  description: Virtual train-fold augmentation brings all four GOLD classes to 36 samples before per-epoch balanced sampling.
 
 model:
   name: hybrid_mamba_attention  # options: mamba | hybrid_mamba_attention | swinunetr
@@ -42,7 +42,7 @@ training:
   seed: 42
   loss: auto
   clip_grad_norm: 1.0
-  amp: true
+  amp: false
   track_train_metrics: false
   class_weight_mode: none
 
@@ -57,7 +57,7 @@ data:
   labels_json: ../patient_angle_classification_by_group.json
   pft_json: ../pft.json
   angle_split_manifest: ../by_angle_all/reclassification_manifest.json
-  manifest: ./datasets/generated/gold_manifest.json
+  manifest: ./datasets/generated/gold_manifest.aug36.json
   image_size: [112, 136, 112]
   intensity_window: [-1000.0, 400.0]
   input_normalization: zscore
@@ -71,9 +71,9 @@ data:
   augmentation:
     enabled: true
     balance_to_majority: false
-    target_per_class: 100
+    target_per_class: 36
     probability: 1.0
-    # GOLD stages are one-based; include all stages so every train fold reaches 200/class.
+    # GOLD stages are one-based; include all stages so every train fold reaches 36/class.
     gold_stages: [1, 2, 3, 4]
     rotation_degrees: 7.0
     translation_fraction: 0.05

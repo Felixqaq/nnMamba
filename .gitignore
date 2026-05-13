@@ -44,6 +44,7 @@ weights/
 train_log/
 logs/
 figures/
+regression/embeddings/
 *.pth
 *.pt
 *.ckpt

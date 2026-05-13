@@ -1,5 +1,5 @@
 {
-  "last_turn_at": "2026-05-06T06:59:40.636Z",
-  "turn_count": 157,
-  "last_agent_output": "已把 GOLD aug 拉到 `200/class`。\n\n改动：\n- [config.gold.yaml](/home/felix/Research/nnMamba/regression/config"
+  "last_turn_at": "2026-05-13T08:43:38.235Z",
+  "turn_count": 178,
+  "last_agent_output": "**Late fusion** 就是：**不同模型先各自把資料轉成自己的高階特徵，最後才把這些特徵合併起來做分類。**\n\n用你現在的情境：\n\n```text\n原始 CT\n  ├─> Hybrid Ma"
 }

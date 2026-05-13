@@ -21,6 +21,7 @@
 | Angle 3-class | 同上 | 3-class classification | `<=131°`, `132-151°`, `>=152°` |
 | Angle extreme binary | 同上 | Gray-zone excluded binary classification | 只分 `AC <=131°` 與 `AC >=152°`，排除灰區 |
 | GOLD | `by_angle_all/`, `pft.json` | 4-class ordinal classification | GOLD 1, 2, 3, 4 COPD 嚴重度 |
+| TAP-CT embedding probe | `by_angle_all/`, TAP-CT frozen encoder | Foundation embedding + small classifier | 用少量資料測試 pretrained 3D CT representation 是否能改善 angle classification |
 
 ## 1. 早期 Classification 實驗
 
@@ -152,6 +153,36 @@ Extreme binary 的價值：
 - 如果要找論文主線，這個任務可以當「clinical interpretable endpoint classification」。
 - 但它不是完整 COPD staging，只能說明 CT 模型能分辨 angle 兩端明確族群。
 
+## 6. TAP-CT Foundation Embedding Probe 實驗
+
+這是近期新增的 low-resource baseline。核心想法是不要在 66 筆資料上從零訓練大型 3D model，而是使用 TAP-CT 這類已在大量 CT 上預訓練的 foundation model，把每位病人的 CT 先轉成 embedding，再用 Logistic regression、Linear SVM、Ridge classifier 等小分類器做 angle 相關分類。
+
+### TAP-CT 流程摘要
+
+| 步驟 | 說明 |
+| --- | --- |
+| 1 | 讀取每位病人的 NIfTI 3D CT |
+| 2 | 使用 SimpleITK 統一 LPS orientation |
+| 3 | 用 TAP-CT image processor 做前處理 |
+| 4 | 沿 axial direction 切成 overlapping 12-slice windows |
+| 5 | TAP-CT encoder 抽每個 window 的 embedding |
+| 6 | 用 mean / std / max pooling 合成 patient-level embedding |
+| 7 | 用 sklearn 小分類器做 5-fold stratified cross-validation |
+
+### TAP-CT 代表性結果
+
+| 任務 | 最佳 TAP-CT probe | Accuracy | Macro-F1 | Balanced Acc | 解讀 |
+| --- | --- | ---: | ---: | ---: | --- |
+| Angle 3-class | TAP-CT-B + Linear SVM | 0.6363 | 0.5202 | 0.6363 | balanced accuracy 接近現有 hybrid 3-class 最佳，但中間類仍困難 |
+| Angle extreme binary | TAP-CT-S + Ridge classifier | 0.8872 | 0.7971 | 0.8111 | 不訓練 3D network 也能接近 extreme binary deep model |
+
+TAP-CT 實驗的意義：
+
+- 它提供一個強而簡潔的小樣本 baseline。
+- 它能說明 pretrained CT representation 對本專案 angle phenotype 有可轉移訊號。
+- Extreme binary 上表現最好，支持「排除灰區後，CT phenotype 兩端差異較明確」這個論點。
+- 3-class 仍受 class 1 只有 5 筆限制，因此後續需要 threshold calibration、hyperparameter search，或與 Hybrid Mamba-Attention 做 late fusion。
+
 ## 目前最佳結果摘要
 
 | 任務 | 目前最佳 / 最值得報告結果 | 指標摘要 |
@@ -161,6 +192,7 @@ Extreme binary 的價值：
 | GOLD 4-class | `gold_balanced_sampling_aug36_class_2026-05-07_11:17:40` | Accuracy 0.5606, Macro-F1 0.5323, Balanced Acc 0.5222 |
 | Angle 3-class | `balanced_sampling_aug300_class_2026-05-07_09:38:05` | Accuracy 0.7593, Macro-F1 0.5713, Balanced Acc 0.6319 |
 | Angle extreme binary | `extreme_binary_balanced_aug100_class_2026-05-06_14:27:44` | Accuracy 0.8692, Macro-F1 0.8177, Balanced Acc 0.8289 |
+| TAP-CT frozen embedding | TAP-CT-S/B + sklearn probes | extreme binary Acc 0.8872；3-class Balanced Acc 0.6363 |
 
 ## 可形成的論文故事線
 

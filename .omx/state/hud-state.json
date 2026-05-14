@@ -1,5 +1,5 @@
 {
-  "last_turn_at": "2026-05-14T05:07:45.294Z",
-  "turn_count": 188,
-  "last_agent_output": "可以，已經加好了。這版是新的 model，不覆蓋原本 MLP late fusion，所以之後可以公平比較兩個結果。\n\n新增內容：\n- 新模型：[hybrid_mamba_tapct_abmil_fu"
+  "last_turn_at": "2026-05-14T06:26:47.632Z",
+  "turn_count": 192,
+  "last_agent_output": "結論：**attention concat fusion 沒有贏過原本 MLP late fusion**。它比 ABMIL weighted-sum 稍微會抓 Intermediate，但代價是把太"
 }

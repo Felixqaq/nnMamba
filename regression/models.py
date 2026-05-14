@@ -8,6 +8,9 @@ from networks.hybrid_mamba_attention_regressor import HybridMambaAttentionRegres
 from networks.hybrid_mamba_tapct_abmil_fusion_regressor import (
     HybridMambaTapctABMILFusionRegressor,
 )
+from networks.hybrid_mamba_tapct_attention_fusion_regressor import (
+    HybridMambaTapctAttentionFusionRegressor,
+)
 from networks.hybrid_mamba_tapct_fusion_regressor import HybridMambaTapctFusionRegressor
 from networks.mamba_regressor import MambaAngleRegressor
 from networks.swinunetr_v2_regressor import SwinUNETRV2AngleRegressor
@@ -24,6 +27,9 @@ MODEL_REGISTRY = {
     "hybrid_mamba_tapct_abmil_fusion": HybridMambaTapctABMILFusionRegressor,
     "hybrid_tapct_abmil_fusion": HybridMambaTapctABMILFusionRegressor,
     "tapct_abmil_fusion": HybridMambaTapctABMILFusionRegressor,
+    "hybrid_mamba_tapct_attention_fusion": HybridMambaTapctAttentionFusionRegressor,
+    "hybrid_tapct_attention_fusion": HybridMambaTapctAttentionFusionRegressor,
+    "tapct_attention_fusion": HybridMambaTapctAttentionFusionRegressor,
     "tapct_abmil": TapctABMILClassifier,
     "tapct_abmil_classifier": TapctABMILClassifier,
     "mamba": MambaAngleRegressor,
@@ -79,6 +85,9 @@ def build_model(model_config, device=None) -> nn.Module:
             "hybrid_mamba_tapct_abmil_fusion",
             "hybrid_tapct_abmil_fusion",
             "tapct_abmil_fusion",
+            "hybrid_mamba_tapct_attention_fusion",
+            "hybrid_tapct_attention_fusion",
+            "tapct_attention_fusion",
         }:
             kwargs = {
                 "in_channels": int(model_config.in_channels),
@@ -99,6 +108,9 @@ def build_model(model_config, device=None) -> nn.Module:
                 "hybrid_mamba_tapct_abmil_fusion",
                 "hybrid_tapct_abmil_fusion",
                 "tapct_abmil_fusion",
+                "hybrid_mamba_tapct_attention_fusion",
+                "hybrid_tapct_attention_fusion",
+                "tapct_attention_fusion",
             }:
                 kwargs.update(
                     {

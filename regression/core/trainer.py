@@ -30,6 +30,9 @@ ATTENTION_HEAVY_MODELS = {
     "hybrid_mamba_tapct_abmil_fusion",
     "hybrid_tapct_abmil_fusion",
     "tapct_abmil_fusion",
+    "hybrid_mamba_tapct_attention_fusion",
+    "hybrid_tapct_attention_fusion",
+    "tapct_attention_fusion",
     "mamba_hybrid",
     "swinunetr",
 }
@@ -41,11 +44,19 @@ TAPCT_FUSION_MODELS = {
     "hybrid_tapct_abmil_fusion",
     "tapct_late_fusion",
     "tapct_abmil_fusion",
+    "hybrid_mamba_tapct_attention_fusion",
+    "hybrid_tapct_attention_fusion",
+    "tapct_attention_fusion",
 }
 TAPCT_ABMIL_FUSION_MODELS = {
     "hybrid_mamba_tapct_abmil_fusion",
     "hybrid_tapct_abmil_fusion",
     "tapct_abmil_fusion",
+}
+TAPCT_ATTENTION_FUSION_MODELS = {
+    "hybrid_mamba_tapct_attention_fusion",
+    "hybrid_tapct_attention_fusion",
+    "tapct_attention_fusion",
 }
 
 
@@ -170,6 +181,11 @@ class Trainer:
                 if model_key in TAPCT_ABMIL_FUSION_MODELS:
                     print(
                         f"ABMIL fusion head: attention={cfg.model.tapct_attention_dim}, "
+                        f"gated={'on' if cfg.model.tapct_gated_attention else 'off'}"
+                    )
+                if model_key in TAPCT_ATTENTION_FUSION_MODELS:
+                    print(
+                        f"Attention concat fusion: attention={cfg.model.tapct_attention_dim}, "
                         f"gated={'on' if cfg.model.tapct_gated_attention else 'off'}"
                     )
         elif model_key in TAPCT_ONLY_MODELS:
@@ -773,7 +789,9 @@ class Trainer:
             config_meta["tapct_features"] = str(self.config.data.tapct_features)
             config_meta["tapct_embedding_dim"] = self.config.model.tapct_embedding_dim
             config_meta["fusion_projection_dim"] = self.config.model.fusion_projection_dim
-            if str(self.config.model.name).lower() in TAPCT_ABMIL_FUSION_MODELS:
+            if str(self.config.model.name).lower() in (
+                TAPCT_ABMIL_FUSION_MODELS | TAPCT_ATTENTION_FUSION_MODELS
+            ):
                 config_meta["tapct_attention_dim"] = (
                     self.config.model.tapct_attention_dim
                 )

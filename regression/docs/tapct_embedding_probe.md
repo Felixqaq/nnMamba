@@ -614,6 +614,54 @@ concat 後交給 MLP，而是可以依 case 動態調整哪個來源比較重要
 - `regression/core/trainer.py`
 - `regression/data/loader.py`
 
+### Attention concat fusion 版本
+
+如果想保留原本 late fusion 的放法，不要把兩邊壓成一個 ABMIL pooled vector，
+可以改用 attention concat fusion：
+
+```yaml
+model:
+  name: hybrid_mamba_tapct_attention_fusion
+  tapct_embedding_dim: 2304
+  fusion_projection_dim: 128
+  tapct_attention_dim: 128
+  tapct_gated_attention: true
+```
+
+對應 config：
+
+```bash
+cd /home/felix/Research/nnMamba/regression
+
+conda run -n nnMamba python train.py \
+  --config config.angle_3class.tapct_attention_fusion.augmentation100.yaml
+```
+
+它和 ABMIL fusion 的差別是：
+
+```text
+ABMIL fusion:
+CT feature + TAP feature ──> attention weighted sum ──> one pooled feature ──> classifier
+
+Attention concat fusion:
+CT feature ──> attention scale ─┐
+                                ├─> concat ──> original MLP head ──> classifier
+TAP feature ─> attention scale ─┘
+```
+
+也就是說，attention 只負責調整 CT/TAP 兩個來源的比例，但最後仍保留
+`concat(CT feature, TAP feature)` 的資訊量。實作中 attention 權重會乘上 2，
+所以初始接近平均權重時，兩個 branch 的 feature scale 會接近原本 late fusion，
+不會像 ABMIL weighted sum 那樣把 concat 後的 feature 維度直接壓掉。
+
+對應實作檔案：
+
+- `regression/networks/hybrid_mamba_tapct_attention_fusion_regressor.py`
+- `regression/config.angle_3class.tapct_attention_fusion.augmentation100.yaml`
+- `regression/models.py`
+- `regression/core/trainer.py`
+- `regression/data/loader.py`
+
 ## Embedding 抽取流程
 
 TAP-CT 接受的 3D crop shape 為 `(B, 1, 12, 224, 224)`。因此 extractor 的流程是：

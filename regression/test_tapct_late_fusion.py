@@ -47,6 +47,24 @@ def test_angle_3class_tapct_abmil_fusion_config() -> None:
     assert config.task == "Angle_3class_classification"
 
 
+def test_angle_3class_tapct_attention_fusion_config() -> None:
+    config = Config.from_yaml(
+        Path(__file__).with_name("config.angle_3class.tapct_attention_fusion.augmentation100.yaml")
+    )
+
+    assert config.data.target_mode == "angle_3class"
+    assert config.is_classification_task() is True
+    assert config.model.name == "hybrid_mamba_tapct_attention_fusion"
+    assert config.model.num_classes == 3
+    assert config.model.tapct_embedding_dim == 2304
+    assert config.model.tapct_attention_dim == 128
+    assert config.model.tapct_gated_attention is True
+    assert config.model.fusion_projection_dim == 128
+    assert config.data.tapct_features == Path("./embeddings/tapct_b_3d/features.npz")
+    assert config.data.augmentation.target_per_class == 100
+    assert config.task == "Angle_3class_classification"
+
+
 def test_angle_binary_extreme_tapct_late_fusion_config() -> None:
     config = Config.from_yaml(
         Path(__file__).with_name("config.angle_binary_extreme.tapct_late_fusion.yaml")
@@ -175,6 +193,50 @@ def test_hybrid_mamba_tapct_abmil_fusion_model_forwards() -> None:
     assert type(model).__name__ == "HybridMambaTapctABMILFusionRegressor"
     assert logits.shape == (2, 3)
     assert features.shape == (2, 12)
+    assert weights.shape == (2, 2)
+    assert torch.allclose(weights.sum(dim=1), torch.ones(2), atol=1e-6)
+    assert torch.isfinite(logits).all()
+
+
+def test_hybrid_mamba_tapct_attention_fusion_model_forwards() -> None:
+    cfg = ModelConfig(
+        name="hybrid_mamba_tapct_attention_fusion",
+        in_channels=1,
+        num_classes=3,
+        base_channels=8,
+        blocks=1,
+        hidden_dim=32,
+        dropout=0.1,
+        attn_heads=2,
+        attn_layers=1,
+        attn_mlp_ratio=2.0,
+        attn_dropout=0.1,
+        tapct_embedding_dim=16,
+        tapct_attention_dim=8,
+        fusion_projection_dim=12,
+        fusion_dropout=0.1,
+    )
+
+    model = build_model(cfg).eval()
+    model.image_encoder.forward_features = lambda ct: torch.zeros(
+        ct.shape[0],
+        model.image_feature_dim,
+        dtype=ct.dtype,
+        device=ct.device,
+    )
+    batch = {
+        "ct": torch.zeros(2, 1, 16, 16, 16),
+        "tapct_embedding": torch.ones(2, 16),
+    }
+
+    with torch.no_grad():
+        logits = model(batch)
+        features = model.forward_features(batch)
+        weights = model.forward_attention_weights(batch)
+
+    assert type(model).__name__ == "HybridMambaTapctAttentionFusionRegressor"
+    assert logits.shape == (2, 3)
+    assert features.shape == (2, model.feature_dim)
     assert weights.shape == (2, 2)
     assert torch.allclose(weights.sum(dim=1), torch.ones(2), atol=1e-6)
     assert torch.isfinite(logits).all()

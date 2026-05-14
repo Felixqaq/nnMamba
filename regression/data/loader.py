@@ -27,6 +27,9 @@ ATTENTION_HEAVY_MODELS = {
     "hybrid_mamba_tapct_abmil_fusion",
     "hybrid_tapct_abmil_fusion",
     "tapct_abmil_fusion",
+    "hybrid_mamba_tapct_attention_fusion",
+    "hybrid_tapct_attention_fusion",
+    "tapct_attention_fusion",
     "mamba_hybrid",
     "swinunetr",
 }

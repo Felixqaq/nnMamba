@@ -176,4 +176,9 @@ class ToTensor:
         }
         if sample.get("label") is not None:
             output["label"] = torch.tensor(sample["label"], dtype=torch.long)
+        if sample.get("tapct_embedding") is not None:
+            output["tapct_embedding"] = torch.as_tensor(
+                sample["tapct_embedding"],
+                dtype=torch.float32,
+            )
         return output

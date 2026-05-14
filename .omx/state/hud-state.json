@@ -1,5 +1,5 @@
 {
-  "last_turn_at": "2026-05-13T08:43:38.235Z",
-  "turn_count": 178,
-  "last_agent_output": "**Late fusion** 就是：**不同模型先各自把資料轉成自己的高階特徵，最後才把這些特徵合併起來做分類。**\n\n用你現在的情境：\n\n```text\n原始 CT\n  ├─> Hybrid Ma"
+  "last_turn_at": "2026-05-14T05:07:45.294Z",
+  "turn_count": 188,
+  "last_agent_output": "可以，已經加好了。這版是新的 model，不覆蓋原本 MLP late fusion，所以之後可以公平比較兩個結果。\n\n新增內容：\n- 新模型：[hybrid_mamba_tapct_abmil_fu"
 }

@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.model_selection import KFold, StratifiedKFold
 import torch
 from torch.utils.data import DataLoader, Dataset, Sampler, Subset
+from torch.utils.data._utils.collate import default_collate
 from torchvision import transforms
 
 from .dataset import AngleRegressionDataset, DEFAULT_IMAGE_SIZE
@@ -20,10 +21,61 @@ ATTENTION_HEAVY_MODELS = {
     "hybrid",
     "hybrid_mamba_attention",
     "hybrid_mamba_attention_regressor",
+    "hybrid_mamba_tapct_fusion",
+    "hybrid_tapct_fusion",
+    "tapct_late_fusion",
+    "hybrid_mamba_tapct_abmil_fusion",
+    "hybrid_tapct_abmil_fusion",
+    "tapct_abmil_fusion",
     "mamba_hybrid",
     "swinunetr",
 }
 CLASSIFICATION_TARGET_MODES = {"gold", "angle_3class", "angle_binary_extreme"}
+
+
+def _collate_angle_batch(samples: list[dict]) -> dict:
+    """Collate CT samples and pad variable-length TAP-CT instance bags."""
+    if not samples or "tapct_embedding" not in samples[0]:
+        return default_collate(samples)
+
+    embeddings = [sample["tapct_embedding"] for sample in samples]
+    if not all(torch.is_tensor(embedding) for embedding in embeddings):
+        return default_collate(samples)
+    if not any(embedding.ndim == 2 for embedding in embeddings):
+        return default_collate(samples)
+
+    normalized: list[torch.Tensor] = []
+    for embedding in embeddings:
+        if embedding.ndim == 1:
+            embedding = embedding.unsqueeze(0)
+        if embedding.ndim != 2:
+            raise ValueError(
+                "TAP-CT ABMIL inputs must be 1D embeddings or 2D instance bags, "
+                f"got shape={tuple(embedding.shape)}."
+            )
+        normalized.append(embedding.float())
+
+    feature_dim = int(normalized[0].shape[-1])
+    if any(int(embedding.shape[-1]) != feature_dim for embedding in normalized):
+        raise ValueError("All TAP-CT instance bags in a batch must share feature dim.")
+
+    max_instances = max(int(embedding.shape[0]) for embedding in normalized)
+    padded = torch.zeros(len(normalized), max_instances, feature_dim, dtype=torch.float32)
+    mask = torch.zeros(len(normalized), max_instances, dtype=torch.bool)
+    for index, embedding in enumerate(normalized):
+        length = int(embedding.shape[0])
+        padded[index, :length] = embedding
+        mask[index, :length] = True
+
+    samples_without_embeddings = []
+    for sample in samples:
+        item = dict(sample)
+        item.pop("tapct_embedding", None)
+        samples_without_embeddings.append(item)
+    batch = default_collate(samples_without_embeddings)
+    batch["tapct_embedding"] = padded
+    batch["tapct_mask"] = mask
+    return batch
 
 
 class BalancedClassSampler(Sampler):
@@ -190,6 +242,10 @@ class RegressionLoaderHelper:
         prefetch_factor: int = 2,
         augmentation_config: Any | None = None,
         balanced_sampling: bool = False,
+        tapct_features: str | Path | None = None,
+        tapct_feature_key: str = "features",
+        tapct_allow_single_instance_fallback: bool = False,
+        load_ct_data: bool = True,
     ):
         if hasattr(data_root, "data") and hasattr(data_root, "training"):
             config = data_root
@@ -216,6 +272,12 @@ class RegressionLoaderHelper:
             prefetch_factor = config.data.prefetch_factor
             augmentation_config = config.data.augmentation
             balanced_sampling = config.data.balanced_sampling
+            tapct_features = config.data.tapct_features
+            tapct_feature_key = config.data.tapct_feature_key
+            tapct_allow_single_instance_fallback = (
+                config.data.tapct_allow_single_instance_fallback
+            )
+            load_ct_data = config.data.load_ct
 
         self.data_root = Path(data_root)
         self.labels_json = Path(labels_json)
@@ -238,6 +300,12 @@ class RegressionLoaderHelper:
         self.balanced_sampling = bool(
             balanced_sampling and self.target_mode in CLASSIFICATION_TARGET_MODES
         )
+        self.tapct_features = Path(tapct_features) if tapct_features else None
+        self.tapct_feature_key = str(tapct_feature_key)
+        self.tapct_allow_single_instance_fallback = bool(
+            tapct_allow_single_instance_fallback
+        )
+        self.load_ct_data = bool(load_ct_data)
         self.train_augmentation = self._build_train_augmentation()
 
         manifest = build_angle_manifest(
@@ -261,6 +329,12 @@ class RegressionLoaderHelper:
             )
         self.patient_ids = [record.patient_id for record in self.records]
         self.target_mean, self.target_std = self._compute_target_stats(self.targets)
+        self.tapct_embeddings = self._load_tapct_embeddings(self.tapct_features)
+        self.tapct_embedding_dim = (
+            int(np.asarray(next(iter(self.tapct_embeddings.values()))).shape[-1])
+            if self.tapct_embeddings
+            else 0
+        )
 
         self.train_ds = AngleRegressionDataset(
             self.data_root,
@@ -271,8 +345,10 @@ class RegressionLoaderHelper:
             intensity_window=self.intensity_window,
             input_normalization=self.input_normalization,
             records=self.records,
+            tapct_embeddings=self.tapct_embeddings,
             transform=transforms.Compose([ToTensor()]),
             cache_data=self.cache_data,
+            load_ct_data=self.load_ct_data,
         )
         self.dataset = self.train_ds
 
@@ -287,6 +363,126 @@ class RegressionLoaderHelper:
             from .manifest import save_manifest
 
             save_manifest(self.manifest, self.manifest_path)
+
+    def _load_tapct_embeddings(self, path: Path | None) -> dict[str, np.ndarray]:
+        """Load TAP-CT features keyed by patient id."""
+        if path is None:
+            return {}
+        if not path.exists():
+            raise FileNotFoundError(f"TAP-CT feature bundle not found: {path}")
+
+        with np.load(path, allow_pickle=False) as data:
+            if "features" not in data or "patient_ids" not in data:
+                raise KeyError(
+                    f"TAP-CT feature bundle must contain features and patient_ids: {path}"
+                )
+            features = np.asarray(data["features"], dtype=np.float32)
+            patient_ids = [str(patient_id) for patient_id in data["patient_ids"]]
+
+        if features.ndim not in {2, 3}:
+            raise ValueError(
+                f"TAP-CT features must be a 2D matrix or 3D bag tensor, got shape={features.shape}"
+            )
+        if features.shape[0] != len(patient_ids):
+            raise ValueError(
+                "TAP-CT feature row count does not match patient_ids length: "
+                f"{features.shape[0]} vs {len(patient_ids)}"
+            )
+        if len(set(patient_ids)) != len(patient_ids):
+            raise ValueError(f"TAP-CT feature bundle contains duplicate patient_ids: {path}")
+
+        if self.tapct_feature_key == "features":
+            embeddings = {
+                patient_id: self._clean_tapct_array(features[index])
+                for index, patient_id in enumerate(patient_ids)
+            }
+        else:
+            embeddings = self._load_case_tapct_features(
+                bundle_path=path,
+                patient_ids=patient_ids,
+                fallback_features=features,
+            )
+        missing = [
+            record.patient_id
+            for record in self.records
+            if record.patient_id not in embeddings
+        ]
+        if missing:
+            preview = ", ".join(missing[:5])
+            suffix = "..." if len(missing) > 5 else ""
+            raise KeyError(
+                f"TAP-CT feature bundle is missing {len(missing)} patients: "
+                f"{preview}{suffix}"
+            )
+
+        first = np.asarray(next(iter(embeddings.values())))
+        token_text = (
+            f"{first.shape[-2]} instances x {first.shape[-1]} dims"
+            if first.ndim == 2
+            else f"{first.shape[-1]} dims"
+        )
+        print(
+            f"TAP-CT embeddings: {path} | "
+            f"{len(embeddings)} patients x {token_text} "
+            f"(key={self.tapct_feature_key})"
+        )
+        return embeddings
+
+    @staticmethod
+    def _clean_tapct_array(array: np.ndarray) -> np.ndarray:
+        """Convert TAP-CT arrays to finite float32 embeddings or instance bags."""
+        output = np.asarray(array, dtype=np.float32)
+        if output.ndim > 2:
+            output = output.reshape(-1, output.shape[-1])
+        return np.nan_to_num(
+            output,
+            nan=0.0,
+            posinf=0.0,
+            neginf=0.0,
+        ).astype(np.float32)
+
+    def _load_case_tapct_features(
+        self,
+        *,
+        bundle_path: Path,
+        patient_ids: list[str],
+        fallback_features: np.ndarray,
+    ) -> dict[str, np.ndarray]:
+        """Load per-patient TAP-CT arrays from the sibling cases directory."""
+        case_dir = bundle_path.parent / "cases"
+        embeddings: dict[str, np.ndarray] = {}
+        missing: list[str] = []
+        for index, patient_id in enumerate(patient_ids):
+            case_path = case_dir / f"{patient_id}.npz"
+            if not case_path.exists():
+                missing.append(patient_id)
+                continue
+            with np.load(case_path, allow_pickle=False) as case_data:
+                if self.tapct_feature_key not in case_data:
+                    missing.append(patient_id)
+                    continue
+                embeddings[patient_id] = self._clean_tapct_array(
+                    case_data[self.tapct_feature_key]
+                )
+
+        if missing and self.tapct_allow_single_instance_fallback:
+            for patient_id in missing:
+                index = patient_ids.index(patient_id)
+                embeddings[patient_id] = self._clean_tapct_array(
+                    fallback_features[index]
+                )
+            return embeddings
+        if missing:
+            preview = ", ".join(missing[:5])
+            suffix = "..." if len(missing) > 5 else ""
+            raise KeyError(
+                f"TAP-CT case files under {case_dir} are missing key "
+                f"{self.tapct_feature_key!r} for {len(missing)} patients: "
+                f"{preview}{suffix}. Re-run extraction with "
+                "--save-window-embeddings for true ABMIL instance bags, or set "
+                "tapct_feature_key: features for single-instance CLS/pooled mode."
+            )
+        return embeddings
 
     def _build_strata(
         self, targets: np.ndarray, max_bins: int
@@ -622,6 +818,7 @@ class RegressionLoaderHelper:
             num_workers=self.num_workers,
             pin_memory=self.pin_memory and torch.cuda.is_available(),
             drop_last=drop_last,
+            collate_fn=_collate_angle_batch,
         )
         if self.num_workers > 0:
             loader_kwargs["persistent_workers"] = True

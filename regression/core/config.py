@@ -10,6 +10,14 @@ import yaml
 ModelType = Literal[
     "hybrid",
     "hybrid_mamba_attention",
+    "hybrid_mamba_tapct_fusion",
+    "hybrid_tapct_fusion",
+    "tapct_late_fusion",
+    "hybrid_mamba_tapct_abmil_fusion",
+    "hybrid_tapct_abmil_fusion",
+    "tapct_abmil_fusion",
+    "tapct_abmil",
+    "tapct_abmil_classifier",
     "mamba",
     "swinunetr",
 ]
@@ -41,6 +49,11 @@ class ModelConfig:
     attn_layers: int = 1
     attn_mlp_ratio: float = 2.0
     attn_dropout: float = 0.1
+    tapct_embedding_dim: int = 2304
+    tapct_attention_dim: int = 128
+    tapct_gated_attention: bool = True
+    fusion_projection_dim: int = 128
+    fusion_dropout: float = 0.1
 
 
 @dataclass
@@ -102,6 +115,10 @@ class DataConfig:
     manifest: Path = field(
         default_factory=lambda: Path("./datasets/generated/regression_manifest.json")
     )
+    tapct_features: Path | None = None
+    tapct_feature_key: str = "features"
+    tapct_allow_single_instance_fallback: bool = False
+    load_ct: bool = True
     image_size: tuple[int, int, int] = (112, 136, 112)
     intensity_window: tuple[float, float] = (-1000.0, 400.0)
     input_normalization: InputNormType = "zscore"
@@ -209,6 +226,13 @@ class Config:
                 attn_layers=model_section.get("attn_layers", 1),
                 attn_mlp_ratio=model_section.get("attn_mlp_ratio", 2.0),
                 attn_dropout=model_section.get("attn_dropout", 0.1),
+                tapct_embedding_dim=model_section.get("tapct_embedding_dim", 2304),
+                tapct_attention_dim=model_section.get("tapct_attention_dim", 128),
+                tapct_gated_attention=model_section.get(
+                    "tapct_gated_attention", True
+                ),
+                fusion_projection_dim=model_section.get("fusion_projection_dim", 128),
+                fusion_dropout=model_section.get("fusion_dropout", 0.1),
             ),
             training=TrainingConfig(**data.get("training", {})),
             early_stopping=EarlyStoppingConfig(
@@ -234,6 +258,16 @@ class Config:
                         "manifest", "./datasets/generated/regression_manifest.json"
                     )
                 ),
+                tapct_features=(
+                    Path(data_section["tapct_features"])
+                    if data_section.get("tapct_features")
+                    else None
+                ),
+                tapct_feature_key=data_section.get("tapct_feature_key", "features"),
+                tapct_allow_single_instance_fallback=data_section.get(
+                    "tapct_allow_single_instance_fallback", False
+                ),
+                load_ct=data_section.get("load_ct", True),
                 image_size=tuple(data_section.get("image_size", [112, 136, 112])),
                 intensity_window=tuple(
                     data_section.get("intensity_window", [-1000.0, 400.0])

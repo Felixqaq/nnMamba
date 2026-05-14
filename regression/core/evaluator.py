@@ -77,6 +77,21 @@ def _extract_input_tensor(batch: dict[str, Any]) -> torch.Tensor:
     return x
 
 
+def _extract_model_input(batch: dict[str, Any], device: torch.device):
+    """Move model inputs to device, including optional late-fusion embeddings."""
+    x = _extract_input_tensor(batch).to(device, non_blocking=True)
+    embedding = batch.get("tapct_embedding")
+    if embedding is None:
+        return x
+    model_input = {
+        "ct": x,
+        "tapct_embedding": embedding.to(device, non_blocking=True),
+    }
+    if batch.get("tapct_mask") is not None:
+        model_input["tapct_mask"] = batch["tapct_mask"].to(device, non_blocking=True)
+    return model_input
+
+
 def _extract_regression_target(batch: dict[str, Any]) -> torch.Tensor:
     """Get regression target from a batch."""
     target = batch.get("angle")
@@ -171,7 +186,7 @@ def get_regression_predictions(
 
     with torch.no_grad():
         for batch in dataloader:
-            x = _extract_input_tensor(batch).to(device, non_blocking=True)
+            x = _extract_model_input(batch, device)
             target = _extract_regression_target(batch).to(device, non_blocking=True)
 
             with torch.autocast(
@@ -216,7 +231,7 @@ def get_classification_predictions(
 
     with torch.no_grad():
         for batch in dataloader:
-            x = _extract_input_tensor(batch).to(device, non_blocking=True)
+            x = _extract_model_input(batch, device)
             target = _extract_classification_target(batch).to(device, non_blocking=True)
 
             with torch.autocast(

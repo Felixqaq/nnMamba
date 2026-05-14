@@ -24,8 +24,28 @@ ATTENTION_HEAVY_MODELS = {
     "hybrid",
     "hybrid_mamba_attention",
     "hybrid_mamba_attention_regressor",
+    "hybrid_mamba_tapct_fusion",
+    "hybrid_tapct_fusion",
+    "tapct_late_fusion",
+    "hybrid_mamba_tapct_abmil_fusion",
+    "hybrid_tapct_abmil_fusion",
+    "tapct_abmil_fusion",
     "mamba_hybrid",
     "swinunetr",
+}
+TAPCT_ONLY_MODELS = {"tapct_abmil", "tapct_abmil_classifier"}
+TAPCT_FUSION_MODELS = {
+    "hybrid_mamba_tapct_fusion",
+    "hybrid_mamba_tapct_abmil_fusion",
+    "hybrid_tapct_fusion",
+    "hybrid_tapct_abmil_fusion",
+    "tapct_late_fusion",
+    "tapct_abmil_fusion",
+}
+TAPCT_ABMIL_FUSION_MODELS = {
+    "hybrid_mamba_tapct_abmil_fusion",
+    "hybrid_tapct_abmil_fusion",
+    "tapct_abmil_fusion",
 }
 
 
@@ -140,6 +160,25 @@ class Trainer:
                 f"Hybrid attention: layers={cfg.model.attn_layers}, "
                 f"heads={cfg.model.attn_heads}, "
                 f"dropout={cfg.model.attn_dropout}"
+            )
+            if model_key in TAPCT_FUSION_MODELS:
+                print(
+                    f"Late fusion: TAP-CT dim={cfg.model.tapct_embedding_dim}, "
+                    f"projection={cfg.model.fusion_projection_dim}, "
+                    f"features={cfg.data.tapct_features}"
+                )
+                if model_key in TAPCT_ABMIL_FUSION_MODELS:
+                    print(
+                        f"ABMIL fusion head: attention={cfg.model.tapct_attention_dim}, "
+                        f"gated={'on' if cfg.model.tapct_gated_attention else 'off'}"
+                    )
+        elif model_key in TAPCT_ONLY_MODELS:
+            print(
+                f"TAP-CT ABMIL: dim={cfg.model.tapct_embedding_dim}, "
+                f"hidden={cfg.model.hidden_dim}, "
+                f"attention={cfg.model.tapct_attention_dim}, "
+                f"key={cfg.data.tapct_feature_key}, "
+                f"features={cfg.data.tapct_features}"
             )
         print(
             f"Optimizer: {self.optimizer_label} | "
@@ -406,11 +445,7 @@ class Trainer:
         num_batches = max(len(dataloader), 1)
 
         for batch in tqdm(dataloader, leave=False):
-            x = (
-                batch["mri"].to(self.device, non_blocking=True)
-                if "mri" in batch
-                else batch["ct"].to(self.device, non_blocking=True)
-            )
+            x = self._extract_model_input(batch)
             optimizer.zero_grad(set_to_none=True)
 
             y = (
@@ -457,6 +492,27 @@ class Trainer:
             total_loss += loss.item()
 
         return total_loss / num_batches
+
+    def _extract_model_input(self, batch: dict):
+        """Move model inputs to the active device, including optional fusion features."""
+        ct = (
+            batch["mri"].to(self.device, non_blocking=True)
+            if "mri" in batch
+            else batch["ct"].to(self.device, non_blocking=True)
+        )
+        embedding = batch.get("tapct_embedding")
+        if embedding is None:
+            return ct
+        model_input = {
+            "ct": ct,
+            "tapct_embedding": embedding.to(self.device, non_blocking=True),
+        }
+        if batch.get("tapct_mask") is not None:
+            model_input["tapct_mask"] = batch["tapct_mask"].to(
+                self.device,
+                non_blocking=True,
+            )
+        return model_input
 
     def _normalize_targets(
         self, targets: torch.Tensor, target_mean: float, target_std: float
@@ -664,6 +720,7 @@ class Trainer:
                     "macro_precision": res.macro_precision,
                     "macro_recall": res.macro_recall,
                     "balanced_accuracy": res.balanced_accuracy,
+                    "confusion_matrix": res.confusion_matrix,
                 }
             else:
                 fold_entry = {
@@ -691,6 +748,16 @@ class Trainer:
                 summary[f"mean_{key}"] = None
                 summary[f"std_{key}"] = None
 
+        total_confusion_matrix = None
+        if self.is_classification:
+            matrices = [
+                np.asarray(entry["confusion_matrix"], dtype=int)
+                for entry in fold_entries
+                if entry.get("confusion_matrix") is not None
+            ]
+            if matrices:
+                total_confusion_matrix = np.sum(matrices, axis=0).astype(int).tolist()
+
         config_meta = {
             "epochs": self.config.training.epochs,
             "batch_size": self.config.training.batch_size,
@@ -702,6 +769,17 @@ class Trainer:
             "num_classes": self.config.model.num_classes,
             "target_mode": self.config.data.target_mode,
         }
+        if self.config.data.tapct_features is not None:
+            config_meta["tapct_features"] = str(self.config.data.tapct_features)
+            config_meta["tapct_embedding_dim"] = self.config.model.tapct_embedding_dim
+            config_meta["fusion_projection_dim"] = self.config.model.fusion_projection_dim
+            if str(self.config.model.name).lower() in TAPCT_ABMIL_FUSION_MODELS:
+                config_meta["tapct_attention_dim"] = (
+                    self.config.model.tapct_attention_dim
+                )
+                config_meta["tapct_gated_attention"] = (
+                    self.config.model.tapct_gated_attention
+                )
         if self.config.data.target_mode == "angle_binary_extreme":
             config_meta.update(
                 {
@@ -742,6 +820,8 @@ class Trainer:
             "folds": fold_entries,
             "summary": summary,
         }
+        if total_confusion_matrix is not None:
+            results["total_confusion_matrix"] = total_confusion_matrix
 
         with open(save_dir / "results.json", "w", encoding="utf-8") as handle:
             json.dump(results, handle, indent=2, ensure_ascii=False)

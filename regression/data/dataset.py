@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal, Sequence
+from typing import Literal, Mapping, Sequence
 
 import nibabel as nib
 import numpy as np
@@ -92,8 +92,10 @@ class AngleRegressionDataset(Dataset):
         intensity_window: tuple[float, float] | None = None,
         input_normalization: InputNormalization = "zscore",
         records: Sequence[AngleRecord] | None = None,
+        tapct_embeddings: Mapping[str, np.ndarray] | None = None,
         transform=None,
         cache_data: bool = True,
+        load_ct_data: bool = True,
     ):
         self.data_root = Path(data_root)
         self.labels_json = Path(labels_json)
@@ -102,8 +104,10 @@ class AngleRegressionDataset(Dataset):
         self.image_size = image_size
         self.intensity_window = intensity_window
         self.input_normalization = input_normalization
+        self.tapct_embeddings = dict(tapct_embeddings or {})
         self.transform = transform
         self.cache_data = cache_data
+        self.load_ct_data = bool(load_ct_data)
 
         if records is None:
             manifest = build_angle_manifest(
@@ -132,13 +136,18 @@ class AngleRegressionDataset(Dataset):
         else:
             target = np.array(record.angle, dtype=np.float32)
 
-        sample = {
-            "ct": load_ct(
+        if self.load_ct_data:
+            ct = load_ct(
                 record.path,
                 self.image_size,
                 intensity_window=self.intensity_window,
                 input_normalization=self.input_normalization,
-            ),
+            )
+        else:
+            ct = np.zeros((1, 1, 1, 1), dtype=np.float32)
+
+        sample = {
+            "ct": ct,
             "target": target,
             "angle": np.array(record.angle, dtype=np.float32),
             "label": (
@@ -153,6 +162,13 @@ class AngleRegressionDataset(Dataset):
             "post_fev1_percent_predicted": record.post_fev1_percent_predicted,
             "path": record.path,
         }
+        if self.tapct_embeddings:
+            embedding = self.tapct_embeddings.get(record.patient_id)
+            if embedding is None:
+                raise KeyError(
+                    f"Missing TAP-CT embedding for patient {record.patient_id}."
+                )
+            sample["tapct_embedding"] = np.asarray(embedding, dtype=np.float32)
         if self.transform is not None:
             sample = self.transform(sample)
         return sample

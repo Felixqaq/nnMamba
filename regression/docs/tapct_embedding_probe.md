@@ -346,6 +346,274 @@ python regression/scripts/run_tapct_embedding_probe.py \
 - `probe.model`：`all`、`logistic`、`linear_svm`、`ridge_classifier`、`ordinal_logistic`、`angle_ridge_threshold`
 - `probe.plots`：是否在訓練後自動產圖
 
+## TAP-CT + Hybrid Mamba Late Fusion
+
+Late fusion 是用來測試 pretrained TAP-CT representation 能不能補上原本
+Hybrid Mamba-Attention 影像分支缺少的全局 CT 訊號。它不是把 TAP-CT
+embedding 當成新的 3D image input，也不是 fine-tune TAP-CT encoder；它保留
+原本 nnMamba/Hybrid 的 CT 影像分支，另外讀取已抽好的 frozen TAP-CT
+patient-level embedding，最後把兩邊 feature 串接後交給同一個 classification head。
+
+### 核心架構
+
+```text
+同一個 patient_id
+├─ 原始 CT volume ──> Hybrid Mamba-Attention image branch ──> CT feature
+└─ TAP-CT-B frozen patient embedding ──> LayerNorm + Linear projection ──> TAP feature
+
+concat(CT feature, TAP feature) ──> MLP classification head ──> angle class logits
+```
+
+對應模型名稱：
+
+```yaml
+model:
+  name: hybrid_mamba_tapct_fusion
+```
+
+對應實作檔案：
+
+- `regression/networks/hybrid_mamba_tapct_fusion_regressor.py`
+- `regression/config.angle_3class.tapct_late_fusion.augmentation100.yaml`
+- `regression/data/loader.py`
+- `regression/data/dataset.py`
+- `regression/core/trainer.py`
+
+### 從頭到尾的流程
+
+#### 1. 先在 TAP-CT 環境抽 frozen TAP-CT-B-3D embedding
+
+Late fusion 的 `B-3D aug100` 使用的是：
+
+```yaml
+tapct:
+  model_id: fomofo/tap-ct-b-3d
+  dtype: float32
+
+embedding:
+  output_dir: regression/embeddings/tapct_b_3d
+  depth_window: 12
+  depth_stride: 6
+  pooling: mean_std_max
+```
+
+執行方式：
+
+```bash
+cd /home/felix/Research/nnMamba
+conda run -n tapct python regression/scripts/run_tapct_embedding_probe.py \
+  --config regression/config.tapct_embedding_probe.yaml \
+  --extract-only
+```
+
+輸出重點：
+
+```text
+regression/embeddings/tapct_b_3d/features.npz
+regression/embeddings/tapct_b_3d/cases/*.npz
+regression/embeddings/tapct_b_3d/metadata.csv
+regression/embeddings/tapct_b_3d/extraction_config.json
+```
+
+`features.npz` 至少包含：
+
+- `features`：shape 為 `66 x 2304`
+- `patient_ids`：和 `features` 每一列對齊的病人 ID
+- `angles`
+- `angle_3class`
+- `angle_binary_extreme`
+
+`2304` 維的來源是 TAP-CT-B 每個 window 的 embedding 維度做
+`mean + std + max` pooling 後串接而成。這一步只做 feature extraction，
+不會訓練 TAP-CT。
+
+#### 2. 用 nnMamba 環境跑 late fusion 訓練
+
+`B-3D aug100` 的訓練設定是：
+
+```bash
+cd /home/felix/Research/nnMamba/regression
+
+conda run -n nnMamba python train.py \
+  --config config.angle_3class.tapct_late_fusion.augmentation100.yaml
+```
+
+主要 YAML 欄位：
+
+```yaml
+experiment:
+  name: TAP-CT late fusion + aug100/class
+
+model:
+  name: hybrid_mamba_tapct_fusion
+  num_classes: 3
+  tapct_embedding_dim: 2304
+  fusion_projection_dim: 128
+
+data:
+  target_mode: angle_3class
+  tapct_features: ./embeddings/tapct_b_3d/features.npz
+  balanced_sampling: true
+  augmentation:
+    enabled: true
+    target_per_class: 100
+    class_indices: [0, 1, 2]
+```
+
+#### 3. Data loader 如何把 embedding 抓進來
+
+`RegressionLoaderHelper` 讀到 `data.tapct_features` 後會載入
+`features.npz`，檢查：
+
+- 檔案是否存在
+- 是否同時包含 `features` 和 `patient_ids`
+- `features.shape[0]` 是否等於 `patient_ids` 數量
+- 是否有重複 patient ID
+- 每個 manifest record 的 patient ID 是否都能在 TAP-CT features 找到
+
+接著建立：
+
+```python
+tapct_embeddings[patient_id] = features[row_index]
+```
+
+`AngleRegressionDataset` 每次讀一位病人時會同時放入：
+
+- `ct`：原始 CT volume，給 Hybrid Mamba-Attention image branch
+- `label` / `target`：angle 3-class label
+- `tapct_embedding`：同一個 patient ID 對應的 frozen TAP-CT-B embedding
+
+`ToTensor` 會把 `tapct_embedding` 轉成 `torch.float32`。
+
+#### 4. Aug100 在這裡代表什麼
+
+`aug100/class` 是 train-fold 內的 virtual augmentation，不是重抽 TAP-CT
+embedding。流程是：
+
+1. 先做 patient-level stratified 5-fold split。
+2. validation fold 只保留原始病人，不放 augmented copy。
+3. train fold 依照 class 補到每類最多 100 個訓練 view。
+4. CT branch 的 augmented copy 會套用 random affine / intensity / noise。
+5. TAP-CT embedding 分支仍使用同一個病人的 frozen patient-level embedding。
+
+也就是說，augmentation 只作用在 Hybrid CT image branch；TAP-CT-B embedding
+是先前離線抽好的穩定 patient-level feature。
+
+#### 5. Trainer 如何餵給模型
+
+在 training/evaluation 時，trainer 看到 batch 裡有 `tapct_embedding`，就不再
+只傳 CT tensor，而是傳一個 dict：
+
+```python
+{
+  "ct": ct_tensor,
+  "tapct_embedding": tapct_embedding_tensor,
+}
+```
+
+`HybridMambaTapctFusionRegressor` 內部做：
+
+1. `image_encoder.forward_features(ct)` 取得 Hybrid image feature。
+2. `embedding_branch(tapct_embedding)` 做 `LayerNorm -> Linear(2304, 128) -> GELU -> Dropout`。
+3. `torch.cat([image_features, embedding_features], dim=1)` 串接。
+4. MLP head 輸出 3-class logits。
+5. 用 cross entropy loss 訓練，early stopping 依 validation Macro-F1。
+
+#### 6. 輸出與目前已跑完的結果
+
+訓練完成後會沿用現有 regression pipeline 自動輸出：
+
+- 每 fold 的 loss、accuracy、Macro-F1、Balanced Accuracy、Macro Recall 曲線
+- 每 fold 的 confusion matrix
+- 所有 folds 合併後的 `total_confusion_matrix.png`
+- fold-wise `metric_boxplot.png`
+- `results.json` 與 `fold*_predictions.json`
+
+目前已完成的 run：
+
+```text
+regression/figures/Angle_3class_classification/
+  hybrid_mamba_tapct_fusion_tap_ct_late_fusion_aug100_class_2026-05-13_18:21:20/
+```
+
+結果摘要：
+
+| Method | Accuracy | Macro-F1 | Balanced Acc |
+| --- | ---: | ---: | ---: |
+| Late fusion B-3D aug100 | 0.82088 | 0.61406 | 0.63259 |
+
+Total confusion matrix：
+
+```text
+[[11, 0, 3],
+ [ 0, 1, 4],
+ [ 3, 2, 42]]
+```
+
+重要限制：
+
+- TAP-CT encoder 是 frozen，不會在 nnMamba 環境中訓練。
+- 原本 MLP late fusion 不是 TAP-CT ABMIL；TAP-CT-only ABMIL 是另一個只吃 TAP-CT feature 的 head。
+- 這不是把 2304 維 embedding reshape 成 3D image。
+- Augmentation 不會改變 TAP-CT embedding，只會改變 Hybrid CT image branch 的輸入。
+- `aug300` 那次中途停止在 fold3，所以沒有完整 `results.json` 和 total CM；完整比較請看 `aug100` run。
+
+其他可直接訓練的 late-fusion config：
+
+```bash
+cd /home/felix/Research/nnMamba/regression
+
+conda run -n nnMamba python train.py \
+  --config config.angle_3class.tapct_late_fusion.yaml
+
+conda run -n nnMamba python train.py \
+  --config config.angle_binary_extreme.tapct_late_fusion.yaml
+```
+
+### ABMIL final head 版本
+
+如果想把最後分類器從單純 MLP 改成 ABMIL，可以使用新的 hybrid fusion head：
+
+```yaml
+model:
+  name: hybrid_mamba_tapct_abmil_fusion
+  tapct_embedding_dim: 2304
+  fusion_projection_dim: 128
+  tapct_attention_dim: 128
+  tapct_gated_attention: true
+```
+
+對應 config：
+
+```bash
+cd /home/felix/Research/nnMamba/regression
+
+conda run -n nnMamba python train.py \
+  --config config.angle_3class.tapct_abmil_fusion.augmentation100.yaml
+```
+
+這個版本不是把幾萬個 TAP-CT patch embeddings 丟進 ABMIL；它使用的是已經
+pool 好的 patient-level TAP-CT embedding。差別在最後 fusion head：
+
+```text
+CT volume ──> Hybrid Mamba-Attention ──> CT feature ──> Linear projection ─┐
+                                                                          ├─> gated ABMIL attention ─> classifier
+TAP-CT-B frozen patient embedding ─────> TAP feature ──> Linear projection ┘
+```
+
+也就是把 `CT feature` 和 `TAP feature` 視為兩個 modality instances。ABMIL
+attention 會學習每個病人在這兩個來源上的權重，再用加權後的 pooled feature
+做三分類。這保留 late fusion 的優點，同時讓模型不必固定把 CT 和 TAP-CT
+concat 後交給 MLP，而是可以依 case 動態調整哪個來源比較重要。
+
+對應實作檔案：
+
+- `regression/networks/hybrid_mamba_tapct_abmil_fusion_regressor.py`
+- `regression/config.angle_3class.tapct_abmil_fusion.augmentation100.yaml`
+- `regression/models.py`
+- `regression/core/trainer.py`
+- `regression/data/loader.py`
+
 ## Embedding 抽取流程
 
 TAP-CT 接受的 3D crop shape 為 `(B, 1, 12, 224, 224)`。因此 extractor 的流程是：
@@ -584,3 +852,44 @@ TAP-CT-B + Linear SVM 是目前 3-class probe 中 Balanced Accuracy 最好的組
 - 對 3-class 做 calibrated ordinal threshold，而不是固定 `0.5` threshold。
 - 嘗試 TAP-CT embedding + 現有 hybrid Mamba feature 的 late fusion。
 - 嘗試 TAP-CT embedding + class 1 專用 decision rule，觀察 intermediate recall 是否能穩定提升。
+
+## ABMIL 分類頭
+
+新增 paper-style frozen TAP-CT ABMIL head：
+
+```bash
+cd regression
+conda activate nnMamba
+python train.py --config config.angle_3class.tapct_abmil.yaml
+```
+
+目前 repo 內的 TAP-CT feature bundle 只保存每位病人的 pooled/CLS-like scan embedding，
+所以 `config.angle_3class.tapct_abmil.yaml` 預設是 single-instance ABMIL：
+
+```yaml
+model:
+  name: tapct_abmil
+data:
+  tapct_features: ./embeddings/tapct_s_3d/features.npz
+  tapct_feature_key: features
+  load_ct: false
+```
+
+如果要跑真正的多 instance ABMIL，先在 TAP-CT 環境重新抽 feature 並保存 window-level embeddings：
+
+```bash
+conda activate tapct
+python regression/scripts/run_tapct_embedding_probe.py \
+  --config regression/config.tapct_embedding_probe.yaml \
+  --extract-only \
+  --force
+```
+
+並在 extraction config 內把 `embedding.save_window_embeddings` 設成 `true`。之後把 ABMIL config 改成：
+
+```yaml
+data:
+  tapct_feature_key: window_embeddings
+```
+
+注意：不要直接把五萬多個 patch tokens 硬丟進 ABMIL。這個實作優先支援 pooled/CLS feature 或 window-level instance bags，避免論文提到的 needle-in-a-haystack 問題。

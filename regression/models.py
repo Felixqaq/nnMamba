@@ -5,14 +5,27 @@ from __future__ import annotations
 import torch.nn as nn
 
 from networks.hybrid_mamba_attention_regressor import HybridMambaAttentionRegressor
+from networks.hybrid_mamba_tapct_abmil_fusion_regressor import (
+    HybridMambaTapctABMILFusionRegressor,
+)
+from networks.hybrid_mamba_tapct_fusion_regressor import HybridMambaTapctFusionRegressor
 from networks.mamba_regressor import MambaAngleRegressor
 from networks.swinunetr_v2_regressor import SwinUNETRV2AngleRegressor
+from networks.tapct_abmil_classifier import TapctABMILClassifier
 
 
 MODEL_REGISTRY = {
     "hybrid": HybridMambaAttentionRegressor,
     "hybrid_mamba_attention": HybridMambaAttentionRegressor,
     "hybrid_mamba_attention_regressor": HybridMambaAttentionRegressor,
+    "hybrid_mamba_tapct_fusion": HybridMambaTapctFusionRegressor,
+    "hybrid_tapct_fusion": HybridMambaTapctFusionRegressor,
+    "tapct_late_fusion": HybridMambaTapctFusionRegressor,
+    "hybrid_mamba_tapct_abmil_fusion": HybridMambaTapctABMILFusionRegressor,
+    "hybrid_tapct_abmil_fusion": HybridMambaTapctABMILFusionRegressor,
+    "tapct_abmil_fusion": HybridMambaTapctABMILFusionRegressor,
+    "tapct_abmil": TapctABMILClassifier,
+    "tapct_abmil_classifier": TapctABMILClassifier,
     "mamba": MambaAngleRegressor,
     "mamba_hybrid": HybridMambaAttentionRegressor,
     "nnmamba": MambaAngleRegressor,
@@ -58,6 +71,51 @@ def build_model(model_config, device=None) -> nn.Module:
                 "attn_layers": int(model_config.attn_layers),
                 "attn_mlp_ratio": float(model_config.attn_mlp_ratio),
                 "attn_dropout": float(model_config.attn_dropout),
+            }
+        elif key in {
+            "hybrid_mamba_tapct_fusion",
+            "hybrid_tapct_fusion",
+            "tapct_late_fusion",
+            "hybrid_mamba_tapct_abmil_fusion",
+            "hybrid_tapct_abmil_fusion",
+            "tapct_abmil_fusion",
+        }:
+            kwargs = {
+                "in_channels": int(model_config.in_channels),
+                "num_classes": int(model_config.num_classes),
+                "base_channels": int(model_config.base_channels),
+                "depths": tuple([int(model_config.blocks)] * 3),
+                "head_hidden_dim": int(model_config.hidden_dim),
+                "dropout": float(model_config.dropout),
+                "attn_heads": int(model_config.attn_heads),
+                "attn_layers": int(model_config.attn_layers),
+                "attn_mlp_ratio": float(model_config.attn_mlp_ratio),
+                "attn_dropout": float(model_config.attn_dropout),
+                "tapct_embedding_dim": int(model_config.tapct_embedding_dim),
+                "fusion_projection_dim": int(model_config.fusion_projection_dim),
+                "fusion_dropout": float(model_config.fusion_dropout),
+            }
+            if key in {
+                "hybrid_mamba_tapct_abmil_fusion",
+                "hybrid_tapct_abmil_fusion",
+                "tapct_abmil_fusion",
+            }:
+                kwargs.update(
+                    {
+                        "tapct_attention_dim": int(model_config.tapct_attention_dim),
+                        "tapct_gated_attention": bool(
+                            model_config.tapct_gated_attention
+                        ),
+                    }
+                )
+        elif key in {"tapct_abmil", "tapct_abmil_classifier"}:
+            kwargs = {
+                "tapct_embedding_dim": int(model_config.tapct_embedding_dim),
+                "num_classes": int(model_config.num_classes),
+                "hidden_dim": int(model_config.hidden_dim),
+                "attention_dim": int(model_config.tapct_attention_dim),
+                "dropout": float(model_config.dropout),
+                "gated_attention": bool(model_config.tapct_gated_attention),
             }
         else:
             window_size = model_config.window_size

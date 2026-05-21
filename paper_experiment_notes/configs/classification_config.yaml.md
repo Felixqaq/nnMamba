@@ -1,0 +1,66 @@
+# Config: classification/config.yaml
+
+- Source: [classification/config.yaml](/home/felix/Research/nnMamba/classification/config.yaml)
+- Size: 855 B
+
+## Parsed Summary
+| field | value |
+| --- | --- |
+| task | Normal_v_Abnormal |
+| model.name | nnmamba |
+| data.target_mode |  |
+| training.epochs | 50 |
+| training.batch_size | 12 |
+| training.k_folds | 5 |
+| training.learning_rate | 0.0001 |
+| training.loss |  |
+| data.balanced_sampling |  |
+| data.augmentation.enabled |  |
+| experiment.name |  |
+
+## Full YAML
+```yaml
+# nnMamba Classification Configuration
+# =====================================
+
+model:
+  name: nnmamba        # nnmamba | densenet | vit | crate
+  num_classes: 1
+  dropout: 0.5
+
+training:
+  epochs: 50
+  batch_size: 12
+  learning_rate: 0.0001
+  weight_decay: 0.001
+  k_folds: 5
+  eval_interval: 5     # Evaluate every N epochs
+  save_interval: 10    # Save checkpoint every N epochs
+  seed: 42
+  warmup_gamma: 1.4
+
+data:
+  image_size: [112, 136, 112]
+  num_workers: 6
+  pin_memory: true
+  prefetch_factor: 4
+
+paths:
+  weights: ../weights
+  logs: ../train_log
+  figures: ../figures
+  graphs: ../graphs
+
+# Available tasks: NC_v_AD | sMCI_v_pMCI | Normal_v_COPD | Normal_v_Abnormal
+task: Normal_v_Abnormal
+
+# Resume training settings
+resume:
+  enabled: false
+  uuid: null           # e.g., "nnMamba_2026-01-05_16:11:17"
+  start_fold: 0
+
+gpu:
+  device_id: "0"
+
+```

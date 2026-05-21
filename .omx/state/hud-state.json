@@ -1,5 +1,5 @@
 {
-  "last_turn_at": "2026-05-14T06:26:47.632Z",
-  "turn_count": 192,
-  "last_agent_output": "結論：**attention concat fusion 沒有贏過原本 MLP late fusion**。它比 ABMIL weighted-sum 稍微會抓 Intermediate，但代價是把太"
+  "last_turn_at": "2026-05-21T06:54:41.945Z",
+  "turn_count": 199,
+  "last_agent_output": "我確認過了：**原本的 `paper_experiment_notes` 對本地 `classification/`、`regression/` 實驗整理已經很完整，但還不能算「整個專案所有資訊都在 "
 }

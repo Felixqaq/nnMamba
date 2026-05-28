@@ -80,6 +80,23 @@ def test_angle_binary_extreme_tapct_late_fusion_config() -> None:
     assert config.task == "Angle_extreme_binary_classification"
 
 
+def test_gold_tapct_late_fusion_config() -> None:
+    config = Config.from_yaml(
+        Path(__file__).with_name("config.gold.tapct_late_fusion.augmentation36.yaml")
+    )
+
+    assert config.data.target_mode == "gold"
+    assert config.is_classification_task() is True
+    assert config.model.name == "hybrid_mamba_tapct_fusion"
+    assert config.model.num_classes == 4
+    assert config.model.tapct_embedding_dim == 2304
+    assert config.data.manifest == Path("./datasets/generated/gold_manifest.aug36.json")
+    assert config.data.tapct_features == Path("./embeddings/tapct_b_3d/features.npz")
+    assert config.data.augmentation.target_per_class == 36
+    assert config.data.augmentation.gold_stages == (1, 2, 3, 4)
+    assert config.task == "GOLD_stage_classification"
+
+
 def test_tapct_late_fusion_loader_reads_patient_embeddings() -> None:
     config = Config.from_yaml(
         Path(__file__).with_name("config.angle_3class.tapct_late_fusion.yaml")

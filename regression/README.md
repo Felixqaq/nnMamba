@@ -99,6 +99,7 @@ conda run -n nnMamba python regression/scripts/generate_angle_3class_augmented_d
 - [config.angle_3class.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.yaml)：131° / 152° 三分類，沿用實體增強資料集
 - [config.angle_binary_extreme.yaml](/home/felix/Research/nnMamba/regression/config.angle_binary_extreme.yaml)：文獻式極端二分類，排除 `132-151°` 灰區，保留 `14/47` 筆
 - [config.angle_binary_extreme.balanced_sampling.augmentation100.yaml](/home/felix/Research/nnMamba/regression/config.angle_binary_extreme.balanced_sampling.augmentation100.yaml)：極端二分類，training fold 內 virtual augmentation 到每類 100，再做每 epoch 少類平衡
+- [config.angle_binary_extreme.tapct_late_fusion.majority_ensemble.yaml](/home/felix/Research/nnMamba/regression/config.angle_binary_extreme.tapct_late_fusion.majority_ensemble.yaml)：沿用最強 TAP-CT late-fusion run 當第 1 個 member，補訓 seed 43-48，輸出 3/5/7 hard majority voting
 - [docs/angle_binary_extreme_report.md](/home/felix/Research/nnMamba/regression/docs/angle_binary_extreme_report.md)：給教授看的文獻依據、分類規則、資料分布與建議實驗說明
 - [config.angle_3class.balanced_sampling.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.balanced_sampling.yaml)：131° / 152° 三分類，使用原始資料並每個 epoch 隨機下採樣多數類
 - [config.angle_3class.balanced_sampling.augmentation.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.balanced_sampling.augmentation.yaml)：131° / 152° 三分類，training fold 內把 class 0/1 virtual augmentation 補到 20，再做每 epoch 少類平衡
@@ -119,6 +120,7 @@ conda run -n nnMamba python train.py --config config.gold.yaml
 conda run -n nnMamba python train.py --config config.angle_3class.yaml
 conda run -n nnMamba python train.py --config config.angle_binary_extreme.yaml
 conda run -n nnMamba python train.py --config config.angle_binary_extreme.balanced_sampling.augmentation100.yaml
+conda run -n nnMamba python train.py --config config.angle_binary_extreme.tapct_late_fusion.majority_ensemble.yaml
 conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.yaml
 conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation.yaml
 conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation100.yaml
@@ -158,6 +160,7 @@ conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampl
 - 因此 `132-151°` 直接當灰區排除，留下 61 筆，分布為 `14/47`。
 - `config.angle_binary_extreme.yaml` 是 baseline，不做 augmentation / balanced sampling。
 - `config.angle_binary_extreme.balanced_sampling.augmentation100.yaml` 是正式比較用設定，會在每個 training fold 內把兩類都補到 100，再做少類平衡。
+- `config.angle_binary_extreme.tapct_late_fusion.majority_ensemble.yaml` 會固定 `split_seed: 42`，先重用既有最強 TAP-CT late-fusion checkpoint，再補訓 6 個不同 member seed，最後寫出 `ensemble_results.json` 與 `ensemble_summary.csv`。
 
 如果是 `angle_3class` 模式：
 
@@ -225,7 +228,8 @@ GOLD 分類模式則會輸出：
 
 - per-fold confusion matrix
 - total confusion matrix
-- Accuracy / Macro-F1 / Balanced Accuracy 的 summary 圖
+- Accuracy / Macro-F1 / Balanced Accuracy / Sensitivity / Specificity 的 summary 圖
+- 全 folds `mean +/- std` 的 metric barplot
 
 ## 8. 匯總結果
 
@@ -236,6 +240,12 @@ conda run -n nnMamba python regression/scripts/summarize_results.py regression/f
 ```
 
 這個 summary script 現在同時支援 regression 與 classification。
+
+舊的 classification run 如果要回填 sensitivity / specificity 並重產 summary 圖：
+
+```bash
+conda run -n nnMamba python regression/scripts/backfill_results_metrics.py
+```
 
 ## 9. 你最常會改的地方
 

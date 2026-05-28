@@ -76,6 +76,8 @@ def plot_training_curves(
             ("macro_f1", "Macro F1", "Macro F1", "#d62728"),
             ("balanced_accuracy", "Balanced Accuracy", "Balanced Accuracy", "#9467bd"),
             ("macro_recall", "Macro Recall", "Macro Recall", "#ff7f0e"),
+            ("sensitivity", "Sensitivity", "Sensitivity", "#17becf"),
+            ("specificity", "Specificity", "Specificity", "#bcbd22"),
         ]
         for key, title, ylabel, color in metric_specs:
             _plot_comparison(
@@ -247,8 +249,10 @@ def _plot_classification_summary(
         ("macro_f1", "Val Macro F1", "#d62728"),
         ("balanced_accuracy", "Val Balanced Accuracy", "#9467bd"),
         ("macro_recall", "Val Macro Recall", "#ff7f0e"),
+        ("sensitivity", "Val Sensitivity", "#17becf"),
+        ("specificity", "Val Specificity", "#bcbd22"),
     ]
-    fig, axes = plt.subplots(2, 3, figsize=(14, 8))
+    fig, axes = plt.subplots(2, 4, figsize=(17, 8))
     axes = axes.ravel()
     axes[0].plot(list(epochs), train_loss, color="#1f77b4", linewidth=2)
     axes[0].set_title("Training Loss", fontweight="bold")
@@ -264,13 +268,14 @@ def _plot_classification_summary(
         ax.set_ylim(0.0, 1.05)
         ax.grid(True, alpha=0.25)
 
-    axes[5].axis("off")
-    axes[5].text(
+    axes[7].axis("off")
+    axes[7].text(
         0.02,
         0.88,
         f"{_method_note(method_label)}UUID: {uuid}\nFold: {fold}\n\n"
-        "Tracked:\nAccuracy,\nMacro F1,\nBalanced Accuracy,\nMacro Recall",
-        transform=axes[5].transAxes,
+        "Tracked:\nAccuracy,\nMacro F1,\nBalanced Accuracy,\nMacro Recall"
+        "\nSensitivity,\nSpecificity",
+        transform=axes[7].transAxes,
         fontsize=11,
         va="top",
         family="serif",
@@ -592,6 +597,8 @@ def _aggregate_classification_results(
         "macro_precision": [],
         "macro_recall": [],
         "balanced_accuracy": [],
+        "sensitivity": [],
+        "specificity": [],
     }
     for res in all_results:
         if getattr(res, "labels", None) is not None and getattr(res, "preds", None) is not None:
@@ -661,6 +668,8 @@ def plot_classification_metric_boxplot(
         "balanced_accuracy",
         "macro_precision",
         "macro_recall",
+        "sensitivity",
+        "specificity",
     ]
     metric_labels = [
         "Accuracy",
@@ -668,6 +677,8 @@ def plot_classification_metric_boxplot(
         "Balanced Accuracy",
         "Macro Precision",
         "Macro Recall",
+        "Sensitivity",
+        "Specificity",
     ]
     data = [metric_arrays[m] for m in metrics if metric_arrays[m].size > 0]
     labels = [
@@ -680,7 +691,15 @@ def plot_classification_metric_boxplot(
 
     plt.figure(figsize=(10, 6))
     bp = plt.boxplot(data, patch_artist=True, widths=0.55)
-    palette = ["#2ca02c", "#d62728", "#9467bd", "#ff7f0e", "#17becf"]
+    palette = [
+        "#2ca02c",
+        "#d62728",
+        "#9467bd",
+        "#ff7f0e",
+        "#17becf",
+        "#8c564b",
+        "#bcbd22",
+    ]
     for patch, color in zip(bp["boxes"], palette):
         patch.set_facecolor(color)
         patch.set_alpha(0.7)
@@ -700,6 +719,61 @@ def plot_classification_metric_boxplot(
     plt.close()
 
 
+def _plot_metric_barplot(
+    metric_arrays: dict[str, np.ndarray],
+    metric_specs: list[tuple[str, str, str]],
+    save_dir: Path,
+    title: str,
+    method_label: str | None = None,
+) -> None:
+    """Plot mean and cross-fold std bars for available metrics."""
+    labels = []
+    means = []
+    stds = []
+    colors = []
+    for key, label, color in metric_specs:
+        values = metric_arrays.get(key, np.array([], dtype=float))
+        if values.size == 0:
+            continue
+        labels.append(label)
+        means.append(float(values.mean()))
+        stds.append(float(values.std()))
+        colors.append(color)
+
+    if not labels:
+        return
+
+    fig, ax = plt.subplots(figsize=(max(9, 1.2 * len(labels)), 5.8))
+    x = np.arange(len(labels))
+    bars = ax.bar(
+        x,
+        means,
+        yerr=stds,
+        capsize=5,
+        color=colors,
+        alpha=0.78,
+    )
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation=18, ha="right")
+    ax.set_ylabel("Score")
+    ax.set_title(_with_method(title, method_label), fontweight="bold")
+    ax.grid(True, axis="y", alpha=0.25)
+
+    for bar, mean, std in zip(bars, means, stds):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            mean,
+            f"{mean:.3f}\n+/-{std:.3f}",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
+
+    fig.tight_layout()
+    fig.savefig(save_dir / "metric_barplot.png", dpi=300)
+    plt.close(fig)
+
+
 def plot_global_summary(
     all_results: list,
     save_dir: Path,
@@ -711,7 +785,7 @@ def plot_global_summary(
     save_dir.mkdir(parents=True, exist_ok=True)
 
     if task_type in CLASSIFICATION_TASK_TYPES:
-        labels, preds, _ = _aggregate_classification_results(all_results)
+        labels, preds, metric_arrays = _aggregate_classification_results(all_results)
         if labels.size > 0 and preds.size > 0:
             plot_confusion_matrix(
                 labels,
@@ -728,9 +802,24 @@ def plot_global_summary(
             save_dir,
             method_label=method_label,
         )
+        _plot_metric_barplot(
+            metric_arrays,
+            [
+                ("accuracy", "Accuracy", "#2ca02c"),
+                ("macro_f1", "Macro F1", "#d62728"),
+                ("balanced_accuracy", "Balanced Acc", "#9467bd"),
+                ("macro_precision", "Macro Precision", "#ff7f0e"),
+                ("macro_recall", "Macro Recall", "#17becf"),
+                ("sensitivity", "Sensitivity", "#8c564b"),
+                ("specificity", "Specificity", "#bcbd22"),
+            ],
+            save_dir,
+            "Classification Metrics (Mean +/- Std)",
+            method_label=method_label,
+        )
         return
 
-    labels, preds, _ = _aggregate_regression_results(all_results)
+    labels, preds, metric_arrays = _aggregate_regression_results(all_results)
     if labels.size > 0 and preds.size > 0:
         plot_prediction_scatter(labels, preds, fold=0, save_dir=save_dir, title_suffix=" (All Folds)")
         plot_residuals(labels, preds, fold=0, save_dir=save_dir, title_suffix=" (All Folds)")
@@ -748,3 +837,16 @@ def plot_global_summary(
                 src.replace(dst)
 
     plot_metric_boxplot(all_results, save_dir, method_label=method_label)
+    _plot_metric_barplot(
+        metric_arrays,
+        [
+            ("mae", "MAE", "#2ca02c"),
+            ("rmse", "RMSE", "#d62728"),
+            ("r2", "R2", "#9467bd"),
+            ("pearson", "Pearson", "#ff7f0e"),
+            ("mean_error", "Mean Error", "#17becf"),
+        ],
+        save_dir,
+        "Regression Metrics (Mean +/- Std)",
+        method_label=method_label,
+    )

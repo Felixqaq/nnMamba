@@ -97,7 +97,7 @@ Training writes:
 - `regression/train_log/PFT_angle_regression/<run_uuid>/`
 - `regression/figures/PFT_angle_regression/<run_uuid>/`
 
-Per-fold figures include loss/MAE/RMSE/R2/Pearson curves plus scatter, residual, error histogram, and Bland-Altman plots. Global figures aggregate all folds into `total_*.png`.
+Per-fold figures include loss/MAE/RMSE/R2/Pearson curves plus scatter, residual, error histogram, and Bland-Altman plots. Global figures aggregate all folds into `total_*.png` and `metric_barplot.png` reports metric means with cross-fold standard deviations. Classification runs also include sensitivity and specificity in their metric figures and summaries.
 
 ## Architecture
 

@@ -7,6 +7,7 @@ import os
 import torch
 
 from core.config import Config
+from core.ensemble import MajorityVotingEnsembleTrainer
 from core.runtime import configure_torch_runtime
 from core.trainer import Trainer
 from data.loader import LoaderHelper
@@ -27,8 +28,15 @@ def main() -> None:
     if not torch.cuda.is_available():
         print("Warning: GPU not detected. nnMamba is designed for CUDA training.")
 
+    if config.ensemble.enabled:
+        trainer = MajorityVotingEnsembleTrainer(config)
+        uuid = trainer.train()
+        print(f"\nMajority ensemble complete. Run UUID: {uuid}")
+        print(f"Results saved to: {config.paths.figures / config.task / uuid}")
+        return
+
     loader_helper = LoaderHelper(config)
-    model_factory = lambda: build_model(config.model)
+    model_factory = lambda: build_model(config.model, output_dim=config.model_output_dim())
 
     trainer = Trainer(config=config, model_factory=model_factory, loader_helper=loader_helper)
     uuid = trainer.train()

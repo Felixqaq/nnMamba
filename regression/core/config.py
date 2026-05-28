@@ -24,8 +24,17 @@ ModelType = Literal[
     "mamba",
     "swinunetr",
 ]
-LossType = Literal["auto", "smooth_l1", "mse", "mae", "cross_entropy"]
+LossType = Literal[
+    "auto",
+    "smooth_l1",
+    "mse",
+    "mae",
+    "cross_entropy",
+    "ordinal_bce",
+]
 ClassWeightMode = Literal["none", "balanced"]
+ClassificationMode = Literal["multiclass", "ordinal"]
+EnsembleVoteType = Literal["majority"]
 InputNormType = Literal["zscore", "none"]
 TargetNormType = Literal["zscore", "none"]
 TargetMode = Literal["angle", "gold", "angle_3class", "angle_binary_extreme"]
@@ -77,6 +86,7 @@ class TrainingConfig:
     amp: bool = True
     track_train_metrics: bool = False
     class_weight_mode: ClassWeightMode = "none"
+    classification_mode: ClassificationMode = "multiclass"
 
 
 @dataclass
@@ -84,6 +94,18 @@ class EarlyStoppingConfig:
     enabled: bool = False
     patience: int = 6
     min_delta: float = 0.005
+
+
+@dataclass
+class EnsembleConfig:
+    enabled: bool = False
+    member_count: int = 1
+    vote_sizes: tuple[int, ...] = (3, 5, 7)
+    voting: EnsembleVoteType = "majority"
+    split_seed: int | None = None
+    member_seeds: tuple[int, ...] = field(default_factory=tuple)
+    existing_member_uuids: tuple[str, ...] = field(default_factory=tuple)
+    train_missing_members: bool = True
 
 
 @dataclass
@@ -168,6 +190,7 @@ class Config:
     model: ModelConfig = field(default_factory=ModelConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
     early_stopping: EarlyStoppingConfig = field(default_factory=EarlyStoppingConfig)
+    ensemble: EnsembleConfig = field(default_factory=EnsembleConfig)
     data: DataConfig = field(default_factory=DataConfig)
     paths: PathConfig = field(default_factory=PathConfig)
     resume: ResumeConfig = field(default_factory=ResumeConfig)
@@ -178,6 +201,22 @@ class Config:
     def is_classification_task(self) -> bool:
         """Return whether the current config runs categorical prediction."""
         return self.data.target_mode in CLASSIFICATION_TARGET_MODES
+
+    def is_ordinal_classification(self) -> bool:
+        """Return whether classification uses cumulative ordinal thresholds."""
+        return self.is_classification_task() and self.training.classification_mode == "ordinal"
+
+    def model_output_dim(self) -> int:
+        """Return the number of logits the active model head must emit."""
+        if self.is_ordinal_classification():
+            return max(1, int(self.model.num_classes) - 1)
+        return int(self.model.num_classes)
+
+    def split_seed(self) -> int:
+        """Return the seed used only for deterministic fold construction."""
+        if self.ensemble.enabled and self.ensemble.split_seed is not None:
+            return int(self.ensemble.split_seed)
+        return int(self.training.seed)
 
     @classmethod
     def from_yaml(cls, path: str | Path = "config.yaml") -> "Config":
@@ -191,8 +230,13 @@ class Config:
         augmentation_section = data_section.get("augmentation", {})
         paths_section = data.get("paths", {})
         gpu_section = data.get("gpu", {})
+        ensemble_section = data.get("ensemble", {}) or {}
         experiment_section = data.get("experiment", {}) or {}
         target_mode = data_section.get("target_mode", "angle")
+        member_seeds = ensemble_section.get(
+            "member_seeds",
+            ensemble_section.get("seeds", []),
+        )
         window_size = model_section.get("window_size", 4)
         if isinstance(window_size, list):
             window_size = tuple(window_size)
@@ -240,6 +284,21 @@ class Config:
             training=TrainingConfig(**data.get("training", {})),
             early_stopping=EarlyStoppingConfig(
                 **(data.get("early_stopping", {}) or {})
+            ),
+            ensemble=EnsembleConfig(
+                enabled=ensemble_section.get("enabled", False),
+                member_count=ensemble_section.get("member_count", 1),
+                vote_sizes=tuple(ensemble_section.get("vote_sizes", [3, 5, 7])),
+                voting=ensemble_section.get("voting", "majority"),
+                split_seed=ensemble_section.get("split_seed"),
+                member_seeds=tuple(member_seeds),
+                existing_member_uuids=tuple(
+                    str(uuid)
+                    for uuid in ensemble_section.get("existing_member_uuids", [])
+                ),
+                train_missing_members=ensemble_section.get(
+                    "train_missing_members", True
+                ),
             ),
             data=DataConfig(
                 source_dir=Path(data_section.get("source_dir", "../by_angle_all")),

@@ -54,6 +54,8 @@ class ClassificationMetrics:
     macro_precision: float
     macro_recall: float
     balanced_accuracy: float
+    sensitivity: float = 0.0
+    specificity: float = 0.0
     labels: torch.Tensor | None = None
     preds: torch.Tensor | None = None
     probs: torch.Tensor | None = None
@@ -153,6 +155,49 @@ def _extract_classification_logits(output: Any) -> torch.Tensor:
     return output
 
 
+def encode_ordinal_targets(labels: torch.Tensor, num_classes: int) -> torch.Tensor:
+    """Expand zero-based class ids into cumulative ordinal threshold targets."""
+    labels = labels.long().view(-1)
+    thresholds = torch.arange(
+        max(0, int(num_classes) - 1),
+        device=labels.device,
+        dtype=labels.dtype,
+    )
+    return (labels.unsqueeze(1) > thresholds.unsqueeze(0)).float()
+
+
+def decode_ordinal_logits(
+    logits: torch.Tensor,
+    num_classes: int,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Decode cumulative threshold logits into class ids and class probabilities."""
+    logits = _extract_classification_logits(logits)
+    expected_thresholds = max(1, int(num_classes) - 1)
+    if logits.shape[1] != expected_thresholds:
+        raise ValueError(
+            "Ordinal logits must emit one threshold per adjacent class boundary: "
+            f"got {logits.shape[1]}, expected {expected_thresholds}."
+        )
+
+    threshold_probs = torch.sigmoid(logits)
+    threshold_probs = torch.cummin(threshold_probs, dim=1).values
+    preds = (threshold_probs >= 0.5).sum(dim=1).long()
+
+    stage_scores = []
+    ones = torch.ones(threshold_probs.shape[0], device=threshold_probs.device)
+    for stage in range(int(num_classes)):
+        lower = threshold_probs[:, :stage].prod(dim=1) if stage else ones
+        upper = (
+            (1.0 - threshold_probs[:, stage:]).prod(dim=1)
+            if stage < threshold_probs.shape[1]
+            else ones
+        )
+        stage_scores.append(lower * upper)
+    class_probs = torch.stack(stage_scores, dim=1)
+    class_probs = class_probs / class_probs.sum(dim=1, keepdim=True).clamp_min(1e-8)
+    return preds, class_probs
+
+
 def _get_batch_indices(
     batch: dict[str, Any],
     batch_size: int,
@@ -220,6 +265,8 @@ def get_classification_predictions(
     dataloader: DataLoader,
     device: torch.device,
     use_amp: bool = False,
+    num_classes: int = 1,
+    classification_mode: str = "multiclass",
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, list[int]]:
     """Run inference for classification labels, argmax predictions, and probabilities."""
     model.eval()
@@ -241,8 +288,11 @@ def get_classification_predictions(
             ):
                 logits = _extract_classification_logits(model(x))
 
-            probs = torch.softmax(logits, dim=1)
-            preds = torch.argmax(probs, dim=1)
+            if classification_mode == "ordinal":
+                preds, probs = decode_ordinal_logits(logits, num_classes)
+            else:
+                probs = torch.softmax(logits, dim=1)
+                preds = torch.argmax(probs, dim=1)
             labels = target.long().view(-1)
 
             all_labels.append(labels.detach().cpu())
@@ -405,6 +455,7 @@ def compute_classification_metrics(
             out=np.zeros(len(class_ids), dtype=float),
             where=class_totals != 0,
         )
+    sensitivity, specificity = _classification_sensitivity_specificity(cm)
 
     return ClassificationMetrics(
         accuracy=round(float(accuracy_score(labels_np, preds_np)), 5),
@@ -412,6 +463,8 @@ def compute_classification_metrics(
         macro_precision=round(float(precision), 5),
         macro_recall=round(float(recall), 5),
         balanced_accuracy=round(float(class_recalls.mean()), 5),
+        sensitivity=round(float(sensitivity), 5),
+        specificity=round(float(specificity), 5),
         labels=labels,
         preds=preds,
         probs=probs,
@@ -420,6 +473,39 @@ def compute_classification_metrics(
         num_valid_samples=num_valid,
         num_invalid_samples=num_invalid,
     )
+
+
+def _classification_sensitivity_specificity(cm: np.ndarray) -> tuple[float, float]:
+    """Return binary class-0 or multiclass macro sensitivity/specificity."""
+    if cm.size == 0:
+        return 0.0, 0.0
+
+    cm = np.asarray(cm, dtype=float)
+    total = float(cm.sum())
+    true_positives = np.diag(cm)
+    false_negatives = cm.sum(axis=1) - true_positives
+    false_positives = cm.sum(axis=0) - true_positives
+    true_negatives = total - true_positives - false_negatives - false_positives
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        sensitivities = np.divide(
+            true_positives,
+            true_positives + false_negatives,
+            out=np.zeros_like(true_positives, dtype=float),
+            where=(true_positives + false_negatives) != 0,
+        )
+        specificities = np.divide(
+            true_negatives,
+            true_negatives + false_positives,
+            out=np.zeros_like(true_negatives, dtype=float),
+            where=(true_negatives + false_positives) != 0,
+        )
+
+    if cm.shape == (2, 2):
+        # Angle binary manifests list the abnormal endpoint first.
+        return float(sensitivities[0]), float(specificities[0])
+
+    return float(sensitivities.mean()), float(specificities.mean())
 
 
 def evaluate(
@@ -431,6 +517,7 @@ def evaluate(
     target_std: float = 1.0,
     use_amp: bool = False,
     num_classes: int = 1,
+    classification_mode: str = "multiclass",
 ) -> RegressionMetrics | ClassificationMetrics:
     """Evaluate model on a dataloader."""
     if task_type in CLASSIFICATION_TASK_TYPES:
@@ -439,6 +526,8 @@ def evaluate(
             dataloader=dataloader,
             device=device,
             use_amp=use_amp,
+            num_classes=num_classes,
+            classification_mode=classification_mode,
         )
         return compute_classification_metrics(
             labels=labels,
@@ -529,6 +618,8 @@ def save_predictions(
             "macro_precision": metrics.macro_precision,
             "macro_recall": metrics.macro_recall,
             "balanced_accuracy": metrics.balanced_accuracy,
+            "sensitivity": metrics.sensitivity,
+            "specificity": metrics.specificity,
             "class_names": class_names,
             "confusion_matrix": metrics.confusion_matrix,
             "predictions": rows,

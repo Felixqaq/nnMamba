@@ -15,7 +15,11 @@ from models import build_model
 
 
 def _load_fold_model(config: Config, uuid: str, fold: int, device: torch.device):
-    model = build_model(config.model, device=device)
+    model = build_model(
+        config.model,
+        device=device,
+        output_dim=config.model_output_dim(),
+    )
     checkpoint_path = config.paths.weights / config.task / uuid / f"fold{fold}_best_weight.pth"
     checkpoint = load_checkpoint(checkpoint_path, model, device)
     return model, checkpoint, checkpoint_path
@@ -53,6 +57,7 @@ def main() -> None:
             target_std=target_std,
             use_amp=bool(config.training.amp and device.type == "cuda"),
             num_classes=int(config.model.num_classes),
+            classification_mode=config.training.classification_mode,
         )
 
         print(f"\nFold {fold}")
@@ -63,6 +68,8 @@ def main() -> None:
             print(f"Macro Precision:   {metrics.macro_precision:.4f}")
             print(f"Macro Recall:      {metrics.macro_recall:.4f}")
             print(f"Balanced Accuracy: {metrics.balanced_accuracy:.4f}")
+            print(f"Sensitivity:       {metrics.sensitivity:.4f}")
+            print(f"Specificity:       {metrics.specificity:.4f}")
         else:
             print(f"MAE:       {metrics.mae:.4f}")
             print(f"RMSE:      {metrics.rmse:.4f}")

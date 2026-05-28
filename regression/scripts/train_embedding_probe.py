@@ -40,6 +40,12 @@ ANGLE_BINARY_EXTREME_NAMES = [
     "Abnormal/emphysema-like (AC <=131 deg)",
     "Normal-like (AC >=152 deg)",
 ]
+GOLD_STAGE_NAMES = [
+    "GOLD 1 (Mild)",
+    "GOLD 2 (Moderate)",
+    "GOLD 3 (Severe)",
+    "GOLD 4 (Very Severe)",
+]
 
 TARGET_MODEL_SETS = {
     "angle_3class": [
@@ -50,6 +56,11 @@ TARGET_MODEL_SETS = {
         "angle_ridge_threshold",
     ],
     "angle_binary_extreme": [
+        "logistic",
+        "linear_svm",
+        "ridge_classifier",
+    ],
+    "gold": [
         "logistic",
         "linear_svm",
         "ridge_classifier",
@@ -67,7 +78,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument(
         "--target",
-        choices=("all", "angle_3class", "angle_binary_extreme"),
+        choices=("all", "angle_3class", "angle_binary_extreme", "gold"),
         default="all",
     )
     parser.add_argument(
@@ -256,6 +267,7 @@ def metric_summary(
     labels: list[int],
 ) -> dict:
     """Compute classification metrics for one fold or combined predictions."""
+    cm = confusion_matrix(y_true, y_pred, labels=labels)
     precision, recall, f1, _ = precision_recall_fscore_support(
         y_true,
         y_pred,
@@ -263,6 +275,7 @@ def metric_summary(
         average="macro",
         zero_division=0,
     )
+    sensitivity, specificity = classification_sensitivity_specificity(cm)
     return {
         "accuracy": round(float(accuracy_score(y_true, y_pred)), 5),
         "macro_f1": round(float(f1), 5),
@@ -272,8 +285,41 @@ def metric_summary(
             float(balanced_accuracy_score(y_true, y_pred)),
             5,
         ),
-        "confusion_matrix": confusion_matrix(y_true, y_pred, labels=labels).tolist(),
+        "sensitivity": round(float(sensitivity), 5),
+        "specificity": round(float(specificity), 5),
+        "confusion_matrix": cm.tolist(),
     }
+
+
+def classification_sensitivity_specificity(cm: np.ndarray) -> tuple[float, float]:
+    """Return binary class-0 or multiclass macro sensitivity/specificity."""
+    if cm.size == 0:
+        return 0.0, 0.0
+
+    cm = np.asarray(cm, dtype=float)
+    total = float(cm.sum())
+    true_positives = np.diag(cm)
+    false_negatives = cm.sum(axis=1) - true_positives
+    false_positives = cm.sum(axis=0) - true_positives
+    true_negatives = total - true_positives - false_negatives - false_positives
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        sensitivities = np.divide(
+            true_positives,
+            true_positives + false_negatives,
+            out=np.zeros_like(true_positives, dtype=float),
+            where=(true_positives + false_negatives) != 0,
+        )
+        specificities = np.divide(
+            true_negatives,
+            true_negatives + false_positives,
+            out=np.zeros_like(true_negatives, dtype=float),
+            where=(true_negatives + false_positives) != 0,
+        )
+
+    if cm.shape == (2, 2):
+        return float(sensitivities[0]), float(specificities[0])
+    return float(sensitivities.mean()), float(specificities.mean())
 
 
 def summarize_folds(folds: list[dict]) -> dict:
@@ -284,6 +330,8 @@ def summarize_folds(folds: list[dict]) -> dict:
         "macro_precision",
         "macro_recall",
         "balanced_accuracy",
+        "sensitivity",
+        "specificity",
     ]
     output = {}
     for key in keys:
@@ -308,6 +356,10 @@ def prepare_target(
         mask = y_all >= 0
         y = y_all[mask]
         class_names = ANGLE_BINARY_EXTREME_NAMES
+    elif target == "gold":
+        mask = metadata["gold_stage"].notna().to_numpy(dtype=bool)
+        y = metadata.loc[mask, "gold_stage"].to_numpy(dtype=int)
+        class_names = GOLD_STAGE_NAMES
     else:
         raise ValueError(f"Unsupported target: {target}")
 

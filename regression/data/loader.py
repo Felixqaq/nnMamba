@@ -258,7 +258,11 @@ class RegressionLoaderHelper:
             target_mode = config.data.target_mode
             image_size = config.data.image_size
             k_folds = config.training.k_folds
-            seed = config.training.seed
+            seed = (
+                config.split_seed()
+                if hasattr(config, "split_seed")
+                else config.training.seed
+            )
             n_bins = config.data.angle_bin_count
             if str(config.model.name).lower() in ATTENTION_HEAVY_MODELS:
                 batch_size = config.training.swin_batch_size

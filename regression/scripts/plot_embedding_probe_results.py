@@ -20,6 +20,8 @@ METRICS = [
     ("accuracy", "Accuracy", "#4C78A8"),
     ("macro_f1", "Macro-F1", "#F58518"),
     ("balanced_accuracy", "Balanced Acc", "#54A24B"),
+    ("sensitivity", "Sensitivity", "#B279A2"),
+    ("specificity", "Specificity", "#E45756"),
 ]
 
 MODEL_LABELS = {
@@ -33,6 +35,7 @@ MODEL_LABELS = {
 TARGET_LABELS = {
     "angle_3class": "Angle 3-Class",
     "angle_binary_extreme": "Angle Extreme Binary",
+    "gold": "GOLD 4-Class",
 }
 
 
@@ -145,7 +148,7 @@ def plot_class_recall(result: dict, output_dir: Path, dpi: int) -> Path:
     bars = ax.bar(
         np.arange(len(recalls)),
         recalls,
-        color=["#4C78A8", "#F58518", "#54A24B"][: len(recalls)],
+        color=["#4C78A8", "#F58518", "#54A24B", "#72B7B2"][: len(recalls)],
         width=0.62,
     )
     ax.set_title(
@@ -187,18 +190,25 @@ def plot_metric_comparison(results: list[dict], output_dir: Path, dpi: int) -> l
     for target in targets:
         target_results = [result for result in results if result["target"] == target]
         x = np.arange(len(target_results))
-        width = 0.24
+        width = min(0.82 / len(METRICS), 0.18)
+        center = (len(METRICS) - 1) / 2
         fig, ax = plt.subplots(figsize=(max(8.5, 1.35 * len(target_results)), 5.8))
         for metric_index, (metric_key, metric_label, color) in enumerate(METRICS):
-            offsets = x + (metric_index - 1) * width
+            offsets = x + (metric_index - center) * width
             values = [
                 float(result["summary"][f"mean_{metric_key}"])
+                for result in target_results
+            ]
+            stds = [
+                float(result["summary"][f"std_{metric_key}"])
                 for result in target_results
             ]
             bars = ax.bar(
                 offsets,
                 values,
                 width=width,
+                yerr=stds,
+                capsize=3,
                 label=metric_label,
                 color=color,
             )
@@ -219,7 +229,7 @@ def plot_metric_comparison(results: list[dict], output_dir: Path, dpi: int) -> l
             fontweight="bold",
             pad=14,
         )
-        ax.set_ylabel("5-fold Mean Score", fontsize=12)
+        ax.set_ylabel("Mean Score +/- Fold Std", fontsize=12)
         ax.set_ylim(0, 1.08)
         ax.set_xticks(x)
         ax.set_xticklabels(
@@ -246,17 +256,24 @@ def plot_all_metric_overview(results: list[dict], output_dir: Path, dpi: int) ->
         for result in results
     ]
     x = np.arange(len(results))
-    width = 0.24
+    width = min(0.82 / len(METRICS), 0.18)
+    center = (len(METRICS) - 1) / 2
     fig, ax = plt.subplots(figsize=(max(10.5, 1.25 * len(results)), 6.2))
     for metric_index, (metric_key, metric_label, color) in enumerate(METRICS):
         values = [
             float(result["summary"][f"mean_{metric_key}"])
             for result in results
         ]
+        stds = [
+            float(result["summary"][f"std_{metric_key}"])
+            for result in results
+        ]
         ax.bar(
-            x + (metric_index - 1) * width,
+            x + (metric_index - center) * width,
             values,
             width=width,
+            yerr=stds,
+            capsize=3,
             label=metric_label,
             color=color,
         )
@@ -266,7 +283,7 @@ def plot_all_metric_overview(results: list[dict], output_dir: Path, dpi: int) ->
         fontweight="bold",
         pad=14,
     )
-    ax.set_ylabel("5-fold Mean Score", fontsize=12)
+    ax.set_ylabel("Mean Score +/- Fold Std", fontsize=12)
     ax.set_ylim(0, 1.05)
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=9)

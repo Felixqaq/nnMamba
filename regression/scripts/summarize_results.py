@@ -47,6 +47,8 @@ CLASSIFICATION_METRICS = [
     ("balanced_accuracy", "Balanced Accuracy", "#9467bd"),
     ("macro_precision", "Macro Precision", "#ff7f0e"),
     ("macro_recall", "Macro Recall", "#17becf"),
+    ("sensitivity", "Sensitivity", "#8c564b"),
+    ("specificity", "Specificity", "#bcbd22"),
 ]
 
 

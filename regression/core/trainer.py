@@ -17,7 +17,13 @@ from tqdm import tqdm
 
 from .checkpoints import generate_uuid, save_checkpoint
 from .config import Config
-from .evaluator import ClassificationMetrics, RegressionMetrics, evaluate, save_predictions
+from .evaluator import (
+    ClassificationMetrics,
+    RegressionMetrics,
+    encode_ordinal_targets,
+    evaluate,
+    save_predictions,
+)
 from .visualizer import plot_global_summary, plot_paper_results, plot_training_curves
 
 ATTENTION_HEAVY_MODELS = {
@@ -72,16 +78,22 @@ def build_loss(
     name: str,
     is_classification: bool,
     class_weights: torch.Tensor | None = None,
+    classification_mode: str = "multiclass",
 ) -> nn.Module:
     """Build task-specific loss by name."""
     resolved = name
     if resolved == "auto":
-        resolved = "cross_entropy" if is_classification else "smooth_l1"
+        if is_classification and classification_mode == "ordinal":
+            resolved = "ordinal_bce"
+        else:
+            resolved = "cross_entropy" if is_classification else "smooth_l1"
 
-    if resolved not in {"smooth_l1", "mse", "mae", "cross_entropy"}:
+    if resolved not in {"smooth_l1", "mse", "mae", "cross_entropy", "ordinal_bce"}:
         raise ValueError(f"Unknown loss: {name}")
     if resolved == "cross_entropy":
         return nn.CrossEntropyLoss(weight=class_weights)
+    if resolved == "ordinal_bce":
+        return nn.BCEWithLogitsLoss()
     if resolved == "smooth_l1":
         return nn.SmoothL1Loss()
     if resolved == "mse":
@@ -106,6 +118,7 @@ class Trainer:
         self.total_training_seconds: float | None = None
         self.task_type = str(config.data.target_mode)
         self.is_classification = config.is_classification_task()
+        self.is_ordinal_classification = config.is_ordinal_classification()
         self.class_names = (
             loader_helper.get_class_names()
             if hasattr(loader_helper, "get_class_names")
@@ -141,6 +154,10 @@ class Trainer:
             print(
                 f"Classes: {cfg.model.num_classes} | "
                 f"Labels: {', '.join(self.class_names) if self.class_names else 'n/a'}"
+            )
+            print(
+                f"Classification mode: {cfg.training.classification_mode} | "
+                f"Model logits: {cfg.model_output_dim()}"
             )
             if cfg.training.class_weight_mode != "none":
                 example_weights = self._resolve_class_weights(0)
@@ -247,6 +264,7 @@ class Trainer:
             cfg.loss,
             self.is_classification,
             class_weights=class_weights,
+            classification_mode=cfg.classification_mode,
         )
 
         train_loss_history: list[float] = []
@@ -291,6 +309,7 @@ class Trainer:
                             target_std=eval_target_std,
                             use_amp=self.use_amp,
                             num_classes=int(self.config.model.num_classes),
+                            classification_mode=self.config.training.classification_mode,
                         )
                     val_result = evaluate(
                         model=model,
@@ -301,6 +320,7 @@ class Trainer:
                         target_std=eval_target_std,
                         use_amp=self.use_amp,
                         num_classes=int(self.config.model.num_classes),
+                        classification_mode=self.config.training.classification_mode,
                     )
 
                     invalid_train = (
@@ -478,6 +498,12 @@ class Trainer:
                 ):
                     out = model(x)
                     if self.is_classification:
+                        if self.is_ordinal_classification:
+                            ordinal_y = encode_ordinal_targets(
+                                y,
+                                num_classes=int(self.config.model.num_classes),
+                            )
+                            return loss_fn(out, ordinal_y)
                         return loss_fn(out, y)
                     y_target = self._normalize_targets(y, target_mean, target_std)
                     return loss_fn(out.view(-1), y_target)
@@ -559,6 +585,8 @@ class Trainer:
                 "macro_precision": [],
                 "macro_recall": [],
                 "balanced_accuracy": [],
+                "sensitivity": [],
+                "specificity": [],
             }
         return {"mae": [], "rmse": [], "r2": [], "pearson": [], "mean_error": []}
 
@@ -611,6 +639,8 @@ class Trainer:
         if not self.is_classification:
             return None
         if self.config.training.class_weight_mode != "balanced":
+            return None
+        if self.is_ordinal_classification:
             return None
         weights = self.loader_helper.get_fold_class_weights(fold)
         return weights.to(self.device)
@@ -699,6 +729,8 @@ class Trainer:
                 "macro_precision": metrics.macro_precision,
                 "macro_recall": metrics.macro_recall,
                 "balanced_accuracy": metrics.balanced_accuracy,
+                "sensitivity": metrics.sensitivity,
+                "specificity": metrics.specificity,
             }
         else:
             payload["metrics"] = {
@@ -736,6 +768,8 @@ class Trainer:
                     "macro_precision": res.macro_precision,
                     "macro_recall": res.macro_recall,
                     "balanced_accuracy": res.balanced_accuracy,
+                    "sensitivity": res.sensitivity,
+                    "specificity": res.specificity,
                     "confusion_matrix": res.confusion_matrix,
                 }
             else:
@@ -783,6 +817,8 @@ class Trainer:
             "seed": self.config.training.seed,
             "loss": self.config.training.loss,
             "num_classes": self.config.model.num_classes,
+            "model_output_dim": self.config.model_output_dim(),
+            "classification_mode": self.config.training.classification_mode,
             "target_mode": self.config.data.target_mode,
         }
         if self.config.data.tapct_features is not None:

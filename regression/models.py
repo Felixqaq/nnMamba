@@ -45,17 +45,18 @@ MODEL_REGISTRY = {
 }
 
 
-def build_model(model_config, device=None) -> nn.Module:
+def build_model(model_config, device=None, output_dim: int | None = None) -> nn.Module:
     """Build a regression model by name."""
     if isinstance(model_config, str):
         key = model_config.lower()
         kwargs = {}
     else:
         key = str(model_config.name).lower()
+        num_outputs = int(output_dim or model_config.num_classes)
         if key in {"mamba", "nnmamba", "nnmamba_regressor"}:
             kwargs = {
                 "in_channels": int(model_config.in_channels),
-                "num_classes": int(model_config.num_classes),
+                "num_classes": num_outputs,
                 "base_channels": int(model_config.base_channels),
                 "depths": tuple([int(model_config.blocks)] * 3),
                 "dropout": float(model_config.dropout),
@@ -68,7 +69,7 @@ def build_model(model_config, device=None) -> nn.Module:
         }:
             kwargs = {
                 "in_channels": int(model_config.in_channels),
-                "num_classes": int(model_config.num_classes),
+                "num_classes": num_outputs,
                 "base_channels": int(model_config.base_channels),
                 "depths": tuple([int(model_config.blocks)] * 3),
                 "head_hidden_dim": int(model_config.hidden_dim),
@@ -91,7 +92,7 @@ def build_model(model_config, device=None) -> nn.Module:
         }:
             kwargs = {
                 "in_channels": int(model_config.in_channels),
-                "num_classes": int(model_config.num_classes),
+                "num_classes": num_outputs,
                 "base_channels": int(model_config.base_channels),
                 "depths": tuple([int(model_config.blocks)] * 3),
                 "head_hidden_dim": int(model_config.hidden_dim),
@@ -123,7 +124,7 @@ def build_model(model_config, device=None) -> nn.Module:
         elif key in {"tapct_abmil", "tapct_abmil_classifier"}:
             kwargs = {
                 "tapct_embedding_dim": int(model_config.tapct_embedding_dim),
-                "num_classes": int(model_config.num_classes),
+                "num_classes": num_outputs,
                 "hidden_dim": int(model_config.hidden_dim),
                 "attention_dim": int(model_config.tapct_attention_dim),
                 "dropout": float(model_config.dropout),
@@ -138,7 +139,7 @@ def build_model(model_config, device=None) -> nn.Module:
                 patch_size = tuple(int(size) for size in patch_size)
             kwargs = {
                 "in_channels": int(model_config.in_channels),
-                "num_classes": int(model_config.num_classes),
+                "num_classes": num_outputs,
                 "feature_size": int(model_config.feature_size),
                 "head_hidden_dim": int(model_config.hidden_dim),
                 "dropout": float(model_config.dropout),

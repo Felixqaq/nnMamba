@@ -96,12 +96,19 @@ def _extract_model_input(batch: dict[str, Any], device: torch.device):
 
 def _extract_regression_target(batch: dict[str, Any]) -> torch.Tensor:
     """Get regression target from a batch."""
-    target = batch.get("angle")
+    target = batch.get("target")
     if target is None:
-        target = batch.get("target")
+        target = batch.get("angle")
     if target is None:
         raise KeyError("Batch is missing a regression target key.")
     return target
+
+
+def _regression_prediction_fields(task_type: str) -> tuple[str, str]:
+    """Return JSON field stem and display label for regression predictions."""
+    if task_type == "oi":
+        return "oi", "OI"
+    return "angle", "Angle"
 
 
 def _extract_classification_target(batch: dict[str, Any]) -> torch.Tensor:
@@ -633,26 +640,37 @@ def save_predictions(
     if getattr(metrics, "labels", None) is None or getattr(metrics, "preds", None) is None:
         return {}
 
+    field_stem, target_label = _regression_prediction_fields(task_type)
     rows = []
-    for i, (true_angle, pred_angle) in enumerate(zip(metrics.labels, metrics.preds)):
+    for i, (true_value, pred_value) in enumerate(zip(metrics.labels, metrics.preds)):
         dataset_idx = fold_indices[i] if i < len(fold_indices) else i
         record = getattr(dataset, "records", [])[dataset_idx]
-        signed_error = float(pred_angle.item() - true_angle.item())
-        rows.append(
-            {
-                "patient_id": record.patient_id,
-                "path": str(record.path),
-                "source_group": record.source_group,
-                "true_angle": round(float(true_angle.item()), 5),
-                "predicted_angle": round(float(pred_angle.item()), 5),
-                "signed_error": round(signed_error, 5),
-                "absolute_error": round(abs(signed_error), 5),
-            }
-        )
+        signed_error = float(pred_value.item() - true_value.item())
+        row = {
+            "patient_id": record.patient_id,
+            "path": str(record.path),
+            "source_group": record.source_group,
+            f"true_{field_stem}": round(float(true_value.item()), 5),
+            f"predicted_{field_stem}": round(float(pred_value.item()), 5),
+            "signed_error": round(signed_error, 5),
+            "absolute_error": round(abs(signed_error), 5),
+        }
+        if task_type == "oi":
+            row["angle"] = (
+                round(float(record.angle), 5)
+                if math.isfinite(float(record.angle))
+                else None
+            )
+            for key in ("a", "fvc", "pef"):
+                value = getattr(record, key, None)
+                if value is not None:
+                    row[key] = round(float(value), 5)
+        rows.append(row)
 
     rows.sort(key=lambda item: item["absolute_error"], reverse=True)
     payload = {
         "fold": fold,
+        "target": target_label,
         "mae": metrics.mae,
         "rmse": metrics.rmse,
         "r2": metrics.r2,

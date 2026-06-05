@@ -88,12 +88,15 @@ def test_gold_tapct_late_fusion_config() -> None:
     assert config.data.target_mode == "gold"
     assert config.is_classification_task() is True
     assert config.model.name == "hybrid_mamba_tapct_fusion"
-    assert config.model.num_classes == 4
+    assert config.model.num_classes == 5
     assert config.model.tapct_embedding_dim == 2304
-    assert config.data.manifest == Path("./datasets/generated/gold_manifest.aug36.json")
+    assert config.data.pft_json == Path("./GOLD_2026_classification.json")
+    assert config.data.manifest == Path(
+        "./datasets/generated/gold_2026_manifest.tapct_aug36.json"
+    )
     assert config.data.tapct_features == Path("./embeddings/tapct_b_3d/features.npz")
     assert config.data.augmentation.target_per_class == 36
-    assert config.data.augmentation.gold_stages == (1, 2, 3, 4)
+    assert config.data.augmentation.class_indices == (0, 1, 2, 3, 4)
     assert config.task == "GOLD_stage_classification"
 
 

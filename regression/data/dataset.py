@@ -1,4 +1,4 @@
-"""Dataset classes for CT angle regression and GOLD classification."""
+"""Dataset classes for CT regression and classification tasks."""
 
 from __future__ import annotations
 
@@ -87,6 +87,7 @@ class AngleRegressionDataset(Dataset):
         data_root: str | Path,
         labels_json: str | Path,
         pft_json: str | Path | None = None,
+        oi_json: str | Path | None = None,
         target_mode: str = "angle",
         image_size: tuple[int, int, int] = DEFAULT_IMAGE_SIZE,
         intensity_window: tuple[float, float] | None = None,
@@ -100,6 +101,7 @@ class AngleRegressionDataset(Dataset):
         self.data_root = Path(data_root)
         self.labels_json = Path(labels_json)
         self.pft_json = Path(pft_json) if pft_json is not None else None
+        self.oi_json = Path(oi_json) if oi_json is not None else None
         self.target_mode = target_mode
         self.image_size = image_size
         self.intensity_window = intensity_window
@@ -115,6 +117,7 @@ class AngleRegressionDataset(Dataset):
                 self.labels_json,
                 pft_json=self.pft_json,
                 target_mode=self.target_mode,
+                oi_json=self.oi_json,
             )
             self.records = list(manifest.records)
         else:
@@ -134,7 +137,8 @@ class AngleRegressionDataset(Dataset):
                 )
             target = np.array(record.class_index, dtype=np.int64)
         else:
-            target = np.array(record.angle, dtype=np.float32)
+            target_value = record.target if record.target is not None else record.angle
+            target = np.array(target_value, dtype=np.float32)
 
         if self.load_ct_data:
             ct = load_ct(
@@ -150,6 +154,14 @@ class AngleRegressionDataset(Dataset):
             "ct": ct,
             "target": target,
             "angle": np.array(record.angle, dtype=np.float32),
+            "oi": (
+                np.array(record.oi, dtype=np.float32)
+                if record.oi is not None
+                else None
+            ),
+            "a": record.a,
+            "fvc": record.fvc,
+            "pef": record.pef,
             "label": (
                 np.array(record.class_index, dtype=np.int64)
                 if record.class_index is not None

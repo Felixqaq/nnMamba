@@ -1,9 +1,9 @@
-"""Manifest helpers for CT angle regression and GOLD-stage classification.
+"""Manifest helpers for CT regression/classification tasks.
 
 The dataset is organized under ``by_angle_all/`` and labels are read from
-``patient_angle_classification_by_group.json`` and optionally ``pft.json``.
-Each CT filename begins with the patient identifier, which is used to match the
-target label.
+``patient_angle_classification_by_group.json``, optionally ``pft.json``, and
+optionally OI labels. Each CT filename begins with the patient identifier,
+which is used to match the target label.
 """
 
 from __future__ import annotations
@@ -24,6 +24,13 @@ ANGLE_BINARY_EXTREME_NAMES = [
     "Abnormal/emphysema-like (AC <=131 deg)",
     "Normal-like (AC >=152 deg)",
 ]
+GOLD_2026_CLASS_NAMES = [
+    "Class 0 (No COPD)",
+    "GOLD 1 (Mild)",
+    "GOLD 2 (Moderate)",
+    "GOLD 3 (Severe)",
+    "GOLD 4 (Very Severe)",
+]
 
 
 @dataclass(frozen=True)
@@ -34,11 +41,16 @@ class AngleRecord:
     path: str
     angle: float
     source_group: str
+    target: float | None = None
     class_index: int | None = None
     class_label: str | None = None
     gold_stage: int | None = None
     gold_stage_label: str | None = None
     post_fev1_percent_predicted: float | None = None
+    oi: float | None = None
+    a: float | None = None
+    fvc: float | None = None
+    pef: float | None = None
 
 
 @dataclass
@@ -129,12 +141,16 @@ def _gold_stage_sort_key(stage_name: str) -> tuple[int, str]:
 
 def _english_gold_label(stage_name: str) -> str:
     """Normalize GOLD class names into English-only labels."""
+    if re.search(r"\bclass\s*0\b", stage_name, flags=re.IGNORECASE):
+        return GOLD_2026_CLASS_NAMES[0]
+
     match = re.search(r"(\d+)", stage_name)
     if not match:
         return stage_name
 
     stage = int(match.group(1))
     aliases = {
+        0: GOLD_2026_CLASS_NAMES[0],
         1: "GOLD 1 (Mild)",
         2: "GOLD 2 (Moderate)",
         3: "GOLD 3 (Severe)",
@@ -143,17 +159,104 @@ def _english_gold_label(stage_name: str) -> str:
     return aliases.get(stage, f"GOLD {stage}")
 
 
+def _gold_label_from_class_index(class_index: int) -> str:
+    """Return the canonical GOLD 2026 label for a zero-based class index."""
+    if 0 <= class_index < len(GOLD_2026_CLASS_NAMES):
+        return GOLD_2026_CLASS_NAMES[class_index]
+    return f"Class {class_index}"
+
+
+def _gold_2026_records(data: dict) -> list[dict]:
+    """Return patient records from a GOLD 2026 class JSON."""
+    records = data.get("records")
+    if isinstance(records, list):
+        return [record for record in records if isinstance(record, dict)]
+
+    by_class = data.get("by_class")
+    if not isinstance(by_class, dict):
+        return []
+
+    output: list[dict] = []
+    for class_key, class_records in by_class.items():
+        match = re.search(r"(\d+)", str(class_key))
+        if match is None or not isinstance(class_records, list):
+            continue
+        class_index = int(match.group(1))
+        for record in class_records:
+            if isinstance(record, dict):
+                item = dict(record)
+                item.setdefault("class", class_index)
+                output.append(item)
+    return output
+
+
+def _load_gold_2026_label_map(
+    data: dict,
+) -> tuple[dict[str, dict[str, float | int | str | None]], list[str]]:
+    """Load patient-id -> GOLD 2026 five-class mapping."""
+    records = _gold_2026_records(data)
+    class_indices = {
+        int(record["class"])
+        for record in records
+        if "class" in record and record["class"] is not None
+    }
+    for class_key in (data.get("counts") or {}).keys():
+        match = re.fullmatch(r"class_(\d+)", str(class_key))
+        if match is not None:
+            class_indices.add(int(match.group(1)))
+    for class_key in (data.get("by_class") or {}).keys():
+        match = re.fullmatch(r"class_(\d+)", str(class_key))
+        if match is not None:
+            class_indices.add(int(match.group(1)))
+
+    class_names = (
+        [
+            _gold_label_from_class_index(class_index)
+            for class_index in range(max(class_indices) + 1)
+        ]
+        if class_indices
+        else []
+    )
+    label_map: dict[str, dict[str, float | int | str | None]] = {}
+
+    for index, record in enumerate(records):
+        patient_id = str(record.get("patient_id", "")).strip()
+        if not patient_id:
+            raise ValueError(f"GOLD 2026 record {index} is missing patient_id.")
+        if "class" not in record or record["class"] is None:
+            raise ValueError(
+                f"GOLD 2026 record for patient {patient_id} is missing class."
+            )
+
+        class_index = int(record["class"])
+        label_map[patient_id] = {
+            "gold_stage": class_index,
+            "gold_stage_label": _gold_label_from_class_index(class_index),
+            "post_fev1_percent_predicted": _optional_float(
+                record,
+                "post_fev1_percent_predicted",
+            ),
+        }
+
+    return label_map, class_names
+
+
 def load_gold_label_map(
     pft_json: str | Path,
-) -> tuple[dict[str, dict[str, float | int | str]], list[str]]:
+) -> tuple[dict[str, dict[str, float | int | str | None]], list[str]]:
     """Load patient-id -> GOLD stage mapping from the provided PFT JSON."""
     pft_json = Path(pft_json)
     with pft_json.open("r", encoding="utf-8-sig") as f:
         data = json.load(f)
 
+    if isinstance(data, dict) and (
+        isinstance(data.get("records"), list) or isinstance(data.get("by_class"), dict)
+    ):
+        return _load_gold_2026_label_map(data)
+
     raw_class_names = sorted((str(key) for key in data.keys()), key=_gold_stage_sort_key)
     class_names = [_english_gold_label(class_name) for class_name in raw_class_names]
-    label_map: dict[str, dict[str, float | int | str]] = {}
+    label_map: dict[str, dict[str, float | int | str | None]] = {}
 
     for class_index, raw_class_name in enumerate(raw_class_names):
         english_class_name = class_names[class_index]
@@ -169,6 +272,42 @@ def load_gold_label_map(
             }
 
     return label_map, class_names
+
+
+def _optional_float(record: dict, key: str) -> float | None:
+    """Return a finite-ish optional float from a JSON record."""
+    value = record.get(key)
+    if value is None or value == "":
+        return None
+    return float(value)
+
+
+def load_oi_label_map(oi_json: str | Path) -> dict[str, dict[str, float | None]]:
+    """Load patient-id -> OI regression targets from the processed OI JSON."""
+    oi_json = Path(oi_json)
+    with oi_json.open("r", encoding="utf-8-sig") as f:
+        data = json.load(f)
+
+    if not isinstance(data, list):
+        raise ValueError("OI labels must be a JSON array of patient records.")
+
+    label_map: dict[str, dict[str, float | None]] = {}
+    for index, record in enumerate(data):
+        if not isinstance(record, dict):
+            raise ValueError(f"OI record {index} must be a JSON object.")
+        patient_id = str(record.get("patient_id", "")).strip()
+        if not patient_id:
+            raise ValueError(f"OI record {index} is missing patient_id.")
+        if "oi" not in record:
+            raise ValueError(f"OI record for patient {patient_id} is missing oi.")
+        label_map[patient_id] = {
+            "oi": float(record["oi"]),
+            "a": _optional_float(record, "a"),
+            "fvc": _optional_float(record, "fvc"),
+            "pef": _optional_float(record, "pef"),
+        }
+
+    return label_map
 
 
 def _extract_patient_id(path: Path) -> str:
@@ -192,12 +331,20 @@ def build_angle_manifest(
     labels_json: str | Path,
     pft_json: str | Path | None = None,
     target_mode: str = "angle",
+    oi_json: str | Path | None = None,
 ) -> AngleManifest:
-    """Create a manifest from the on-disk CTs and the angle annotation JSON."""
+    """Create a manifest from the on-disk CTs and task annotation JSON."""
     data_root = Path(data_root)
     labels_json = Path(labels_json)
-    label_map = load_angle_label_map(labels_json)
-    gold_label_map: dict[str, dict[str, float | int | str]] = {}
+    target_mode = str(target_mode)
+    label_map = load_angle_label_map(labels_json) if labels_json.exists() else {}
+    oi_label_map: dict[str, dict[str, float | None]] = {}
+    oi_path = Path(oi_json) if oi_json is not None else None
+    if target_mode == "oi":
+        if oi_path is None:
+            raise ValueError("target_mode='oi' requires data.oi_json.")
+        oi_label_map = load_oi_label_map(oi_path)
+    gold_label_map: dict[str, dict[str, float | int | str | None]] = {}
     gold_class_names: list[str] = []
     pft_path = Path(pft_json) if pft_json is not None else None
     if pft_path is not None and (target_mode == "gold" or pft_path.exists()):
@@ -223,10 +370,20 @@ def build_angle_manifest(
     for ct_path in iter_ct_files(data_root):
         patient_id = _extract_patient_id(ct_path)
         source_ids.add(patient_id)
-        angle = label_map.get(patient_id)
-        if angle is None:
-            missing_from_source.append(patient_id)
-            continue
+        oi_meta = None
+        if target_mode == "oi":
+            oi_meta = oi_label_map.get(patient_id)
+            if oi_meta is None:
+                missing_from_source.append(patient_id)
+                continue
+            angle = label_map.get(patient_id, float("nan"))
+            target = float(oi_meta["oi"])
+        else:
+            angle = label_map.get(patient_id)
+            if angle is None:
+                missing_from_source.append(patient_id)
+                continue
+            target = float(angle)
 
         gold_meta = gold_label_map.get(patient_id)
         if target_mode == "gold" and gold_meta is None:
@@ -253,6 +410,7 @@ def build_angle_manifest(
                 path=str(ct_path),
                 angle=float(angle),
                 source_group=source_group,
+                target=target,
                 class_index=class_index,
                 class_label=class_label,
                 gold_stage=(
@@ -269,11 +427,28 @@ def build_angle_manifest(
                     and gold_meta["post_fev1_percent_predicted"] is not None
                     else None
                 ),
+                oi=float(oi_meta["oi"]) if oi_meta is not None else None,
+                a=(
+                    float(oi_meta["a"])
+                    if oi_meta is not None and oi_meta["a"] is not None
+                    else None
+                ),
+                fvc=(
+                    float(oi_meta["fvc"])
+                    if oi_meta is not None and oi_meta["fvc"] is not None
+                    else None
+                ),
+                pef=(
+                    float(oi_meta["pef"])
+                    if oi_meta is not None and oi_meta["pef"] is not None
+                    else None
+                ),
             )
         )
 
+    active_label_ids = oi_label_map.keys() if target_mode == "oi" else label_map.keys()
     extra_in_source_not_in_json = sorted(
-        patient_id for patient_id in label_map.keys() if patient_id not in source_ids
+        patient_id for patient_id in active_label_ids if patient_id not in source_ids
     )
 
     counts = {
@@ -292,7 +467,7 @@ def build_angle_manifest(
     }
 
     return AngleManifest(
-        source_json=str(labels_json),
+        source_json=str(oi_path if target_mode == "oi" else labels_json),
         data_root=str(data_root),
         records=records,
         counts=counts,

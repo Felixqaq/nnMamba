@@ -38,6 +38,7 @@ CLASSIFICATION_TARGET_MODES = {"gold", "angle_3class", "angle_binary_extreme"}
 
 def _collate_angle_batch(samples: list[dict]) -> dict:
     """Collate CT samples and pad variable-length TAP-CT instance bags."""
+    samples = _drop_none_batch_fields(samples)
     if not samples or "tapct_embedding" not in samples[0]:
         return default_collate(samples)
 
@@ -79,6 +80,18 @@ def _collate_angle_batch(samples: list[dict]) -> dict:
     batch["tapct_embedding"] = padded
     batch["tapct_mask"] = mask
     return batch
+
+
+def _drop_none_batch_fields(samples: list[dict]) -> list[dict]:
+    """Remove optional metadata fields that cannot be default-collated."""
+    if not samples:
+        return samples
+    keys = [
+        key
+        for key in samples[0].keys()
+        if all(key in sample and sample[key] is not None for sample in samples)
+    ]
+    return [{key: sample[key] for key in keys} for sample in samples]
 
 
 class BalancedClassSampler(Sampler):
@@ -229,6 +242,7 @@ class RegressionLoaderHelper:
         data_root: str | Path | Any = "../by_angle_all",
         labels_json: str | Path = "../patient_angle_classification_by_group.json",
         pft_json: str | Path = "../pft.json",
+        oi_json: str | Path = "./oi_processed.json",
         target_mode: str = "angle",
         image_size: tuple[int, int, int] = DEFAULT_IMAGE_SIZE,
         k_folds: int = 5,
@@ -255,6 +269,7 @@ class RegressionLoaderHelper:
             data_root = config.data.source_dir
             labels_json = config.data.labels_json
             pft_json = config.data.pft_json
+            oi_json = config.data.oi_json
             target_mode = config.data.target_mode
             image_size = config.data.image_size
             k_folds = config.training.k_folds
@@ -289,6 +304,7 @@ class RegressionLoaderHelper:
         self.data_root = Path(data_root)
         self.labels_json = Path(labels_json)
         self.pft_json = Path(pft_json) if pft_json is not None else None
+        self.oi_json = Path(oi_json) if oi_json is not None else None
         self.target_mode = str(target_mode)
         self.image_size = image_size
         self.k_folds = k_folds
@@ -320,6 +336,7 @@ class RegressionLoaderHelper:
             self.labels_json,
             pft_json=self.pft_json,
             target_mode=self.target_mode,
+            oi_json=self.oi_json,
         )
         self.manifest = manifest
         self.records = list(manifest.records)
@@ -331,7 +348,10 @@ class RegressionLoaderHelper:
             )
         else:
             self.targets = np.asarray(
-                [record.angle for record in self.records],
+                [
+                    record.target if record.target is not None else record.angle
+                    for record in self.records
+                ],
                 dtype=np.float32,
             )
         self.patient_ids = [record.patient_id for record in self.records]
@@ -347,6 +367,7 @@ class RegressionLoaderHelper:
             self.data_root,
             self.labels_json,
             pft_json=self.pft_json,
+            oi_json=self.oi_json,
             target_mode=self.target_mode,
             image_size=self.image_size,
             intensity_window=self.intensity_window,

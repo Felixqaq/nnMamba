@@ -1,0 +1,1160 @@
+﻿{
+    "standard":  "GOLD 2026",
+    "rules":  {
+                  "class_0":  "FEV1/FVC \u003e= 70%: no COPD by GOLD fixed-ratio spirometry criterion",
+                  "class_1":  "FEV1/FVC \u003c 70% and post-bronchodilator FEV1 \u003e= 80% predicted",
+                  "class_2":  "FEV1/FVC \u003c 70% and 50% \u003c= post-bronchodilator FEV1 \u003c 80% predicted",
+                  "class_3":  "FEV1/FVC \u003c 70% and 30% \u003c= post-bronchodilator FEV1 \u003c 50% predicted",
+                  "class_4":  "FEV1/FVC \u003c 70% and post-bronchodilator FEV1 \u003c 30% predicted"
+              },
+    "source_notes":  [
+                         "FEV1/FVC measured/reference pairs were parsed from GOLD.json after removing parenthesized labels.",
+                         "Patient IDs come from the 66 JPG filenames in this folder, sorted by filename.",
+                         "post_fev1_percent_predicted values were merged from pft_images_all/pft_before_grouped_by_gold_backup.json and pft_jpg_output/醫院NormalDataset20260421/20260421pft_before_grouped_by_gold.json.",
+                         "FEV1/FVC reference percent is retained for traceability; GOLD fixed-ratio classification uses measured FEV1/FVC \u003c 70%."
+                     ],
+    "counts":  {
+                   "total":  66,
+                   "class_0":  34,
+                   "class_1":  2,
+                   "class_2":  11,
+                   "class_3":  13,
+                   "class_4":  6
+               },
+    "by_class":  {
+                     "class_0":  [
+                                     {
+                                         "patient_id":  "0781915",
+                                         "fev1_fvc_measured_percent":  89,
+                                         "fev1_fvc_reference_percent":  82,
+                                         "post_fev1_percent_predicted":  105,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "1596038",
+                                         "fev1_fvc_measured_percent":  78,
+                                         "fev1_fvc_reference_percent":  71,
+                                         "post_fev1_percent_predicted":  87,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "1604378",
+                                         "fev1_fvc_measured_percent":  80,
+                                         "fev1_fvc_reference_percent":  85,
+                                         "post_fev1_percent_predicted":  87,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "1663485",
+                                         "fev1_fvc_measured_percent":  77,
+                                         "fev1_fvc_reference_percent":  73,
+                                         "post_fev1_percent_predicted":  116,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "1746380",
+                                         "fev1_fvc_measured_percent":  87,
+                                         "fev1_fvc_reference_percent":  82,
+                                         "post_fev1_percent_predicted":  92,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "1814107",
+                                         "fev1_fvc_measured_percent":  77,
+                                         "fev1_fvc_reference_percent":  79,
+                                         "post_fev1_percent_predicted":  96,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "2094528",
+                                         "fev1_fvc_measured_percent":  81,
+                                         "fev1_fvc_reference_percent":  81,
+                                         "post_fev1_percent_predicted":  85,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "2221276",
+                                         "fev1_fvc_measured_percent":  74,
+                                         "fev1_fvc_reference_percent":  80,
+                                         "post_fev1_percent_predicted":  85,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "2256243",
+                                         "fev1_fvc_measured_percent":  78,
+                                         "fev1_fvc_reference_percent":  75,
+                                         "post_fev1_percent_predicted":  111,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "2291134",
+                                         "fev1_fvc_measured_percent":  81,
+                                         "fev1_fvc_reference_percent":  76,
+                                         "post_fev1_percent_predicted":  110,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "2500824",
+                                         "fev1_fvc_measured_percent":  94,
+                                         "fev1_fvc_reference_percent":  86,
+                                         "post_fev1_percent_predicted":  100,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "2860903",
+                                         "fev1_fvc_measured_percent":  78,
+                                         "fev1_fvc_reference_percent":  79,
+                                         "post_fev1_percent_predicted":  83,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "3097765",
+                                         "fev1_fvc_measured_percent":  74,
+                                         "fev1_fvc_reference_percent":  72,
+                                         "post_fev1_percent_predicted":  95,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "3635301",
+                                         "fev1_fvc_measured_percent":  78,
+                                         "fev1_fvc_reference_percent":  70,
+                                         "post_fev1_percent_predicted":  93,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "4204917",
+                                         "fev1_fvc_measured_percent":  79,
+                                         "fev1_fvc_reference_percent":  72,
+                                         "post_fev1_percent_predicted":  84,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "4205212",
+                                         "fev1_fvc_measured_percent":  83,
+                                         "fev1_fvc_reference_percent":  75,
+                                         "post_fev1_percent_predicted":  93,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "4230847",
+                                         "fev1_fvc_measured_percent":  83,
+                                         "fev1_fvc_reference_percent":  74,
+                                         "post_fev1_percent_predicted":  94,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "4302294",
+                                         "fev1_fvc_measured_percent":  85,
+                                         "fev1_fvc_reference_percent":  82,
+                                         "post_fev1_percent_predicted":  104,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "4996166",
+                                         "fev1_fvc_measured_percent":  78,
+                                         "fev1_fvc_reference_percent":  77,
+                                         "post_fev1_percent_predicted":  110,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "5046455",
+                                         "fev1_fvc_measured_percent":  81,
+                                         "fev1_fvc_reference_percent":  80,
+                                         "post_fev1_percent_predicted":  91,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "5390303",
+                                         "fev1_fvc_measured_percent":  79,
+                                         "fev1_fvc_reference_percent":  75,
+                                         "post_fev1_percent_predicted":  85,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "5925853",
+                                         "fev1_fvc_measured_percent":  75,
+                                         "fev1_fvc_reference_percent":  78,
+                                         "post_fev1_percent_predicted":  107,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "6212308",
+                                         "fev1_fvc_measured_percent":  80,
+                                         "fev1_fvc_reference_percent":  79,
+                                         "post_fev1_percent_predicted":  114,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "6312603",
+                                         "fev1_fvc_measured_percent":  88,
+                                         "fev1_fvc_reference_percent":  83,
+                                         "post_fev1_percent_predicted":  91,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "6757504",
+                                         "fev1_fvc_measured_percent":  77,
+                                         "fev1_fvc_reference_percent":  78,
+                                         "post_fev1_percent_predicted":  138,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "6858508",
+                                         "fev1_fvc_measured_percent":  80,
+                                         "fev1_fvc_reference_percent":  83,
+                                         "post_fev1_percent_predicted":  86,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "7871759",
+                                         "fev1_fvc_measured_percent":  80,
+                                         "fev1_fvc_reference_percent":  78,
+                                         "post_fev1_percent_predicted":  99,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "8244460",
+                                         "fev1_fvc_measured_percent":  78,
+                                         "fev1_fvc_reference_percent":  75,
+                                         "post_fev1_percent_predicted":  96,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "8332556",
+                                         "fev1_fvc_measured_percent":  79,
+                                         "fev1_fvc_reference_percent":  75,
+                                         "post_fev1_percent_predicted":  114,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "A267542",
+                                         "fev1_fvc_measured_percent":  84,
+                                         "fev1_fvc_reference_percent":  77,
+                                         "post_fev1_percent_predicted":  94,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "A754735",
+                                         "fev1_fvc_measured_percent":  76,
+                                         "fev1_fvc_reference_percent":  78,
+                                         "post_fev1_percent_predicted":  110,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "C081146",
+                                         "fev1_fvc_measured_percent":  80,
+                                         "fev1_fvc_reference_percent":  81,
+                                         "post_fev1_percent_predicted":  99,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "E717248",
+                                         "fev1_fvc_measured_percent":  82,
+                                         "fev1_fvc_reference_percent":  75,
+                                         "post_fev1_percent_predicted":  83,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     },
+                                     {
+                                         "patient_id":  "E797258",
+                                         "fev1_fvc_measured_percent":  70,
+                                         "fev1_fvc_reference_percent":  75,
+                                         "post_fev1_percent_predicted":  93,
+                                         "gold_stage":  "Class 0 (沒有 COPD)"
+                                     }
+                                 ],
+                     "class_1":  [
+                                     {
+                                         "patient_id":  "C041635",
+                                         "fev1_fvc_measured_percent":  60,
+                                         "fev1_fvc_reference_percent":  75,
+                                         "post_fev1_percent_predicted":  87,
+                                         "gold_stage":  "GOLD 1 (輕度)"
+                                     },
+                                     {
+                                         "patient_id":  "C543831",
+                                         "fev1_fvc_measured_percent":  53,
+                                         "fev1_fvc_reference_percent":  75,
+                                         "post_fev1_percent_predicted":  80,
+                                         "gold_stage":  "GOLD 1 (輕度)"
+                                     }
+                                 ],
+                     "class_2":  [
+                                     {
+                                         "patient_id":  "4372708",
+                                         "fev1_fvc_measured_percent":  32,
+                                         "fev1_fvc_reference_percent":  70,
+                                         "post_fev1_percent_predicted":  51,
+                                         "gold_stage":  "GOLD 2 (中度)"
+                                     },
+                                     {
+                                         "patient_id":  "4710629",
+                                         "fev1_fvc_measured_percent":  49,
+                                         "fev1_fvc_reference_percent":  72,
+                                         "post_fev1_percent_predicted":  73,
+                                         "gold_stage":  "GOLD 2 (中度)"
+                                     },
+                                     {
+                                         "patient_id":  "4796667",
+                                         "fev1_fvc_measured_percent":  56,
+                                         "fev1_fvc_reference_percent":  75,
+                                         "post_fev1_percent_predicted":  61,
+                                         "gold_stage":  "GOLD 2 (中度)"
+                                     },
+                                     {
+                                         "patient_id":  "5127217",
+                                         "fev1_fvc_measured_percent":  51,
+                                         "fev1_fvc_reference_percent":  73,
+                                         "post_fev1_percent_predicted":  72,
+                                         "gold_stage":  "GOLD 2 (中度)"
+                                     },
+                                     {
+                                         "patient_id":  "8126939",
+                                         "fev1_fvc_measured_percent":  38,
+                                         "fev1_fvc_reference_percent":  75,
+                                         "post_fev1_percent_predicted":  61,
+                                         "gold_stage":  "GOLD 2 (中度)"
+                                     },
+                                     {
+                                         "patient_id":  "9075311",
+                                         "fev1_fvc_measured_percent":  63,
+                                         "fev1_fvc_reference_percent":  73,
+                                         "post_fev1_percent_predicted":  62,
+                                         "gold_stage":  "GOLD 2 (中度)"
+                                     },
+                                     {
+                                         "patient_id":  "9529629",
+                                         "fev1_fvc_measured_percent":  50,
+                                         "fev1_fvc_reference_percent":  72,
+                                         "post_fev1_percent_predicted":  65,
+                                         "gold_stage":  "GOLD 2 (中度)"
+                                     },
+                                     {
+                                         "patient_id":  "A613117",
+                                         "fev1_fvc_measured_percent":  66,
+                                         "fev1_fvc_reference_percent":  74,
+                                         "post_fev1_percent_predicted":  66,
+                                         "gold_stage":  "GOLD 2 (中度)"
+                                     },
+                                     {
+                                         "patient_id":  "A762364",
+                                         "fev1_fvc_measured_percent":  46,
+                                         "fev1_fvc_reference_percent":  76,
+                                         "post_fev1_percent_predicted":  58,
+                                         "gold_stage":  "GOLD 2 (中度)"
+                                     },
+                                     {
+                                         "patient_id":  "D132855",
+                                         "fev1_fvc_measured_percent":  33,
+                                         "fev1_fvc_reference_percent":  74,
+                                         "post_fev1_percent_predicted":  62,
+                                         "gold_stage":  "GOLD 2 (中度)"
+                                     },
+                                     {
+                                         "patient_id":  "D550510",
+                                         "fev1_fvc_measured_percent":  33,
+                                         "fev1_fvc_reference_percent":  72,
+                                         "post_fev1_percent_predicted":  60,
+                                         "gold_stage":  "GOLD 2 (中度)"
+                                     }
+                                 ],
+                     "class_3":  [
+                                     {
+                                         "patient_id":  "1687031",
+                                         "fev1_fvc_measured_percent":  29,
+                                         "fev1_fvc_reference_percent":  74,
+                                         "post_fev1_percent_predicted":  36,
+                                         "gold_stage":  "GOLD 3 (重度)"
+                                     },
+                                     {
+                                         "patient_id":  "1800944",
+                                         "fev1_fvc_measured_percent":  30,
+                                         "fev1_fvc_reference_percent":  72,
+                                         "post_fev1_percent_predicted":  32,
+                                         "gold_stage":  "GOLD 3 (重度)"
+                                     },
+                                     {
+                                         "patient_id":  "3647457",
+                                         "fev1_fvc_measured_percent":  32,
+                                         "fev1_fvc_reference_percent":  76,
+                                         "post_fev1_percent_predicted":  42,
+                                         "gold_stage":  "GOLD 3 (重度)"
+                                     },
+                                     {
+                                         "patient_id":  "5630846",
+                                         "fev1_fvc_measured_percent":  50,
+                                         "fev1_fvc_reference_percent":  72,
+                                         "post_fev1_percent_predicted":  44,
+                                         "gold_stage":  "GOLD 3 (重度)"
+                                     },
+                                     {
+                                         "patient_id":  "6887256",
+                                         "fev1_fvc_measured_percent":  37,
+                                         "fev1_fvc_reference_percent":  75,
+                                         "post_fev1_percent_predicted":  36,
+                                         "gold_stage":  "GOLD 3 (重度)"
+                                     },
+                                     {
+                                         "patient_id":  "8009284",
+                                         "fev1_fvc_measured_percent":  31,
+                                         "fev1_fvc_reference_percent":  76,
+                                         "post_fev1_percent_predicted":  31,
+                                         "gold_stage":  "GOLD 3 (重度)"
+                                     },
+                                     {
+                                         "patient_id":  "8404129",
+                                         "fev1_fvc_measured_percent":  37,
+                                         "fev1_fvc_reference_percent":  78,
+                                         "post_fev1_percent_predicted":  39,
+                                         "gold_stage":  "GOLD 3 (重度)"
+                                     },
+                                     {
+                                         "patient_id":  "8704416",
+                                         "fev1_fvc_measured_percent":  34,
+                                         "fev1_fvc_reference_percent":  77,
+                                         "post_fev1_percent_predicted":  34,
+                                         "gold_stage":  "GOLD 3 (重度)"
+                                     },
+                                     {
+                                         "patient_id":  "C435832",
+                                         "fev1_fvc_measured_percent":  32,
+                                         "fev1_fvc_reference_percent":  76,
+                                         "post_fev1_percent_predicted":  44,
+                                         "gold_stage":  "GOLD 3 (重度)"
+                                     },
+                                     {
+                                         "patient_id":  "C586742",
+                                         "fev1_fvc_measured_percent":  57,
+                                         "fev1_fvc_reference_percent":  76,
+                                         "post_fev1_percent_predicted":  33,
+                                         "gold_stage":  "GOLD 3 (重度)"
+                                     },
+                                     {
+                                         "patient_id":  "C905524",
+                                         "fev1_fvc_measured_percent":  31,
+                                         "fev1_fvc_reference_percent":  76,
+                                         "post_fev1_percent_predicted":  41,
+                                         "gold_stage":  "GOLD 3 (重度)"
+                                     },
+                                     {
+                                         "patient_id":  "E647833",
+                                         "fev1_fvc_measured_percent":  33,
+                                         "fev1_fvc_reference_percent":  72,
+                                         "post_fev1_percent_predicted":  44,
+                                         "gold_stage":  "GOLD 3 (重度)"
+                                     },
+                                     {
+                                         "patient_id":  "E771850",
+                                         "fev1_fvc_measured_percent":  39,
+                                         "fev1_fvc_reference_percent":  80,
+                                         "post_fev1_percent_predicted":  48,
+                                         "gold_stage":  "GOLD 3 (重度)"
+                                     }
+                                 ],
+                     "class_4":  [
+                                     {
+                                         "patient_id":  "1261736",
+                                         "fev1_fvc_measured_percent":  33,
+                                         "fev1_fvc_reference_percent":  70,
+                                         "post_fev1_percent_predicted":  26,
+                                         "gold_stage":  "GOLD 4 (極重度)"
+                                     },
+                                     {
+                                         "patient_id":  "2588424",
+                                         "fev1_fvc_measured_percent":  25,
+                                         "fev1_fvc_reference_percent":  76,
+                                         "post_fev1_percent_predicted":  27,
+                                         "gold_stage":  "GOLD 4 (極重度)"
+                                     },
+                                     {
+                                         "patient_id":  "2991621",
+                                         "fev1_fvc_measured_percent":  23,
+                                         "fev1_fvc_reference_percent":  75,
+                                         "post_fev1_percent_predicted":  27,
+                                         "gold_stage":  "GOLD 4 (極重度)"
+                                     },
+                                     {
+                                         "patient_id":  "B213449",
+                                         "fev1_fvc_measured_percent":  27,
+                                         "fev1_fvc_reference_percent":  75,
+                                         "post_fev1_percent_predicted":  19,
+                                         "gold_stage":  "GOLD 4 (極重度)"
+                                     },
+                                     {
+                                         "patient_id":  "E353272",
+                                         "fev1_fvc_measured_percent":  21,
+                                         "fev1_fvc_reference_percent":  78,
+                                         "post_fev1_percent_predicted":  20,
+                                         "gold_stage":  "GOLD 4 (極重度)"
+                                     },
+                                     {
+                                         "patient_id":  "E558113",
+                                         "fev1_fvc_measured_percent":  34,
+                                         "fev1_fvc_reference_percent":  76,
+                                         "post_fev1_percent_predicted":  25,
+                                         "gold_stage":  "GOLD 4 (極重度)"
+                                     }
+                                 ]
+                 },
+    "records":  [
+                    {
+                        "order":  1,
+                        "patient_id":  "0781915",
+                        "fev1_fvc_measured_percent":  89,
+                        "fev1_fvc_reference_percent":  82,
+                        "post_fev1_percent_predicted":  105,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  2,
+                        "patient_id":  "1261736",
+                        "fev1_fvc_measured_percent":  33,
+                        "fev1_fvc_reference_percent":  70,
+                        "post_fev1_percent_predicted":  26,
+                        "class":  4,
+                        "gold_stage":  "GOLD 4 (極重度)",
+                        "severity":  "Very severe"
+                    },
+                    {
+                        "order":  3,
+                        "patient_id":  "1596038",
+                        "fev1_fvc_measured_percent":  78,
+                        "fev1_fvc_reference_percent":  71,
+                        "post_fev1_percent_predicted":  87,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  4,
+                        "patient_id":  "1604378",
+                        "fev1_fvc_measured_percent":  80,
+                        "fev1_fvc_reference_percent":  85,
+                        "post_fev1_percent_predicted":  87,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  5,
+                        "patient_id":  "1663485",
+                        "fev1_fvc_measured_percent":  77,
+                        "fev1_fvc_reference_percent":  73,
+                        "post_fev1_percent_predicted":  116,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  6,
+                        "patient_id":  "1687031",
+                        "fev1_fvc_measured_percent":  29,
+                        "fev1_fvc_reference_percent":  74,
+                        "post_fev1_percent_predicted":  36,
+                        "class":  3,
+                        "gold_stage":  "GOLD 3 (重度)",
+                        "severity":  "Severe"
+                    },
+                    {
+                        "order":  7,
+                        "patient_id":  "1746380",
+                        "fev1_fvc_measured_percent":  87,
+                        "fev1_fvc_reference_percent":  82,
+                        "post_fev1_percent_predicted":  92,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  8,
+                        "patient_id":  "1800944",
+                        "fev1_fvc_measured_percent":  30,
+                        "fev1_fvc_reference_percent":  72,
+                        "post_fev1_percent_predicted":  32,
+                        "class":  3,
+                        "gold_stage":  "GOLD 3 (重度)",
+                        "severity":  "Severe"
+                    },
+                    {
+                        "order":  9,
+                        "patient_id":  "1814107",
+                        "fev1_fvc_measured_percent":  77,
+                        "fev1_fvc_reference_percent":  79,
+                        "post_fev1_percent_predicted":  96,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  10,
+                        "patient_id":  "2094528",
+                        "fev1_fvc_measured_percent":  81,
+                        "fev1_fvc_reference_percent":  81,
+                        "post_fev1_percent_predicted":  85,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  11,
+                        "patient_id":  "2221276",
+                        "fev1_fvc_measured_percent":  74,
+                        "fev1_fvc_reference_percent":  80,
+                        "post_fev1_percent_predicted":  85,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  12,
+                        "patient_id":  "2256243",
+                        "fev1_fvc_measured_percent":  78,
+                        "fev1_fvc_reference_percent":  75,
+                        "post_fev1_percent_predicted":  111,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  13,
+                        "patient_id":  "2291134",
+                        "fev1_fvc_measured_percent":  81,
+                        "fev1_fvc_reference_percent":  76,
+                        "post_fev1_percent_predicted":  110,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  14,
+                        "patient_id":  "2500824",
+                        "fev1_fvc_measured_percent":  94,
+                        "fev1_fvc_reference_percent":  86,
+                        "post_fev1_percent_predicted":  100,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  15,
+                        "patient_id":  "2588424",
+                        "fev1_fvc_measured_percent":  25,
+                        "fev1_fvc_reference_percent":  76,
+                        "post_fev1_percent_predicted":  27,
+                        "class":  4,
+                        "gold_stage":  "GOLD 4 (極重度)",
+                        "severity":  "Very severe"
+                    },
+                    {
+                        "order":  16,
+                        "patient_id":  "2860903",
+                        "fev1_fvc_measured_percent":  78,
+                        "fev1_fvc_reference_percent":  79,
+                        "post_fev1_percent_predicted":  83,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  17,
+                        "patient_id":  "2991621",
+                        "fev1_fvc_measured_percent":  23,
+                        "fev1_fvc_reference_percent":  75,
+                        "post_fev1_percent_predicted":  27,
+                        "class":  4,
+                        "gold_stage":  "GOLD 4 (極重度)",
+                        "severity":  "Very severe"
+                    },
+                    {
+                        "order":  18,
+                        "patient_id":  "3097765",
+                        "fev1_fvc_measured_percent":  74,
+                        "fev1_fvc_reference_percent":  72,
+                        "post_fev1_percent_predicted":  95,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  19,
+                        "patient_id":  "3635301",
+                        "fev1_fvc_measured_percent":  78,
+                        "fev1_fvc_reference_percent":  70,
+                        "post_fev1_percent_predicted":  93,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  20,
+                        "patient_id":  "3647457",
+                        "fev1_fvc_measured_percent":  32,
+                        "fev1_fvc_reference_percent":  76,
+                        "post_fev1_percent_predicted":  42,
+                        "class":  3,
+                        "gold_stage":  "GOLD 3 (重度)",
+                        "severity":  "Severe"
+                    },
+                    {
+                        "order":  21,
+                        "patient_id":  "4204917",
+                        "fev1_fvc_measured_percent":  79,
+                        "fev1_fvc_reference_percent":  72,
+                        "post_fev1_percent_predicted":  84,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  22,
+                        "patient_id":  "4205212",
+                        "fev1_fvc_measured_percent":  83,
+                        "fev1_fvc_reference_percent":  75,
+                        "post_fev1_percent_predicted":  93,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  23,
+                        "patient_id":  "4230847",
+                        "fev1_fvc_measured_percent":  83,
+                        "fev1_fvc_reference_percent":  74,
+                        "post_fev1_percent_predicted":  94,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  24,
+                        "patient_id":  "4302294",
+                        "fev1_fvc_measured_percent":  85,
+                        "fev1_fvc_reference_percent":  82,
+                        "post_fev1_percent_predicted":  104,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  25,
+                        "patient_id":  "4372708",
+                        "fev1_fvc_measured_percent":  32,
+                        "fev1_fvc_reference_percent":  70,
+                        "post_fev1_percent_predicted":  51,
+                        "class":  2,
+                        "gold_stage":  "GOLD 2 (中度)",
+                        "severity":  "Moderate"
+                    },
+                    {
+                        "order":  26,
+                        "patient_id":  "4710629",
+                        "fev1_fvc_measured_percent":  49,
+                        "fev1_fvc_reference_percent":  72,
+                        "post_fev1_percent_predicted":  73,
+                        "class":  2,
+                        "gold_stage":  "GOLD 2 (中度)",
+                        "severity":  "Moderate"
+                    },
+                    {
+                        "order":  27,
+                        "patient_id":  "4796667",
+                        "fev1_fvc_measured_percent":  56,
+                        "fev1_fvc_reference_percent":  75,
+                        "post_fev1_percent_predicted":  61,
+                        "class":  2,
+                        "gold_stage":  "GOLD 2 (中度)",
+                        "severity":  "Moderate"
+                    },
+                    {
+                        "order":  28,
+                        "patient_id":  "4996166",
+                        "fev1_fvc_measured_percent":  78,
+                        "fev1_fvc_reference_percent":  77,
+                        "post_fev1_percent_predicted":  110,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  29,
+                        "patient_id":  "5046455",
+                        "fev1_fvc_measured_percent":  81,
+                        "fev1_fvc_reference_percent":  80,
+                        "post_fev1_percent_predicted":  91,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  30,
+                        "patient_id":  "5127217",
+                        "fev1_fvc_measured_percent":  51,
+                        "fev1_fvc_reference_percent":  73,
+                        "post_fev1_percent_predicted":  72,
+                        "class":  2,
+                        "gold_stage":  "GOLD 2 (中度)",
+                        "severity":  "Moderate"
+                    },
+                    {
+                        "order":  31,
+                        "patient_id":  "5390303",
+                        "fev1_fvc_measured_percent":  79,
+                        "fev1_fvc_reference_percent":  75,
+                        "post_fev1_percent_predicted":  85,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  32,
+                        "patient_id":  "5630846",
+                        "fev1_fvc_measured_percent":  50,
+                        "fev1_fvc_reference_percent":  72,
+                        "post_fev1_percent_predicted":  44,
+                        "class":  3,
+                        "gold_stage":  "GOLD 3 (重度)",
+                        "severity":  "Severe"
+                    },
+                    {
+                        "order":  33,
+                        "patient_id":  "5925853",
+                        "fev1_fvc_measured_percent":  75,
+                        "fev1_fvc_reference_percent":  78,
+                        "post_fev1_percent_predicted":  107,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  34,
+                        "patient_id":  "6212308",
+                        "fev1_fvc_measured_percent":  80,
+                        "fev1_fvc_reference_percent":  79,
+                        "post_fev1_percent_predicted":  114,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  35,
+                        "patient_id":  "6312603",
+                        "fev1_fvc_measured_percent":  88,
+                        "fev1_fvc_reference_percent":  83,
+                        "post_fev1_percent_predicted":  91,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  36,
+                        "patient_id":  "6757504",
+                        "fev1_fvc_measured_percent":  77,
+                        "fev1_fvc_reference_percent":  78,
+                        "post_fev1_percent_predicted":  138,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  37,
+                        "patient_id":  "6858508",
+                        "fev1_fvc_measured_percent":  80,
+                        "fev1_fvc_reference_percent":  83,
+                        "post_fev1_percent_predicted":  86,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  38,
+                        "patient_id":  "6887256",
+                        "fev1_fvc_measured_percent":  37,
+                        "fev1_fvc_reference_percent":  75,
+                        "post_fev1_percent_predicted":  36,
+                        "class":  3,
+                        "gold_stage":  "GOLD 3 (重度)",
+                        "severity":  "Severe"
+                    },
+                    {
+                        "order":  39,
+                        "patient_id":  "7871759",
+                        "fev1_fvc_measured_percent":  80,
+                        "fev1_fvc_reference_percent":  78,
+                        "post_fev1_percent_predicted":  99,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  40,
+                        "patient_id":  "8009284",
+                        "fev1_fvc_measured_percent":  31,
+                        "fev1_fvc_reference_percent":  76,
+                        "post_fev1_percent_predicted":  31,
+                        "class":  3,
+                        "gold_stage":  "GOLD 3 (重度)",
+                        "severity":  "Severe"
+                    },
+                    {
+                        "order":  41,
+                        "patient_id":  "8126939",
+                        "fev1_fvc_measured_percent":  38,
+                        "fev1_fvc_reference_percent":  75,
+                        "post_fev1_percent_predicted":  61,
+                        "class":  2,
+                        "gold_stage":  "GOLD 2 (中度)",
+                        "severity":  "Moderate"
+                    },
+                    {
+                        "order":  42,
+                        "patient_id":  "8244460",
+                        "fev1_fvc_measured_percent":  78,
+                        "fev1_fvc_reference_percent":  75,
+                        "post_fev1_percent_predicted":  96,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  43,
+                        "patient_id":  "8332556",
+                        "fev1_fvc_measured_percent":  79,
+                        "fev1_fvc_reference_percent":  75,
+                        "post_fev1_percent_predicted":  114,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  44,
+                        "patient_id":  "8404129",
+                        "fev1_fvc_measured_percent":  37,
+                        "fev1_fvc_reference_percent":  78,
+                        "post_fev1_percent_predicted":  39,
+                        "class":  3,
+                        "gold_stage":  "GOLD 3 (重度)",
+                        "severity":  "Severe"
+                    },
+                    {
+                        "order":  45,
+                        "patient_id":  "8704416",
+                        "fev1_fvc_measured_percent":  34,
+                        "fev1_fvc_reference_percent":  77,
+                        "post_fev1_percent_predicted":  34,
+                        "class":  3,
+                        "gold_stage":  "GOLD 3 (重度)",
+                        "severity":  "Severe"
+                    },
+                    {
+                        "order":  46,
+                        "patient_id":  "9075311",
+                        "fev1_fvc_measured_percent":  63,
+                        "fev1_fvc_reference_percent":  73,
+                        "post_fev1_percent_predicted":  62,
+                        "class":  2,
+                        "gold_stage":  "GOLD 2 (中度)",
+                        "severity":  "Moderate"
+                    },
+                    {
+                        "order":  47,
+                        "patient_id":  "9529629",
+                        "fev1_fvc_measured_percent":  50,
+                        "fev1_fvc_reference_percent":  72,
+                        "post_fev1_percent_predicted":  65,
+                        "class":  2,
+                        "gold_stage":  "GOLD 2 (中度)",
+                        "severity":  "Moderate"
+                    },
+                    {
+                        "order":  48,
+                        "patient_id":  "A267542",
+                        "fev1_fvc_measured_percent":  84,
+                        "fev1_fvc_reference_percent":  77,
+                        "post_fev1_percent_predicted":  94,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  49,
+                        "patient_id":  "A613117",
+                        "fev1_fvc_measured_percent":  66,
+                        "fev1_fvc_reference_percent":  74,
+                        "post_fev1_percent_predicted":  66,
+                        "class":  2,
+                        "gold_stage":  "GOLD 2 (中度)",
+                        "severity":  "Moderate"
+                    },
+                    {
+                        "order":  50,
+                        "patient_id":  "A754735",
+                        "fev1_fvc_measured_percent":  76,
+                        "fev1_fvc_reference_percent":  78,
+                        "post_fev1_percent_predicted":  110,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  51,
+                        "patient_id":  "A762364",
+                        "fev1_fvc_measured_percent":  46,
+                        "fev1_fvc_reference_percent":  76,
+                        "post_fev1_percent_predicted":  58,
+                        "class":  2,
+                        "gold_stage":  "GOLD 2 (中度)",
+                        "severity":  "Moderate"
+                    },
+                    {
+                        "order":  52,
+                        "patient_id":  "B213449",
+                        "fev1_fvc_measured_percent":  27,
+                        "fev1_fvc_reference_percent":  75,
+                        "post_fev1_percent_predicted":  19,
+                        "class":  4,
+                        "gold_stage":  "GOLD 4 (極重度)",
+                        "severity":  "Very severe"
+                    },
+                    {
+                        "order":  53,
+                        "patient_id":  "C041635",
+                        "fev1_fvc_measured_percent":  60,
+                        "fev1_fvc_reference_percent":  75,
+                        "post_fev1_percent_predicted":  87,
+                        "class":  1,
+                        "gold_stage":  "GOLD 1 (輕度)",
+                        "severity":  "Mild"
+                    },
+                    {
+                        "order":  54,
+                        "patient_id":  "C081146",
+                        "fev1_fvc_measured_percent":  80,
+                        "fev1_fvc_reference_percent":  81,
+                        "post_fev1_percent_predicted":  99,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  55,
+                        "patient_id":  "C435832",
+                        "fev1_fvc_measured_percent":  32,
+                        "fev1_fvc_reference_percent":  76,
+                        "post_fev1_percent_predicted":  44,
+                        "class":  3,
+                        "gold_stage":  "GOLD 3 (重度)",
+                        "severity":  "Severe"
+                    },
+                    {
+                        "order":  56,
+                        "patient_id":  "C543831",
+                        "fev1_fvc_measured_percent":  53,
+                        "fev1_fvc_reference_percent":  75,
+                        "post_fev1_percent_predicted":  80,
+                        "class":  1,
+                        "gold_stage":  "GOLD 1 (輕度)",
+                        "severity":  "Mild"
+                    },
+                    {
+                        "order":  57,
+                        "patient_id":  "C586742",
+                        "fev1_fvc_measured_percent":  57,
+                        "fev1_fvc_reference_percent":  76,
+                        "post_fev1_percent_predicted":  33,
+                        "class":  3,
+                        "gold_stage":  "GOLD 3 (重度)",
+                        "severity":  "Severe"
+                    },
+                    {
+                        "order":  58,
+                        "patient_id":  "C905524",
+                        "fev1_fvc_measured_percent":  31,
+                        "fev1_fvc_reference_percent":  76,
+                        "post_fev1_percent_predicted":  41,
+                        "class":  3,
+                        "gold_stage":  "GOLD 3 (重度)",
+                        "severity":  "Severe"
+                    },
+                    {
+                        "order":  59,
+                        "patient_id":  "D132855",
+                        "fev1_fvc_measured_percent":  33,
+                        "fev1_fvc_reference_percent":  74,
+                        "post_fev1_percent_predicted":  62,
+                        "class":  2,
+                        "gold_stage":  "GOLD 2 (中度)",
+                        "severity":  "Moderate"
+                    },
+                    {
+                        "order":  60,
+                        "patient_id":  "D550510",
+                        "fev1_fvc_measured_percent":  33,
+                        "fev1_fvc_reference_percent":  72,
+                        "post_fev1_percent_predicted":  60,
+                        "class":  2,
+                        "gold_stage":  "GOLD 2 (中度)",
+                        "severity":  "Moderate"
+                    },
+                    {
+                        "order":  61,
+                        "patient_id":  "E353272",
+                        "fev1_fvc_measured_percent":  21,
+                        "fev1_fvc_reference_percent":  78,
+                        "post_fev1_percent_predicted":  20,
+                        "class":  4,
+                        "gold_stage":  "GOLD 4 (極重度)",
+                        "severity":  "Very severe"
+                    },
+                    {
+                        "order":  62,
+                        "patient_id":  "E558113",
+                        "fev1_fvc_measured_percent":  34,
+                        "fev1_fvc_reference_percent":  76,
+                        "post_fev1_percent_predicted":  25,
+                        "class":  4,
+                        "gold_stage":  "GOLD 4 (極重度)",
+                        "severity":  "Very severe"
+                    },
+                    {
+                        "order":  63,
+                        "patient_id":  "E647833",
+                        "fev1_fvc_measured_percent":  33,
+                        "fev1_fvc_reference_percent":  72,
+                        "post_fev1_percent_predicted":  44,
+                        "class":  3,
+                        "gold_stage":  "GOLD 3 (重度)",
+                        "severity":  "Severe"
+                    },
+                    {
+                        "order":  64,
+                        "patient_id":  "E717248",
+                        "fev1_fvc_measured_percent":  82,
+                        "fev1_fvc_reference_percent":  75,
+                        "post_fev1_percent_predicted":  83,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    },
+                    {
+                        "order":  65,
+                        "patient_id":  "E771850",
+                        "fev1_fvc_measured_percent":  39,
+                        "fev1_fvc_reference_percent":  80,
+                        "post_fev1_percent_predicted":  48,
+                        "class":  3,
+                        "gold_stage":  "GOLD 3 (重度)",
+                        "severity":  "Severe"
+                    },
+                    {
+                        "order":  66,
+                        "patient_id":  "E797258",
+                        "fev1_fvc_measured_percent":  70,
+                        "fev1_fvc_reference_percent":  75,
+                        "post_fev1_percent_predicted":  93,
+                        "class":  0,
+                        "gold_stage":  "Class 0 (沒有 COPD)",
+                        "severity":  "No COPD"
+                    }
+                ]
+}

@@ -487,7 +487,7 @@ class Trainer:
             y = (
                 batch["label"].to(self.device, non_blocking=True).long().view(-1)
                 if self.is_classification
-                else batch["angle"].to(self.device, non_blocking=True).float().view(-1)
+                else batch["target"].to(self.device, non_blocking=True).float().view(-1)
             )
 
             def compute_loss(amp_enabled: bool) -> torch.Tensor:

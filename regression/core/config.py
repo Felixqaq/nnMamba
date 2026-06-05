@@ -37,7 +37,7 @@ ClassificationMode = Literal["multiclass", "ordinal"]
 EnsembleVoteType = Literal["majority"]
 InputNormType = Literal["zscore", "none"]
 TargetNormType = Literal["zscore", "none"]
-TargetMode = Literal["angle", "gold", "angle_3class", "angle_binary_extreme"]
+TargetMode = Literal["angle", "gold", "angle_3class", "angle_binary_extreme", "oi"]
 CLASSIFICATION_TARGET_MODES = {"gold", "angle_3class", "angle_binary_extreme"}
 
 
@@ -133,6 +133,7 @@ class DataConfig:
         default_factory=lambda: Path("../patient_angle_classification_by_group.json")
     )
     pft_json: Path = field(default_factory=lambda: Path("../pft.json"))
+    oi_json: Path = field(default_factory=lambda: Path("./oi_processed.json"))
     target_mode: TargetMode = "angle"
     angle_split_manifest: Path = field(
         default_factory=lambda: Path("../by_angle_all/reclassification_manifest.json")
@@ -241,7 +242,7 @@ class Config:
         if isinstance(window_size, list):
             window_size = tuple(window_size)
         if target_mode == "gold":
-            default_num_classes = 4
+            default_num_classes = 5
             default_task = "GOLD_stage_classification"
         elif target_mode == "angle_3class":
             default_num_classes = 3
@@ -249,9 +250,17 @@ class Config:
         elif target_mode == "angle_binary_extreme":
             default_num_classes = 2
             default_task = "Angle_extreme_binary_classification"
+        elif target_mode == "oi":
+            default_num_classes = 1
+            default_task = "OI_regression"
         else:
             default_num_classes = 1
             default_task = "PFT_angle_regression"
+        default_pft_json = (
+            "./GOLD_2026_classification.json"
+            if target_mode == "gold"
+            else "../pft.json"
+        )
 
         return cls(
             model=ModelConfig(
@@ -307,7 +316,8 @@ class Config:
                         "labels_json", "../patient_angle_classification_by_group.json"
                     )
                 ),
-                pft_json=Path(data_section.get("pft_json", "../pft.json")),
+                pft_json=Path(data_section.get("pft_json", default_pft_json)),
+                oi_json=Path(data_section.get("oi_json", "./oi_processed.json")),
                 target_mode=target_mode,
                 angle_split_manifest=Path(
                     data_section.get(

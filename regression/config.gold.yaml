@@ -3,12 +3,12 @@
 
 experiment:
   name: GOLD balanced sampling + aug200/class
-  description: Virtual train-fold augmentation brings all four GOLD classes to 200 samples before per-epoch balanced sampling.
+  description: Virtual train-fold augmentation brings all five GOLD 2026 classes to 200 samples before per-epoch balanced sampling.
 
 model:
   name: hybrid_mamba_attention  # options: mamba | hybrid_mamba_attention | swinunetr
   in_channels: 1
-  num_classes: 4
+  num_classes: 5
   hidden_dim: 128
   dropout: 0.3
   base_channels: 32
@@ -36,7 +36,7 @@ training:
   swin_eval_batch_size: 6
   learning_rate: 0.0001
   weight_decay: 0.001
-  k_folds: 3
+  k_folds: 2
   eval_interval: 5
   save_interval: 10
   seed: 42
@@ -55,9 +55,9 @@ data:
   target_mode: gold
   source_dir: ../by_angle_all
   labels_json: ../patient_angle_classification_by_group.json
-  pft_json: ../pft.json
+  pft_json: ./GOLD_2026_classification.json
   angle_split_manifest: ../by_angle_all/reclassification_manifest.json
-  manifest: ./datasets/generated/gold_manifest.json
+  manifest: ./datasets/generated/gold_2026_manifest.json
   image_size: [112, 136, 112]
   intensity_window: [-1000.0, 400.0]
   input_normalization: zscore
@@ -71,10 +71,10 @@ data:
   augmentation:
     enabled: true
     balance_to_majority: false
-    target_per_class: 100
+    target_per_class: 200
     probability: 1.0
-    # GOLD stages are one-based; include all stages so every train fold reaches 200/class.
-    gold_stages: [1, 2, 3, 4]
+    # GOLD 2026 classes are zero-based, including class 0 for no COPD.
+    class_indices: [0, 1, 2, 3, 4]
     rotation_degrees: 7.0
     translation_fraction: 0.05
     scale_range: [0.95, 1.05]

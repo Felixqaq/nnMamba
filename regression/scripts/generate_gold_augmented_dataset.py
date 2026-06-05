@@ -24,10 +24,11 @@ from data.manifest import build_angle_manifest, save_manifest
 
 
 GOLD_STAGE_NAMES = {
-    0: "GOLD 1 (Mild)",
-    1: "GOLD 2 (Moderate)",
-    2: "GOLD 3 (Severe)",
-    3: "GOLD 4 (Very Severe)",
+    0: "Class 0 (No COPD)",
+    1: "GOLD 1 (Mild)",
+    2: "GOLD 2 (Moderate)",
+    3: "GOLD 3 (Severe)",
+    4: "GOLD 4 (Very Severe)",
 }
 
 
@@ -257,7 +258,11 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=REPO_ROOT / "patient_angle_classification_by_group.json",
     )
-    parser.add_argument("--pft-json", type=Path, default=REPO_ROOT / "pft.json")
+    parser.add_argument(
+        "--pft-json",
+        type=Path,
+        default=REGRESSION_ROOT / "GOLD_2026_classification.json",
+    )
     parser.add_argument(
         "--manifest",
         type=Path,
@@ -272,7 +277,7 @@ def parse_args() -> argparse.Namespace:
         / "gold_augmented_dataset_summary.json",
     )
     parser.add_argument("--target-count", type=int, default=None)
-    parser.add_argument("--gold-stages", type=int, nargs="+", default=[2, 3, 4])
+    parser.add_argument("--gold-stages", type=int, nargs="+", default=[1, 2, 3, 4, 5])
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--rotation-degrees", type=float, default=7.0)
     parser.add_argument("--translation-fraction", type=float, default=0.05)

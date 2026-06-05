@@ -38,4 +38,4 @@ def test_gold_probe_yaml_runs_existing_embeddings_probe_only() -> None:
 
     assert config["run"] == {"extract_embeddings": False, "train_probe": True}
     assert probe_command[probe_command.index("--target") + 1] == "gold"
-    assert probe_command[probe_command.index("--n-splits") + 1] == "3"
+    assert probe_command[probe_command.index("--n-splits") + 1] == "2"

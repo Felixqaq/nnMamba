@@ -10,6 +10,7 @@ import torch
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 CLASSIFICATION_TASK_TYPES = {"gold", "angle_3class", "angle_binary_extreme"}
 
@@ -39,6 +40,27 @@ def _with_method(title: str, method_label: str | None) -> str:
 
 def _method_note(method_label: str | None) -> str:
     return f"Method: {method_label}\n" if method_label else ""
+
+
+def _regression_axis_label(task_type: str) -> str:
+    """Return the user-facing label for regression target plots."""
+    return "OI" if task_type == "oi" else "Angle (degrees)"
+
+
+def _confusion_tick_labels(class_names: list[str], num_classes: int) -> list[str]:
+    """Return compact tick labels for known classification tasks."""
+    tick_labels = class_names if class_names else [str(i) for i in range(num_classes)]
+    compact_labels = []
+    for label in tick_labels:
+        if label.startswith("Emphysema/Abnormal"):
+            compact_labels.append("Abnormal")
+        elif label.startswith("Intermediate"):
+            compact_labels.append("Intermediate")
+        elif label.startswith("Normal"):
+            compact_labels.append("Normal")
+        else:
+            compact_labels.append(label)
+    return compact_labels
 
 
 def plot_training_curves(
@@ -324,11 +346,13 @@ def plot_prediction_scatter(
     fold: int,
     save_dir: Path,
     title_suffix: str = "",
+    task_type: str = "angle",
 ) -> None:
-    """Plot predicted vs. true angles."""
+    """Plot predicted vs. true regression targets."""
     labels_np = _to_numpy(labels)
     preds_np = _to_numpy(preds)
     stats = _regression_stats(labels_np, preds_np)
+    axis_label = _regression_axis_label(task_type)
 
     plt.figure(figsize=(8, 8))
     plt.scatter(
@@ -350,8 +374,8 @@ def plot_prediction_scatter(
         xs = np.linspace(lo, hi, 100)
         plt.plot(xs, slope * xs + intercept, color="#d62728", linewidth=2)
 
-    plt.xlabel("True Angle (degrees)")
-    plt.ylabel("Predicted Angle (degrees)")
+    plt.xlabel(f"True {axis_label}")
+    plt.ylabel(f"Predicted {axis_label}")
     plt.title(f"Prediction Scatter - Fold {fold}{title_suffix}", fontweight="bold")
     plt.grid(True, alpha=0.25)
     plt.text(
@@ -375,11 +399,13 @@ def plot_residuals(
     fold: int,
     save_dir: Path,
     title_suffix: str = "",
+    task_type: str = "angle",
 ) -> None:
     """Plot residuals against true values."""
     labels_np = _to_numpy(labels)
     preds_np = _to_numpy(preds)
     residuals = preds_np - labels_np
+    axis_label = _regression_axis_label(task_type)
 
     plt.figure(figsize=(8, 6))
     plt.scatter(
@@ -392,7 +418,7 @@ def plot_residuals(
         linewidths=0.5,
     )
     plt.axhline(0, color="black", linestyle="--", linewidth=1.5)
-    plt.xlabel("True Angle (degrees)")
+    plt.xlabel(f"True {axis_label}")
     plt.ylabel("Residual (Pred - True)")
     plt.title(f"Residual Plot - Fold {fold}{title_suffix}", fontweight="bold")
     plt.grid(True, alpha=0.25)
@@ -441,10 +467,12 @@ def plot_bland_altman(
     fold: int,
     save_dir: Path,
     title_suffix: str = "",
+    task_type: str = "angle",
 ) -> None:
     """Plot Bland-Altman diagram."""
     labels_np = _to_numpy(labels)
     preds_np = _to_numpy(preds)
+    axis_label = _regression_axis_label(task_type)
     means = (labels_np + preds_np) / 2.0
     diffs = preds_np - labels_np
     bias = float(np.mean(diffs)) if diffs.size else 0.0
@@ -465,7 +493,7 @@ def plot_bland_altman(
     plt.axhline(bias, color="red", linestyle="-", linewidth=2)
     plt.axhline(upper, color="black", linestyle="--", linewidth=1.5)
     plt.axhline(lower, color="black", linestyle="--", linewidth=1.5)
-    plt.xlabel("Mean of True and Predicted Angle")
+    plt.xlabel(f"Mean of True and Predicted {axis_label}")
     plt.ylabel("Prediction Difference (Pred - True)")
     plt.title(f"Bland-Altman - Fold {fold}{title_suffix}", fontweight="bold")
     plt.grid(True, alpha=0.25)
@@ -493,38 +521,30 @@ def plot_confusion_matrix(
         if 0 <= true_idx < num_classes and 0 <= pred_idx < num_classes:
             cm[true_idx, pred_idx] += 1
 
-    fig, ax = plt.subplots(figsize=(8, 7))
-    im = ax.imshow(cm, cmap="Blues")
-    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-    ax.set_xlabel("Predicted")
-    ax.set_ylabel("True")
-    ax.set_title(
-        _with_method(f"Confusion Matrix - Fold {fold}{title_suffix}", method_label),
-        fontweight="bold",
-    )
-    tick_labels = class_names if class_names else [str(i) for i in range(num_classes)]
-    ax.set_xticks(np.arange(num_classes))
-    ax.set_yticks(np.arange(num_classes))
-    ax.set_xticklabels(tick_labels, rotation=20, ha="right")
-    ax.set_yticklabels(tick_labels)
-
-    max_value = cm.max() if cm.size else 0
-    threshold = max_value / 2 if max_value > 0 else 0
-    for row in range(num_classes):
-        for col in range(num_classes):
-            ax.text(
-                col,
-                row,
-                str(cm[row, col]),
-                ha="center",
-                va="center",
-                color="white" if cm[row, col] > threshold else "black",
-            )
-
-    plt.tight_layout()
+    tick_labels = _confusion_tick_labels(class_names, num_classes)
+    title = _with_method(f"Confusion Matrix - Fold {fold}{title_suffix}", method_label)
     filename = output_name or f"fold{fold}_confusion_matrix.png"
-    plt.savefig(save_dir / filename, dpi=300)
-    plt.close(fig)
+
+    with plt.rc_context({"font.family": "sans-serif", "axes.grid": False}):
+        fig, ax = plt.subplots(figsize=(8, 6))
+        sns.heatmap(
+            cm,
+            annot=True,
+            fmt="d",
+            cmap="Blues",
+            xticklabels=tick_labels,
+            yticklabels=tick_labels,
+            cbar_kws={"label": "Count"},
+            annot_kws={"size": 16},
+            ax=ax,
+        )
+        ax.set_xlabel("Predicted Label", fontsize=12, fontweight="bold")
+        ax.set_ylabel("True Label", fontsize=12, fontweight="bold")
+        ax.set_title(title, fontsize=14, fontweight="bold")
+
+        fig.tight_layout()
+        fig.savefig(save_dir / filename, dpi=300, bbox_inches="tight")
+        plt.close(fig)
 
 
 def plot_paper_results(
@@ -555,10 +575,28 @@ def plot_paper_results(
 
     if getattr(test_metrics, "preds", None) is None:
         return
-    plot_prediction_scatter(test_metrics.labels, test_metrics.preds, fold, save_dir)
-    plot_residuals(test_metrics.labels, test_metrics.preds, fold, save_dir)
+    plot_prediction_scatter(
+        test_metrics.labels,
+        test_metrics.preds,
+        fold,
+        save_dir,
+        task_type=task_type,
+    )
+    plot_residuals(
+        test_metrics.labels,
+        test_metrics.preds,
+        fold,
+        save_dir,
+        task_type=task_type,
+    )
     plot_error_histogram(test_metrics.labels, test_metrics.preds, fold, save_dir)
-    plot_bland_altman(test_metrics.labels, test_metrics.preds, fold, save_dir)
+    plot_bland_altman(
+        test_metrics.labels,
+        test_metrics.preds,
+        fold,
+        save_dir,
+        task_type=task_type,
+    )
 
 
 def _aggregate_regression_results(all_results: list) -> tuple[np.ndarray, np.ndarray, dict[str, np.ndarray]]:
@@ -821,10 +859,31 @@ def plot_global_summary(
 
     labels, preds, metric_arrays = _aggregate_regression_results(all_results)
     if labels.size > 0 and preds.size > 0:
-        plot_prediction_scatter(labels, preds, fold=0, save_dir=save_dir, title_suffix=" (All Folds)")
-        plot_residuals(labels, preds, fold=0, save_dir=save_dir, title_suffix=" (All Folds)")
+        plot_prediction_scatter(
+            labels,
+            preds,
+            fold=0,
+            save_dir=save_dir,
+            title_suffix=" (All Folds)",
+            task_type=task_type,
+        )
+        plot_residuals(
+            labels,
+            preds,
+            fold=0,
+            save_dir=save_dir,
+            title_suffix=" (All Folds)",
+            task_type=task_type,
+        )
         plot_error_histogram(labels, preds, fold=0, save_dir=save_dir, title_suffix=" (All Folds)")
-        plot_bland_altman(labels, preds, fold=0, save_dir=save_dir, title_suffix=" (All Folds)")
+        plot_bland_altman(
+            labels,
+            preds,
+            fold=0,
+            save_dir=save_dir,
+            title_suffix=" (All Folds)",
+            task_type=task_type,
+        )
         for src_name, dst_name in [
             ("fold0_scatter.png", "total_scatter.png"),
             ("fold0_residuals.png", "total_residuals.png"),

@@ -15,7 +15,7 @@ run:
 data:
   source_root: by_angle_all
   labels_json: patient_angle_classification_by_group.json
-  pft_json: pft.json
+  pft_json: regression/GOLD_2026_classification.json
 
 embedding:
   output_dir: regression/embeddings/tapct_b_3d
@@ -27,7 +27,7 @@ probe:
   output_dir: regression/figures/TAPCT_embedding_probes/tapct_b_3d_gold_yaml
   target: gold
   model: all
-  n_splits: 3
+  n_splits: 2
   seed: 42
   ridge_alpha: 1.0
   plots: true

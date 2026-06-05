@@ -174,6 +174,11 @@ class ToTensor:
             "post_fev1_percent_predicted": sample.get("post_fev1_percent_predicted"),
             "path": sample.get("path"),
         }
+        if sample.get("oi") is not None:
+            output["oi"] = torch.tensor(sample["oi"], dtype=torch.float32)
+        for key in ("a", "fvc", "pef"):
+            if sample.get(key) is not None:
+                output[key] = sample.get(key)
         if sample.get("label") is not None:
             output["label"] = torch.tensor(sample["label"], dtype=torch.long)
         if sample.get("tapct_embedding") is not None:

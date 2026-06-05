@@ -41,6 +41,7 @@ ANGLE_BINARY_EXTREME_NAMES = [
     "Normal-like (AC >=152 deg)",
 ]
 GOLD_STAGE_NAMES = [
+    "Class 0 (No COPD)",
     "GOLD 1 (Mild)",
     "GOLD 2 (Moderate)",
     "GOLD 3 (Severe)",

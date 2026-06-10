@@ -31,6 +31,7 @@ GOLD_2026_CLASS_NAMES = [
     "GOLD 3 (Severe)",
     "GOLD 4 (Very Severe)",
 ]
+GOLD_SEVERITY4_CLASS_NAMES = GOLD_2026_CLASS_NAMES[1:]
 
 
 @dataclass(frozen=True)
@@ -332,11 +333,17 @@ def build_angle_manifest(
     pft_json: str | Path | None = None,
     target_mode: str = "angle",
     oi_json: str | Path | None = None,
+    gold_exclude_class_indices: tuple[int, ...] | list[int] | None = None,
+    gold_remap_class_indices: bool = False,
 ) -> AngleManifest:
     """Create a manifest from the on-disk CTs and task annotation JSON."""
     data_root = Path(data_root)
     labels_json = Path(labels_json)
     target_mode = str(target_mode)
+    is_gold_target = target_mode in {"gold", "gold_severity4"}
+    excluded_gold_classes = {
+        int(class_idx) for class_idx in (gold_exclude_class_indices or [])
+    }
     label_map = load_angle_label_map(labels_json) if labels_json.exists() else {}
     oi_label_map: dict[str, dict[str, float | None]] = {}
     oi_path = Path(oi_json) if oi_json is not None else None
@@ -347,14 +354,33 @@ def build_angle_manifest(
     gold_label_map: dict[str, dict[str, float | int | str | None]] = {}
     gold_class_names: list[str] = []
     pft_path = Path(pft_json) if pft_json is not None else None
-    if pft_path is not None and (target_mode == "gold" or pft_path.exists()):
+    if pft_path is not None and (is_gold_target or pft_path.exists()):
         gold_label_map, gold_class_names = load_gold_label_map(pft_path)
-    if target_mode == "gold" and not gold_label_map:
+    if is_gold_target and not gold_label_map:
         raise ValueError(
-            "target_mode='gold' requires a valid pft_json with GOLD stage labels."
+            f"target_mode={target_mode!r} requires a valid pft_json with GOLD stage labels."
         )
+    active_gold_classes = [
+        (class_idx, class_name)
+        for class_idx, class_name in enumerate(gold_class_names)
+        if class_idx not in excluded_gold_classes
+    ]
+    gold_class_remap = {
+        class_idx: remapped_idx
+        for remapped_idx, (class_idx, _) in enumerate(active_gold_classes)
+    }
     if target_mode == "gold":
-        class_names = list(gold_class_names)
+        class_names = (
+            [class_name for _, class_name in active_gold_classes]
+            if gold_remap_class_indices
+            else list(gold_class_names)
+        )
+    elif target_mode == "gold_severity4":
+        class_names = [
+            class_name
+            for class_idx, class_name in enumerate(gold_class_names)
+            if class_idx > 0
+        ]
     elif target_mode == "angle_3class":
         class_names = list(ANGLE_3CLASS_NAMES)
     elif target_mode == "angle_binary_extreme":
@@ -386,14 +412,29 @@ def build_angle_manifest(
             target = float(angle)
 
         gold_meta = gold_label_map.get(patient_id)
-        if target_mode == "gold" and gold_meta is None:
+        if is_gold_target and gold_meta is None:
             missing_gold_labels.append(patient_id)
             continue
+        if is_gold_target and gold_meta is not None:
+            gold_stage = int(gold_meta["gold_stage"])
+            if target_mode == "gold_severity4" and gold_stage == 0:
+                continue
+            if target_mode == "gold" and gold_stage in excluded_gold_classes:
+                continue
 
         class_index = None
         class_label = None
         if target_mode == "gold" and gold_meta is not None:
-            class_index = int(gold_meta["gold_stage"])
+            gold_stage = int(gold_meta["gold_stage"])
+            class_index = (
+                gold_class_remap[gold_stage]
+                if gold_remap_class_indices
+                else gold_stage
+            )
+            class_label = str(gold_meta["gold_stage_label"])
+        elif target_mode == "gold_severity4" and gold_meta is not None:
+            gold_stage = int(gold_meta["gold_stage"])
+            class_index = gold_stage - 1
             class_label = str(gold_meta["gold_stage_label"])
         elif target_mode == "angle_3class":
             class_index, class_label = angle_3class_label(float(angle))
@@ -457,9 +498,21 @@ def build_angle_manifest(
         "low_angle_group": sum(1 for record in records if "low" in record.source_group),
         "high_angle_group": sum(1 for record in records if "high" in record.source_group),
     }
+    if target_mode == "gold_severity4":
+        gold_count_names = [
+            class_name
+            for class_idx, class_name in enumerate(gold_class_names)
+            if class_idx > 0
+        ]
+    else:
+        gold_count_names = [
+            class_name
+            for class_idx, class_name in enumerate(gold_class_names)
+            if class_idx not in excluded_gold_classes
+        ]
     gold_stage_counts = {
         class_name: sum(1 for record in records if record.gold_stage_label == class_name)
-        for class_name in gold_class_names
+        for class_name in gold_count_names
     }
     class_counts = {
         class_name: sum(1 for record in records if record.class_label == class_name)

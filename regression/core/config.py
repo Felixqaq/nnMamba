@@ -31,14 +31,27 @@ LossType = Literal[
     "mae",
     "cross_entropy",
     "ordinal_bce",
+    "focal",
 ]
 ClassWeightMode = Literal["none", "balanced"]
 ClassificationMode = Literal["multiclass", "ordinal"]
 EnsembleVoteType = Literal["majority"]
 InputNormType = Literal["zscore", "none"]
 TargetNormType = Literal["zscore", "none"]
-TargetMode = Literal["angle", "gold", "angle_3class", "angle_binary_extreme", "oi"]
-CLASSIFICATION_TARGET_MODES = {"gold", "angle_3class", "angle_binary_extreme"}
+TargetMode = Literal[
+    "angle",
+    "gold",
+    "gold_severity4",
+    "angle_3class",
+    "angle_binary_extreme",
+    "oi",
+]
+CLASSIFICATION_TARGET_MODES = {
+    "gold",
+    "gold_severity4",
+    "angle_3class",
+    "angle_binary_extreme",
+}
 
 
 @dataclass
@@ -87,6 +100,7 @@ class TrainingConfig:
     track_train_metrics: bool = False
     class_weight_mode: ClassWeightMode = "none"
     classification_mode: ClassificationMode = "multiclass"
+    focal_gamma: float = 2.0
 
 
 @dataclass
@@ -155,6 +169,9 @@ class DataConfig:
     prefetch_factor: int = 2
     angle_bin_count: int = 5
     balanced_sampling: bool = False
+    gold_exclude_class_indices: tuple[int, ...] = field(default_factory=tuple)
+    gold_remap_class_indices: bool = False
+    reuse_underrepresented_classes_in_folds: bool = False
     augmentation: AugmentationConfig = field(default_factory=AugmentationConfig)
 
 
@@ -241,9 +258,32 @@ class Config:
         window_size = model_section.get("window_size", 4)
         if isinstance(window_size, list):
             window_size = tuple(window_size)
+        gold_exclude_class_indices = tuple(
+            int(class_idx)
+            for class_idx in data_section.get("gold_exclude_class_indices", [])
+        )
+        gold_remap_class_indices = bool(
+            data_section.get("gold_remap_class_indices", False)
+        )
         if target_mode == "gold":
-            default_num_classes = 5
+            if gold_remap_class_indices:
+                default_num_classes = max(
+                    1,
+                    5
+                    - len(
+                        {
+                            class_idx
+                            for class_idx in gold_exclude_class_indices
+                            if 0 <= class_idx < 5
+                        }
+                    ),
+                )
+            else:
+                default_num_classes = 5
             default_task = "GOLD_stage_classification"
+        elif target_mode == "gold_severity4":
+            default_num_classes = 4
+            default_task = "GOLD_severity4_classification"
         elif target_mode == "angle_3class":
             default_num_classes = 3
             default_task = "Angle_3class_classification"
@@ -258,7 +298,7 @@ class Config:
             default_task = "PFT_angle_regression"
         default_pft_json = (
             "./GOLD_2026_classification.json"
-            if target_mode == "gold"
+            if target_mode in {"gold", "gold_severity4"}
             else "../pft.json"
         )
 
@@ -356,6 +396,11 @@ class Config:
                 prefetch_factor=data_section.get("prefetch_factor", 2),
                 angle_bin_count=data_section.get("angle_bin_count", 5),
                 balanced_sampling=data_section.get("balanced_sampling", False),
+                gold_exclude_class_indices=gold_exclude_class_indices,
+                gold_remap_class_indices=gold_remap_class_indices,
+                reuse_underrepresented_classes_in_folds=data_section.get(
+                    "reuse_underrepresented_classes_in_folds", False
+                ),
                 augmentation=AugmentationConfig(
                     enabled=augmentation_section.get("enabled", False),
                     balance_to_majority=augmentation_section.get(

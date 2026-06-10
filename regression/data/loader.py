@@ -33,7 +33,12 @@ ATTENTION_HEAVY_MODELS = {
     "mamba_hybrid",
     "swinunetr",
 }
-CLASSIFICATION_TARGET_MODES = {"gold", "angle_3class", "angle_binary_extreme"}
+CLASSIFICATION_TARGET_MODES = {
+    "gold",
+    "gold_severity4",
+    "angle_3class",
+    "angle_binary_extreme",
+}
 
 
 def _collate_angle_batch(samples: list[dict]) -> dict:
@@ -263,6 +268,9 @@ class RegressionLoaderHelper:
         tapct_feature_key: str = "features",
         tapct_allow_single_instance_fallback: bool = False,
         load_ct_data: bool = True,
+        gold_exclude_class_indices: tuple[int, ...] | list[int] | None = None,
+        gold_remap_class_indices: bool = False,
+        reuse_underrepresented_classes_in_folds: bool = False,
     ):
         if hasattr(data_root, "data") and hasattr(data_root, "training"):
             config = data_root
@@ -300,6 +308,11 @@ class RegressionLoaderHelper:
                 config.data.tapct_allow_single_instance_fallback
             )
             load_ct_data = config.data.load_ct
+            gold_exclude_class_indices = config.data.gold_exclude_class_indices
+            gold_remap_class_indices = config.data.gold_remap_class_indices
+            reuse_underrepresented_classes_in_folds = (
+                config.data.reuse_underrepresented_classes_in_folds
+            )
 
         self.data_root = Path(data_root)
         self.labels_json = Path(labels_json)
@@ -329,6 +342,11 @@ class RegressionLoaderHelper:
             tapct_allow_single_instance_fallback
         )
         self.load_ct_data = bool(load_ct_data)
+        self.gold_exclude_class_indices = tuple(gold_exclude_class_indices or ())
+        self.gold_remap_class_indices = bool(gold_remap_class_indices)
+        self.reuse_underrepresented_classes_in_folds = bool(
+            reuse_underrepresented_classes_in_folds
+        )
         self.train_augmentation = self._build_train_augmentation()
 
         manifest = build_angle_manifest(
@@ -337,6 +355,8 @@ class RegressionLoaderHelper:
             pft_json=self.pft_json,
             target_mode=self.target_mode,
             oi_json=self.oi_json,
+            gold_exclude_class_indices=self.gold_exclude_class_indices,
+            gold_remap_class_indices=self.gold_remap_class_indices,
         )
         self.manifest = manifest
         self.records = list(manifest.records)
@@ -377,6 +397,8 @@ class RegressionLoaderHelper:
             transform=transforms.Compose([ToTensor()]),
             cache_data=self.cache_data,
             load_ct_data=self.load_ct_data,
+            gold_exclude_class_indices=self.gold_exclude_class_indices,
+            gold_remap_class_indices=self.gold_remap_class_indices,
         )
         self.dataset = self.train_ds
 
@@ -582,6 +604,17 @@ class RegressionLoaderHelper:
             )
 
         if (
+            self.reuse_underrepresented_classes_in_folds
+            and self._has_underrepresented_class(original_targets)
+        ):
+            self._setup_reused_minority_classification_folds(
+                indices=indices,
+                original_indices=original_indices,
+                original_targets=original_targets,
+            )
+            return
+
+        if (
             len(np.unique(original_targets)) > 1
             and np.bincount(original_targets).min() >= self.k_folds
         ):
@@ -610,6 +643,115 @@ class RegressionLoaderHelper:
                 if self.patient_ids[int(index)] in train_patients
             ]
             val_idx = [int(index) for index in val_original]
+            self.fold_indices.append((train_idx, val_idx))
+
+    def _has_underrepresented_class(self, targets: np.ndarray) -> bool:
+        """Return whether any classification class has fewer samples than folds."""
+        if len(targets) == 0:
+            return False
+        counts = np.bincount(
+            targets.astype(int),
+            minlength=max(len(self.class_names), 1),
+        )
+        return bool(np.any((counts > 0) & (counts < self.k_folds)))
+
+    def _setup_reused_minority_classification_folds(
+        self,
+        *,
+        indices: np.ndarray,
+        original_indices: np.ndarray,
+        original_targets: np.ndarray,
+    ) -> None:
+        """Build patient folds that cycle rare classes through validation."""
+        targets_by_index = {
+            int(index): int(target)
+            for index, target in zip(original_indices, original_targets, strict=True)
+        }
+        class_to_indices: dict[int, list[int]] = {}
+        for index in original_indices:
+            class_to_indices.setdefault(
+                targets_by_index[int(index)],
+                [],
+            ).append(int(index))
+
+        reusable_by_class = {
+            class_idx: sorted(class_indices)
+            for class_idx, class_indices in class_to_indices.items()
+            if len(class_indices) < self.k_folds
+        }
+        regular_indices = np.asarray(
+            [
+                index
+                for class_idx, class_indices in class_to_indices.items()
+                if class_idx not in reusable_by_class
+                for index in class_indices
+            ],
+            dtype=int,
+        )
+
+        if len(regular_indices) > 0:
+            regular_targets = np.asarray(
+                [targets_by_index[int(index)] for index in regular_indices],
+                dtype=int,
+            )
+            regular_counts = np.bincount(regular_targets)
+            regular_nonzero_counts = regular_counts[regular_counts > 0]
+            if (
+                len(np.unique(regular_targets)) > 1
+                and len(regular_nonzero_counts) > 0
+                and regular_nonzero_counts.min() >= self.k_folds
+            ):
+                splitter = StratifiedKFold(
+                    n_splits=self.k_folds,
+                    shuffle=True,
+                    random_state=self.seed,
+                )
+                regular_splits = list(splitter.split(regular_indices, regular_targets))
+            else:
+                splitter = KFold(
+                    n_splits=self.k_folds,
+                    shuffle=True,
+                    random_state=self.seed,
+                )
+                regular_splits = list(splitter.split(regular_indices))
+        else:
+            regular_splits = [
+                (np.asarray([], dtype=int), np.asarray([], dtype=int))
+                for _ in range(self.k_folds)
+            ]
+
+        all_original = set(int(index) for index in original_indices)
+        self.fold_indices = []
+        self.reused_validation_class_indices = {
+            class_idx: list(class_indices)
+            for class_idx, class_indices in reusable_by_class.items()
+        }
+        self.split_strategy = "patient_reused_minority_classification"
+
+        for fold_idx, (_, regular_val_pos) in enumerate(regular_splits):
+            regular_val = {
+                int(regular_indices[position]) for position in regular_val_pos
+            }
+            reused_val = {
+                class_indices[fold_idx % len(class_indices)]
+                for class_indices in reusable_by_class.values()
+            }
+            val_original = regular_val | reused_val
+            train_original = all_original - val_original
+
+            train_patients = {
+                self.patient_ids[int(index)] for index in train_original
+            }
+            val_patients = {self.patient_ids[int(index)] for index in val_original}
+            if train_patients & val_patients:
+                raise ValueError("Patient leakage detected between train and validation.")
+
+            train_idx = [
+                int(index)
+                for index in indices
+                if self.patient_ids[int(index)] in train_patients
+            ]
+            val_idx = sorted(int(index) for index in val_original)
             self.fold_indices.append((train_idx, val_idx))
 
     @staticmethod

@@ -1,5 +1,5 @@
 {
-  "last_turn_at": "2026-06-05T06:57:53.039Z",
-  "turn_count": 241,
-  "last_agent_output": "可以，我已經用「新增 config」方式做好，原本的 `config.gold.yaml` 和 late-fusion 原設定都沒有動。\n\n新增檔案：\n\n- [config.gold.fullres5"
+  "last_turn_at": "2026-06-10T09:36:10.816Z",
+  "turn_count": 260,
+  "last_agent_output": "改好了。現在這份主線 config 已經從 `balanced CE` 改成 `focal loss`：\n\n[config.gold.severity4.tapct_late_fusion.augme"
 }

@@ -16,7 +16,12 @@ from .manifest import AngleRecord, build_angle_manifest
 
 DEFAULT_IMAGE_SIZE = (112, 136, 112)
 InputNormalization = Literal["zscore", "none"]
-CLASSIFICATION_TARGET_MODES = {"gold", "angle_3class", "angle_binary_extreme"}
+CLASSIFICATION_TARGET_MODES = {
+    "gold",
+    "gold_severity4",
+    "angle_3class",
+    "angle_binary_extreme",
+}
 
 
 def _resize_volume(volume: np.ndarray, target_shape: tuple[int, int, int]) -> np.ndarray:
@@ -97,6 +102,8 @@ class AngleRegressionDataset(Dataset):
         transform=None,
         cache_data: bool = True,
         load_ct_data: bool = True,
+        gold_exclude_class_indices: tuple[int, ...] | list[int] | None = None,
+        gold_remap_class_indices: bool = False,
     ):
         self.data_root = Path(data_root)
         self.labels_json = Path(labels_json)
@@ -110,6 +117,8 @@ class AngleRegressionDataset(Dataset):
         self.transform = transform
         self.cache_data = cache_data
         self.load_ct_data = bool(load_ct_data)
+        self.gold_exclude_class_indices = tuple(gold_exclude_class_indices or ())
+        self.gold_remap_class_indices = bool(gold_remap_class_indices)
 
         if records is None:
             manifest = build_angle_manifest(
@@ -118,6 +127,8 @@ class AngleRegressionDataset(Dataset):
                 pft_json=self.pft_json,
                 target_mode=self.target_mode,
                 oi_json=self.oi_json,
+                gold_exclude_class_indices=self.gold_exclude_class_indices,
+                gold_remap_class_indices=self.gold_remap_class_indices,
             )
             self.records = list(manifest.records)
         else:

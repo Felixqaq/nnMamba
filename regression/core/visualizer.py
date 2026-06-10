@@ -12,7 +12,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-CLASSIFICATION_TASK_TYPES = {"gold", "angle_3class", "angle_binary_extreme"}
+CLASSIFICATION_TASK_TYPES = {
+    "gold",
+    "gold_severity4",
+    "angle_3class",
+    "angle_binary_extreme",
+}
 
 
 plt.rcParams.update(

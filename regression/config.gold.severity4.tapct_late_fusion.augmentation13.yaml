@@ -1,14 +1,14 @@
-# nnMamba GOLD Stage Classification with TAP-CT Late Fusion and 512x512 CT
-# =========================================================================
+# nnMamba GOLD 1-4 Severity Classification with TAP-CT Late Fusion, 13/Class
+# =================================================================================
 
 experiment:
-  name: GOLD TAP-CT late fusion fullres512 + aug36/class
-  description: Hybrid Mamba-Attention CT features use 512x512 in-plane inputs and are concatenated with frozen TAP-CT-B patient-level embeddings for GOLD 2026 classification.
+  name: GOLD severity4 TAP-CT late fusion + aug13/class + focal
+  description: GOLD 1-4 severity classification with a four-class focal-loss head, augmenting each train fold to 13 samples/class while reusing underrepresented GOLD 1 validation patients across 5 folds without same-fold train/val leakage.
 
 model:
   name: hybrid_mamba_tapct_fusion
   in_channels: 1
-  num_classes: 5
+  num_classes: 4
   hidden_dim: 256
   dropout: 0.3
   base_channels: 32
@@ -21,7 +21,6 @@ model:
   fusion_projection_dim: 128
   fusion_dropout: 0.1
 
-  # SwinUNETR-only settings. Kept for consistency with other configs.
   feature_size: 24
   depths: [2, 2, 2, 2]
   num_heads: [3, 6, 12, 24]
@@ -32,17 +31,18 @@ model:
 
 training:
   epochs: 160
-  batch_size: 1
-  eval_batch_size: 1
-  swin_batch_size: 1
-  swin_eval_batch_size: 1
+  batch_size: 12
+  eval_batch_size: 12
+  swin_batch_size: 5
+  swin_eval_batch_size: 6
   learning_rate: 0.0001
   weight_decay: 0.001
-  k_folds: 2
+  k_folds: 5
   eval_interval: 5
   save_interval: 10
   seed: 42
-  loss: auto
+  loss: focal
+  focal_gamma: 2.0
   clip_grad_norm: 1.0
   amp: false
   track_train_metrics: false
@@ -54,32 +54,31 @@ early_stopping:
   min_delta: 0.005
 
 data:
-  target_mode: gold
+  target_mode: gold_severity4
   source_dir: ../by_angle_all
   labels_json: ../patient_angle_classification_by_group.json
   pft_json: ./GOLD_2026_classification.json
   angle_split_manifest: ../by_angle_all/reclassification_manifest.json
-  manifest: ./datasets/generated/gold_2026_manifest.tapct_fullres512_aug36.json
+  manifest: ./datasets/generated/gold_severity4_2026_manifest.tapct_aug13.json
   tapct_features: ./embeddings/tapct_b_3d/features.npz
-  # NIfTI arrays are loaded as (512, 512, slices). Keep 512x512 in-plane
-  # resolution and normalize depth to 112 for batchable tensors.
-  image_size: [512, 512, 112]
+  image_size: [112, 136, 112]
   intensity_window: [-1000.0, 400.0]
   input_normalization: zscore
   target_normalization: none
-  cache_data: false
-  num_workers: 2
+  cache_data: true
+  num_workers: 4
   pin_memory: true
-  prefetch_factor: 2
+  prefetch_factor: 4
   angle_bin_count: 5
   balanced_sampling: true
+  reuse_underrepresented_classes_in_folds: true
   augmentation:
     enabled: true
     balance_to_majority: false
-    target_per_class: 36
+    target_per_class: 13
     probability: 1.0
-    # GOLD 2026 classes are zero-based, including class 0 for no COPD.
-    class_indices: [0, 1, 2, 3, 4]
+    # GOLD severity4 class indices: GOLD 1, GOLD 2, GOLD 3, GOLD 4.
+    class_indices: [0, 1, 2, 3]
     rotation_degrees: 7.0
     translation_fraction: 0.05
     scale_range: [0.95, 1.05]
@@ -93,7 +92,7 @@ paths:
   figures: ./figures
   graphs: ./graphs
 
-task: GOLD_stage_classification
+task: GOLD_severity4_classification
 
 resume:
   enabled: false

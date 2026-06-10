@@ -12,6 +12,7 @@ from time import perf_counter
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 from tqdm import tqdm
 
@@ -74,11 +75,39 @@ def setup_seed(seed: int) -> None:
     random.seed(seed)
 
 
+class FocalLoss(nn.Module):
+    """Multiclass focal loss for imbalanced classification."""
+
+    def __init__(
+        self,
+        gamma: float = 2.0,
+        weight: torch.Tensor | None = None,
+    ):
+        super().__init__()
+        self.gamma = float(gamma)
+        if weight is not None:
+            self.register_buffer("weight", weight.float())
+        else:
+            self.weight = None
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        targets = targets.long().view(-1)
+        log_probs = F.log_softmax(logits, dim=1)
+        probs = torch.exp(log_probs)
+        true_log_probs = log_probs.gather(1, targets.unsqueeze(1)).squeeze(1)
+        true_probs = probs.gather(1, targets.unsqueeze(1)).squeeze(1)
+        losses = -((1.0 - true_probs).clamp_min(0.0) ** self.gamma) * true_log_probs
+        if self.weight is not None:
+            losses = losses * self.weight[targets]
+        return losses.mean()
+
+
 def build_loss(
     name: str,
     is_classification: bool,
     class_weights: torch.Tensor | None = None,
     classification_mode: str = "multiclass",
+    focal_gamma: float = 2.0,
 ) -> nn.Module:
     """Build task-specific loss by name."""
     resolved = name
@@ -88,12 +117,23 @@ def build_loss(
         else:
             resolved = "cross_entropy" if is_classification else "smooth_l1"
 
-    if resolved not in {"smooth_l1", "mse", "mae", "cross_entropy", "ordinal_bce"}:
+    if resolved not in {
+        "smooth_l1",
+        "mse",
+        "mae",
+        "cross_entropy",
+        "ordinal_bce",
+        "focal",
+    }:
         raise ValueError(f"Unknown loss: {name}")
     if resolved == "cross_entropy":
         return nn.CrossEntropyLoss(weight=class_weights)
     if resolved == "ordinal_bce":
         return nn.BCEWithLogitsLoss()
+    if resolved == "focal":
+        if not is_classification or classification_mode == "ordinal":
+            raise ValueError("Focal loss expects multiclass classification targets.")
+        return FocalLoss(gamma=focal_gamma, weight=class_weights)
     if resolved == "smooth_l1":
         return nn.SmoothL1Loss()
     if resolved == "mse":
@@ -265,6 +305,7 @@ class Trainer:
             self.is_classification,
             class_weights=class_weights,
             classification_mode=cfg.classification_mode,
+            focal_gamma=cfg.focal_gamma,
         )
 
         train_loss_history: list[float] = []
@@ -816,6 +857,8 @@ class Trainer:
             "k_folds": self.config.training.k_folds,
             "seed": self.config.training.seed,
             "loss": self.config.training.loss,
+            "class_weight_mode": self.config.training.class_weight_mode,
+            "focal_gamma": self.config.training.focal_gamma,
             "num_classes": self.config.model.num_classes,
             "model_output_dim": self.config.model_output_dim(),
             "classification_mode": self.config.training.classification_mode,

@@ -10,7 +10,12 @@ from torch.utils.data import Subset
 
 from core.config import Config
 from data.loader import AugmentedSubset, BalancedClassSampler, RegressionLoaderHelper
-from data.manifest import GOLD_2026_CLASS_NAMES, load_gold_label_map
+from data.manifest import (
+    GOLD_2026_CLASS_NAMES,
+    GOLD_SEVERITY4_CLASS_NAMES,
+    build_angle_manifest,
+    load_gold_label_map,
+)
 from data.transforms import RandomCTAugmentation
 
 
@@ -150,3 +155,97 @@ def test_gold_aug200_keeps_patient_level_validation_split() -> None:
     assert isinstance(val_dl.dataset, Subset)
     assert not isinstance(val_dl.dataset, AugmentedSubset)
     assert len(val_dl.dataset) == len(val_idx)
+
+
+def test_gold_severity4_manifest_uses_native_gold1_to_gold4_indices() -> None:
+    regression_root = Path(__file__).resolve().parent
+    manifest = build_angle_manifest(
+        regression_root / "../by_angle_all",
+        regression_root / "../patient_angle_classification_by_group.json",
+        pft_json=regression_root / "GOLD_2026_classification.json",
+        target_mode="gold_severity4",
+    )
+
+    class_counts = Counter(record.class_label for record in manifest.records)
+    severity_counts = Counter(int(record.class_index) for record in manifest.records)
+
+    assert len(manifest.records) == 32
+    assert manifest.class_names == GOLD_SEVERITY4_CLASS_NAMES
+    assert manifest.class_counts == {
+        "GOLD 1 (Mild)": 2,
+        "GOLD 2 (Moderate)": 11,
+        "GOLD 3 (Severe)": 13,
+        "GOLD 4 (Very Severe)": 6,
+    }
+    assert class_counts == manifest.class_counts
+    assert severity_counts == {0: 2, 1: 11, 2: 13, 3: 6}
+    assert {record.gold_stage for record in manifest.records} == {1, 2, 3, 4}
+    assert all(
+        record.class_index == int(record.gold_stage) - 1
+        for record in manifest.records
+    )
+    assert "0781915" not in {record.patient_id for record in manifest.records}
+
+
+def test_gold_severity4_five_fold_reuses_gold1_without_same_fold_leakage() -> None:
+    config = Config.from_yaml(
+        Path(__file__).with_name(
+            "config.gold.severity4.tapct_late_fusion.augmentation13.yaml"
+        )
+    )
+    regression_root = Path(__file__).resolve().parent
+
+    loader = RegressionLoaderHelper(
+        data_root=regression_root / config.data.source_dir,
+        labels_json=regression_root / config.data.labels_json,
+        pft_json=regression_root / config.data.pft_json,
+        target_mode=config.data.target_mode,
+        k_folds=config.training.k_folds,
+        seed=config.training.seed,
+        batch_size=4,
+        val_batch_size=4,
+        num_workers=0,
+        cache_data=False,
+        manifest_path=None,
+        intensity_window=config.data.intensity_window,
+        input_normalization=config.data.input_normalization,
+        augmentation_config=config.data.augmentation,
+        balanced_sampling=config.data.balanced_sampling,
+        load_ct_data=False,
+        reuse_underrepresented_classes_in_folds=(
+            config.data.reuse_underrepresented_classes_in_folds
+        ),
+    )
+
+    assert len(loader.records) == 32
+    assert loader.class_names == GOLD_SEVERITY4_CLASS_NAMES
+    assert loader.split_strategy == "patient_reused_minority_classification"
+
+    reused_gold1_patients = []
+    for fold in range(config.training.k_folds):
+        train_idx, val_idx = loader.fold_indices[fold]
+        train_patients = {loader.patient_ids[index] for index in train_idx}
+        val_patients = {loader.patient_ids[index] for index in val_idx}
+        val_counts = Counter(int(loader.targets[index]) for index in val_idx)
+        train_counts = Counter(int(loader.targets[index]) for index in train_idx)
+
+        assert train_patients.isdisjoint(val_patients)
+        assert val_counts[0] == 1
+        assert train_counts[0] >= 1
+        reused_gold1_patients.extend(
+            loader.patient_ids[index]
+            for index in val_idx
+            if int(loader.targets[index]) == 0
+        )
+
+    assert set(reused_gold1_patients) == {"C041635", "C543831"}
+    assert len(reused_gold1_patients) == config.training.k_folds
+
+    train_dl = loader.get_train_dl(0)
+    assert isinstance(train_dl.sampler, BalancedClassSampler)
+    assert isinstance(train_dl.dataset, AugmentedSubset)
+    augmented_targets = Counter(
+        int(loader.targets[index]) for index in train_dl.dataset.indices
+    )
+    assert augmented_targets == {0: 13, 1: 13, 2: 13, 3: 13}
+    assert train_dl.dataset.augmentation.target_class_indices == {0, 1, 2, 3}

@@ -2,8 +2,8 @@
 # =================================================================================
 
 experiment:
-  name: GOLD severity4 TAP-CT late fusion + aug13/class + focal
-  description: GOLD 1-4 severity classification with a four-class focal-loss head, augmenting each train fold to 13 samples/class while reusing underrepresented GOLD 1 validation patients across 5 folds without same-fold train/val leakage.
+  name: GOLD severity4 TAP-CT late fusion + aug13/class + focal-gamma1
+  description: GOLD 1-4 severity classification with a four-class focal-loss head using gamma=1.0, augmenting each train fold to 13 samples/class while reusing underrepresented GOLD 1 validation patients across 5 folds without same-fold train/val leakage.
 
 model:
   name: hybrid_mamba_tapct_fusion
@@ -42,7 +42,7 @@ training:
   save_interval: 10
   seed: 42
   loss: focal
-  focal_gamma: 2.0
+  focal_gamma: 1.0
   clip_grad_norm: 1.0
   amp: false
   track_train_metrics: false

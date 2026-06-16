@@ -45,12 +45,14 @@ TargetMode = Literal[
     "angle_3class",
     "angle_binary_extreme",
     "oi",
+    "oi_emphysema",
 ]
 CLASSIFICATION_TARGET_MODES = {
     "gold",
     "gold_severity4",
     "angle_3class",
     "angle_binary_extreme",
+    "oi_emphysema",
 }
 
 
@@ -148,6 +150,8 @@ class DataConfig:
     )
     pft_json: Path = field(default_factory=lambda: Path("../pft.json"))
     oi_json: Path = field(default_factory=lambda: Path("./oi_processed.json"))
+    oi_threshold: float = 4.38
+    oi_exclude_range: tuple[float, float] | None = None
     target_mode: TargetMode = "angle"
     angle_split_manifest: Path = field(
         default_factory=lambda: Path("../by_angle_all/reclassification_manifest.json")
@@ -191,6 +195,14 @@ class ResumeConfig:
 
 
 @dataclass
+class GradCAMConfig:
+    enabled: bool = False
+    max_samples: int = 8
+    target_layer: str | None = None
+    target_class: int | None = None
+
+
+@dataclass
 class GPUConfig:
     device_id: str = "0"
 
@@ -212,6 +224,7 @@ class Config:
     data: DataConfig = field(default_factory=DataConfig)
     paths: PathConfig = field(default_factory=PathConfig)
     resume: ResumeConfig = field(default_factory=ResumeConfig)
+    gradcam: GradCAMConfig = field(default_factory=GradCAMConfig)
     gpu: GPUConfig = field(default_factory=GPUConfig)
     experiment: ExperimentConfig = field(default_factory=ExperimentConfig)
     task: str = "PFT_angle_regression"
@@ -236,6 +249,18 @@ class Config:
             return int(self.ensemble.split_seed)
         return int(self.training.seed)
 
+    @staticmethod
+    def _parse_optional_float_range(value) -> tuple[float, float] | None:
+        """Parse an optional ``[low, high]`` numeric range from YAML."""
+        if value is None:
+            return None
+        if not isinstance(value, (list, tuple)) or len(value) != 2:
+            raise ValueError("oi_exclude_range must be null or a two-value range.")
+        low, high = (float(value[0]), float(value[1]))
+        if low >= high:
+            raise ValueError("oi_exclude_range must satisfy low < high.")
+        return low, high
+
     @classmethod
     def from_yaml(cls, path: str | Path = "config.yaml") -> "Config":
         """Load configuration from YAML file."""
@@ -248,6 +273,7 @@ class Config:
         augmentation_section = data_section.get("augmentation", {})
         paths_section = data.get("paths", {})
         gpu_section = data.get("gpu", {})
+        gradcam_section = data.get("gradcam", {}) or {}
         ensemble_section = data.get("ensemble", {}) or {}
         experiment_section = data.get("experiment", {}) or {}
         target_mode = data_section.get("target_mode", "angle")
@@ -293,6 +319,9 @@ class Config:
         elif target_mode == "oi":
             default_num_classes = 1
             default_task = "OI_regression"
+        elif target_mode == "oi_emphysema":
+            default_num_classes = 2
+            default_task = "OI_emphysema_classification"
         else:
             default_num_classes = 1
             default_task = "PFT_angle_regression"
@@ -358,6 +387,10 @@ class Config:
                 ),
                 pft_json=Path(data_section.get("pft_json", default_pft_json)),
                 oi_json=Path(data_section.get("oi_json", "./oi_processed.json")),
+                oi_threshold=float(data_section.get("oi_threshold", 4.38)),
+                oi_exclude_range=cls._parse_optional_float_range(
+                    data_section.get("oi_exclude_range")
+                ),
                 target_mode=target_mode,
                 angle_split_manifest=Path(
                     data_section.get(
@@ -447,6 +480,12 @@ class Config:
                 graphs=Path(paths_section.get("graphs", "./graphs")),
             ),
             resume=ResumeConfig(**data.get("resume", {})),
+            gradcam=GradCAMConfig(
+                enabled=gradcam_section.get("enabled", False),
+                max_samples=gradcam_section.get("max_samples", 8),
+                target_layer=gradcam_section.get("target_layer"),
+                target_class=gradcam_section.get("target_class"),
+            ),
             gpu=GPUConfig(device_id=gpu_section.get("device_id", "0")),
             experiment=ExperimentConfig(
                 name=experiment_section.get("name"),

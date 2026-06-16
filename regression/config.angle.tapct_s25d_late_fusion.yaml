@@ -1,14 +1,14 @@
-# nnMamba Angle Extreme Binary Classification with TAP-CT Late Fusion
-# ===================================================================
+# nnMamba Angle Regression with TAP-CT-S-2.5D Late Fusion
+# ========================================================
 
 experiment:
-  name: TAP-CT late fusion extreme binary + aug100/class
-  description: Gray-zone excluded binary classification using Hybrid Mamba-Attention CT features fused with frozen TAP-CT-S patient-level embeddings.
+  name: Angle TAP-CT-S-2.5D late fusion
+  description: Hybrid Mamba-Attention CT features are concatenated with frozen TAP-CT-S-2.5D patient-level embeddings to predict continuous Angle of Collapse values.
 
 model:
   name: hybrid_mamba_tapct_fusion
   in_channels: 1
-  num_classes: 2
+  num_classes: 1
   hidden_dim: 256
   dropout: 0.3
   base_channels: 32
@@ -34,8 +34,8 @@ training:
   epochs: 160
   batch_size: 12
   eval_batch_size: 12
-  swin_batch_size: 8
-  swin_eval_batch_size: 8
+  swin_batch_size: 5
+  swin_eval_batch_size: 6
   learning_rate: 0.0001
   weight_decay: 0.001
   k_folds: 5
@@ -53,44 +53,26 @@ early_stopping:
   patience: 6
   min_delta: 0.005
 
-gradcam:
-  enabled: true
-  max_samples: 8
-  target_layer: image_encoder.attention_layers
-  # Zero-based angle_binary_extreme labels: 0=Abnormal/emphysema-like, 1=Normal-like.
-  target_class: 0
-
 data:
-  target_mode: angle_binary_extreme
+  target_mode: angle
   source_dir: ../by_angle_all
   labels_json: ../patient_angle_classification_by_group.json
   pft_json: ../pft.json
   angle_split_manifest: ../by_angle_all/reclassification_manifest.json
-  manifest: ./datasets/generated/angle_binary_extreme_manifest.tapct_late_fusion.json
-  tapct_features: ./embeddings/tapct_s_3d/features.npz
+  manifest: ./datasets/generated/regression_manifest.tapct_s25d_late_fusion.json
+  tapct_features: ./embeddings/tapct_s_2_5d/features.npz
   image_size: [112, 136, 112]
   intensity_window: [-1000.0, 400.0]
   input_normalization: zscore
-  target_normalization: none
+  target_normalization: zscore
   cache_data: true
   num_workers: 4
   pin_memory: true
   prefetch_factor: 4
   angle_bin_count: 5
-  balanced_sampling: true
+  balanced_sampling: false
   augmentation:
-    enabled: true
-    balance_to_majority: false
-    target_per_class: 100
-    probability: 1.0
-    # Zero-based angle_binary_extreme labels: 0=Abnormal/emphysema-like, 1=Normal-like.
-    class_indices: [0, 1]
-    rotation_degrees: 5.0
-    translation_fraction: 0.03
-    scale_range: [0.97, 1.03]
-    intensity_scale_range: [0.98, 1.02]
-    intensity_shift_range: [-0.05, 0.05]
-    noise_std: 0.02
+    enabled: false
 
 paths:
   weights: ./weights
@@ -98,7 +80,7 @@ paths:
   figures: ./figures
   graphs: ./graphs
 
-task: Angle_extreme_binary_classification
+task: PFT_angle_regression
 
 resume:
   enabled: false

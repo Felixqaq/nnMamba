@@ -54,6 +54,17 @@ class ResumeConfig:
 
 
 @dataclass
+class GradCAMConfig:
+    enabled: bool = True
+    max_samples: int = 8
+    target_layer: str | None = None
+    target_layers: tuple[str, ...] = ()
+    target_class: int = 1
+    per_class: int | None = None  # If set, render exactly this many samples per true class
+    per_outcome: int | None = None  # If set, render TP/TN/FP/FN examples
+
+
+@dataclass
 class Config:
     """Main configuration container."""
 
@@ -62,6 +73,7 @@ class Config:
     data: DataConfig = field(default_factory=DataConfig)
     paths: PathConfig = field(default_factory=PathConfig)
     resume: ResumeConfig = field(default_factory=ResumeConfig)
+    gradcam: GradCAMConfig = field(default_factory=GradCAMConfig)
     task: TaskType = "Normal_v_Abnormal"
     gpu_device_id: str = "0"
 
@@ -70,6 +82,21 @@ class Config:
         """Load configuration from YAML file."""
         with open(path) as f:
             data = yaml.safe_load(f)
+        gradcam_data = data.get("gradcam", {}) or {}
+        if isinstance(gradcam_data.get("target_layers"), str):
+            gradcam_data = {
+                **gradcam_data,
+                "target_layers": tuple(
+                    layer.strip()
+                    for layer in gradcam_data["target_layers"].split(",")
+                    if layer.strip()
+                ),
+            }
+        elif gradcam_data.get("target_layers") is not None:
+            gradcam_data = {
+                **gradcam_data,
+                "target_layers": tuple(gradcam_data["target_layers"]),
+            }
 
         return cls(
             model=ModelConfig(**data.get("model", {})),
@@ -89,6 +116,7 @@ class Config:
                 graphs=Path(data.get("paths", {}).get("graphs", "../graphs")),
             ),
             resume=ResumeConfig(**data.get("resume", {})),
+            gradcam=GradCAMConfig(**gradcam_data),
             task=data.get("task", "Normal_v_Abnormal"),
             gpu_device_id=data.get("gpu", {}).get("device_id", "0"),
         )

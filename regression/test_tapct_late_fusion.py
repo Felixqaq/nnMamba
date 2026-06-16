@@ -80,6 +80,47 @@ def test_angle_binary_extreme_tapct_late_fusion_config() -> None:
     assert config.task == "Angle_extreme_binary_classification"
 
 
+def test_angle_regression_tapct_s25d_late_fusion_config() -> None:
+    config = Config.from_yaml(
+        Path(__file__).with_name("config.angle.tapct_s25d_late_fusion.yaml")
+    )
+
+    assert config.data.target_mode == "angle"
+    assert config.is_classification_task() is False
+    assert config.model.name == "hybrid_mamba_tapct_fusion"
+    assert config.model.num_classes == 1
+    assert config.model_output_dim() == 1
+    assert config.model.tapct_embedding_dim == 1152
+    assert config.data.manifest == Path(
+        "./datasets/generated/regression_manifest.tapct_s25d_late_fusion.json"
+    )
+    assert config.data.tapct_features == Path("./embeddings/tapct_s_2_5d/features.npz")
+    assert config.data.target_normalization == "zscore"
+    assert config.data.balanced_sampling is False
+    assert config.data.augmentation.enabled is False
+    assert config.task == "PFT_angle_regression"
+
+
+def test_angle_binary_extreme_tapct_s25d_late_fusion_config() -> None:
+    config = Config.from_yaml(
+        Path(__file__).with_name(
+            "config.angle_binary_extreme.tapct_s25d_late_fusion.yaml"
+        )
+    )
+
+    assert config.data.target_mode == "angle_binary_extreme"
+    assert config.is_classification_task() is True
+    assert config.model.name == "hybrid_mamba_tapct_fusion"
+    assert config.model.num_classes == 2
+    assert config.model.tapct_embedding_dim == 1152
+    assert config.data.manifest == Path(
+        "./datasets/generated/angle_binary_extreme_manifest.tapct_s25d_late_fusion.json"
+    )
+    assert config.data.tapct_features == Path("./embeddings/tapct_s_2_5d/features.npz")
+    assert config.data.augmentation.target_per_class == 100
+    assert config.task == "Angle_extreme_binary_classification"
+
+
 def test_gold_tapct_late_fusion_config() -> None:
     config = Config.from_yaml(
         Path(__file__).with_name("config.gold.tapct_late_fusion.augmentation36.yaml")
@@ -95,6 +136,28 @@ def test_gold_tapct_late_fusion_config() -> None:
         "./datasets/generated/gold_2026_manifest.tapct_aug36.json"
     )
     assert config.data.tapct_features == Path("./embeddings/tapct_b_3d/features.npz")
+    assert config.data.augmentation.target_per_class == 36
+    assert config.data.augmentation.class_indices == (0, 1, 2, 3, 4)
+    assert config.task == "GOLD_stage_classification"
+
+
+def test_gold_tapct_s25d_late_fusion_config() -> None:
+    config = Config.from_yaml(
+        Path(__file__).with_name(
+            "config.gold.tapct_s25d_late_fusion.augmentation36.yaml"
+        )
+    )
+
+    assert config.data.target_mode == "gold"
+    assert config.is_classification_task() is True
+    assert config.model.name == "hybrid_mamba_tapct_fusion"
+    assert config.model.num_classes == 5
+    assert config.model.tapct_embedding_dim == 1152
+    assert config.data.pft_json == Path("./GOLD_2026_classification.json")
+    assert config.data.manifest == Path(
+        "./datasets/generated/gold_2026_manifest.tapct_s25d_aug36.json"
+    )
+    assert config.data.tapct_features == Path("./embeddings/tapct_s_2_5d/features.npz")
     assert config.data.augmentation.target_per_class == 36
     assert config.data.augmentation.class_indices == (0, 1, 2, 3, 4)
     assert config.task == "GOLD_stage_classification"

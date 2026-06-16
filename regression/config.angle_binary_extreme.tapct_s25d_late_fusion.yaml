@@ -1,9 +1,9 @@
-# nnMamba Angle Extreme Binary Classification with TAP-CT Late Fusion
-# ===================================================================
+# nnMamba Angle Extreme Binary Classification with TAP-CT-S-2.5D Late Fusion
+# =============================================================================
 
 experiment:
-  name: TAP-CT late fusion extreme binary + aug100/class
-  description: Gray-zone excluded binary classification using Hybrid Mamba-Attention CT features fused with frozen TAP-CT-S patient-level embeddings.
+  name: TAP-CT-S-2.5D late fusion extreme binary + aug100/class
+  description: Gray-zone excluded binary classification using Hybrid Mamba-Attention CT features fused with frozen TAP-CT-S-2.5D patient-level embeddings.
 
 model:
   name: hybrid_mamba_tapct_fusion
@@ -66,8 +66,8 @@ data:
   labels_json: ../patient_angle_classification_by_group.json
   pft_json: ../pft.json
   angle_split_manifest: ../by_angle_all/reclassification_manifest.json
-  manifest: ./datasets/generated/angle_binary_extreme_manifest.tapct_late_fusion.json
-  tapct_features: ./embeddings/tapct_s_3d/features.npz
+  manifest: ./datasets/generated/angle_binary_extreme_manifest.tapct_s25d_late_fusion.json
+  tapct_features: ./embeddings/tapct_s_2_5d/features.npz
   image_size: [112, 136, 112]
   intensity_window: [-1000.0, 400.0]
   input_normalization: zscore

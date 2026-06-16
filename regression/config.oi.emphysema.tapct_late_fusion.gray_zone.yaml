@@ -1,9 +1,13 @@
-# nnMamba Angle Extreme Binary Classification with TAP-CT Late Fusion
+# nnMamba OI Emphysema Binary Classification with TAP-CT Late Fusion
 # ===================================================================
+# Gray-zone experiment: keep the clinically balanced OI >= 3.0 endpoint,
+# but exclude borderline cases with 2.5 <= OI < 3.5 from train/validation.
+# This leaves 50 patients: 29 significant emphysema / 21 no significant
+# emphysema, testing whether far-from-cutpoint cases are more learnable.
 
 experiment:
-  name: TAP-CT late fusion extreme binary + aug100/class
-  description: Gray-zone excluded binary classification using Hybrid Mamba-Attention CT features fused with frozen TAP-CT-S patient-level embeddings.
+  name: OI emphysema TAP-CT late fusion (OI >= 3.0, no 2.5-3.5 gray zone)
+  description: Binary emphysema classification from OI with CT + frozen TAP-CT-B 3D embeddings, excluding borderline 2.5 <= OI < 3.5 cases to test a cleaner far-from-cutpoint endpoint.
 
 model:
   name: hybrid_mamba_tapct_fusion
@@ -17,7 +21,7 @@ model:
   attn_layers: 1
   attn_mlp_ratio: 2.0
   attn_dropout: 0.1
-  tapct_embedding_dim: 1152
+  tapct_embedding_dim: 2304
   fusion_projection_dim: 128
   fusion_dropout: 0.1
 
@@ -34,15 +38,15 @@ training:
   epochs: 160
   batch_size: 12
   eval_batch_size: 12
-  swin_batch_size: 8
-  swin_eval_batch_size: 8
+  swin_batch_size: 5
+  swin_eval_batch_size: 6
   learning_rate: 0.0001
   weight_decay: 0.001
   k_folds: 5
   eval_interval: 5
   save_interval: 10
   seed: 42
-  loss: auto
+  loss: cross_entropy
   clip_grad_norm: 1.0
   amp: false
   track_train_metrics: false
@@ -57,17 +61,19 @@ gradcam:
   enabled: true
   max_samples: 8
   target_layer: image_encoder.attention_layers
-  # Zero-based angle_binary_extreme labels: 0=Abnormal/emphysema-like, 1=Normal-like.
   target_class: 0
 
 data:
-  target_mode: angle_binary_extreme
+  target_mode: oi_emphysema
+  oi_threshold: 3.0
+  oi_exclude_range: [2.5, 3.5]
   source_dir: ../by_angle_all
   labels_json: ../patient_angle_classification_by_group.json
   pft_json: ../pft.json
+  oi_json: ./oi_processed.json
   angle_split_manifest: ../by_angle_all/reclassification_manifest.json
-  manifest: ./datasets/generated/angle_binary_extreme_manifest.tapct_late_fusion.json
-  tapct_features: ./embeddings/tapct_s_3d/features.npz
+  manifest: ./datasets/generated/oi_emphysema_manifest.tapct_late_fusion.gray_zone.json
+  tapct_features: ./embeddings/tapct_b_3d/features.npz
   image_size: [112, 136, 112]
   intensity_window: [-1000.0, 400.0]
   input_normalization: zscore
@@ -77,20 +83,9 @@ data:
   pin_memory: true
   prefetch_factor: 4
   angle_bin_count: 5
-  balanced_sampling: true
+  balanced_sampling: false
   augmentation:
-    enabled: true
-    balance_to_majority: false
-    target_per_class: 100
-    probability: 1.0
-    # Zero-based angle_binary_extreme labels: 0=Abnormal/emphysema-like, 1=Normal-like.
-    class_indices: [0, 1]
-    rotation_degrees: 5.0
-    translation_fraction: 0.03
-    scale_range: [0.97, 1.03]
-    intensity_scale_range: [0.98, 1.02]
-    intensity_shift_range: [-0.05, 0.05]
-    noise_std: 0.02
+    enabled: false
 
 paths:
   weights: ./weights
@@ -98,7 +93,7 @@ paths:
   figures: ./figures
   graphs: ./graphs
 
-task: Angle_extreme_binary_classification
+task: OI_emphysema_classification
 
 resume:
   enabled: false

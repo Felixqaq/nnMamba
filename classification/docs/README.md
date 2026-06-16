@@ -8,9 +8,27 @@ Medical image classification using nnMamba, DenseNet, ViT, and CRATE architectur
 # Edit config.yaml to set your task and hyperparameters
 python train.py
 
-# Evaluate a trained model
+# Evaluate a trained model and generate Grad-CAM figures by default
 python evaluate.py --uuid nnMamba_2026-01-21_14:30:00
 ```
+
+Training automatically writes Grad-CAM overlays for each fold's best model to:
+
+```
+../figures/{task}/{uuid}/gradcam/fold{N}/
+```
+
+Use `python train.py --no-gradcam` or set `gradcam.enabled: false` for a
+metrics-only training run.
+
+Evaluation also writes Grad-CAM overlays to:
+
+```
+../figures/{task}/{uuid}/gradcam/
+```
+
+Use `--no-gradcam` for a metrics-only evaluation. Use `--gradcam-layer` to
+override the target layer with any name from `model.named_modules()`.
 
 ## Configuration
 
@@ -24,6 +42,10 @@ training:
   epochs: 50
   batch_size: 12
   k_folds: 5
+
+gradcam:
+  enabled: true
+  max_samples: 8
 
 task: Normal_v_Abnormal  # NC_v_AD | sMCI_v_pMCI | Normal_v_COPD | Normal_v_Abnormal
 ```
@@ -91,6 +113,7 @@ Training produces:
 - **Weights**: `../weights/{task}/{uuid}/best_weight.pth`
 - **Logs**: `../train_log/{uuid}.txt`
 - **Figures**: `../figures/{uuid}_fold{N}_*.png`
+- **Grad-CAM**: `../figures/{task}/{uuid}/gradcam/fold{N}/*.png`
 
 ## Troubleshooting
 

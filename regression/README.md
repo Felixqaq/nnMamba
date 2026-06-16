@@ -1,11 +1,13 @@
 # CT Regression / GOLD 分類 使用說明
 
-這個資料夾現在支援四種任務，而且共用同一套 CT 輸入 pipeline 與三個模型：
+這個資料夾現在支援六種任務，而且共用同一套 CT 輸入 pipeline；CT-only 模型與 TAP-CT late-fusion 模型都走同一個 `train.py` / `evaluate.py` 入口：
 
 - `angle`：原本的 regression，從 CT 預測 PFT 塌陷角度
 - `gold`：GOLD 2026 五分類，從 CT 預測 `Class 0` 與 `GOLD 1 ~ 4`
 - `angle_3class`：用 131° / 152° 門檻做三分類，從 CT 預測 `Emphysema/Abnormal`、`Intermediate`、`Normal`
 - `angle_binary_extreme`：排除 132°-151° 灰區，只用 `AC <=131°` 與 `AC >=152°` 做二分類
+- `oi`：從 CT + TAP-CT late fusion 預測連續 OI obstruction index
+- `oi_emphysema`：用 OI cutpoint 做二分類；目前正式設定使用 `OI >= 3.0`，因為 66 筆資料可切成 34/32
 
 你可以直接改 yaml 切換，不需要換 `train.py` / `evaluate.py` 入口。
 
@@ -31,6 +33,7 @@ conda run -n nnMamba python --version
 ../by_angle_all/
 ../patient_angle_classification_by_group.json
 ./GOLD_2026_classification.json
+./oi_processed.json
 ```
 
 其中：
@@ -40,6 +43,7 @@ conda run -n nnMamba python --version
 - `by_angle_all_angle_3class_augmented/` 是 131° / 152° 三分類訓練用的實體增強資料集，由 `regression/scripts/generate_angle_3class_augmented_dataset.py` 產生
 - `patient_angle_classification_by_group.json` 放每位病人的角度標註
 - `GOLD_2026_classification.json` 放每位病人的 GOLD 2026 五類分級
+- `oi_processed.json` 放每位病人的 OI obstruction index、`a` 與 `fvc`
 - 程式會從 CT 檔名抓病人 ID，再去 JSON 對應 target
 
 注意：
@@ -80,9 +84,9 @@ conda run -n nnMamba python regression/scripts/generate_angle_3class_augmented_d
 
 你只要改這幾個欄位：
 
-- `data.target_mode: angle | gold | angle_3class | angle_binary_extreme`
-- `task: PFT_angle_regression | GOLD_stage_classification | Angle_3class_classification | Angle_extreme_binary_classification`
-- `model.name: mamba | hybrid_mamba_attention | swinunetr`
+- `data.target_mode: angle | gold | angle_3class | angle_binary_extreme | oi | oi_emphysema`
+- `task: PFT_angle_regression | GOLD_stage_classification | Angle_3class_classification | Angle_extreme_binary_classification | OI_regression | OI_emphysema_classification`
+- `model.name: mamba | hybrid_mamba_attention | swinunetr | hybrid_mamba_tapct_fusion`
 
 `training.loss` 已經支援 `auto`：
 
@@ -90,6 +94,8 @@ conda run -n nnMamba python regression/scripts/generate_angle_3class_augmented_d
 - `gold` 時會自動用 `cross_entropy`
 - `angle_3class` 時會自動用 `cross_entropy`
 - `angle_binary_extreme` 時會自動用 `cross_entropy`
+- `oi` 時會自動用 regression loss
+- `oi_emphysema` 時會自動用 `cross_entropy`
 
 已經附一份可直接使用的 GOLD 範例設定：
 
@@ -101,6 +107,9 @@ conda run -n nnMamba python regression/scripts/generate_angle_3class_augmented_d
 - [config.angle_binary_extreme.balanced_sampling.augmentation100.yaml](/home/felix/Research/nnMamba/regression/config.angle_binary_extreme.balanced_sampling.augmentation100.yaml)：極端二分類，training fold 內 virtual augmentation 到每類 100，再做每 epoch 少類平衡
 - [config.angle_binary_extreme.tapct_late_fusion.majority_ensemble.yaml](/home/felix/Research/nnMamba/regression/config.angle_binary_extreme.tapct_late_fusion.majority_ensemble.yaml)：沿用最強 TAP-CT late-fusion run 當第 1 個 member，補訓 seed 43-48，輸出 3/5/7 hard majority voting
 - [docs/angle_binary_extreme_report.md](/home/felix/Research/nnMamba/regression/docs/angle_binary_extreme_report.md)：給教授看的文獻依據、分類規則、資料分布與建議實驗說明
+- [config.oi.tapct_late_fusion.yaml](/home/felix/Research/nnMamba/regression/config.oi.tapct_late_fusion.yaml)：OI 連續值 regression，使用 CT + frozen TAP-CT-B 3D embedding late fusion
+- [config.oi.emphysema.tapct_late_fusion.yaml](/home/felix/Research/nnMamba/regression/config.oi.emphysema.tapct_late_fusion.yaml)：OI emphysema 二分類，使用 `OI >= 3.0` 作為最平衡且有文獻臨床意義的 cutpoint
+- [config.oi.emphysema.tapct_late_fusion.gray_zone.yaml](/home/felix/Research/nnMamba/regression/config.oi.emphysema.tapct_late_fusion.gray_zone.yaml)：同樣使用 `OI >= 3.0`，但用 `data.oi_exclude_range: [2.5, 3.5]` 排除切點附近灰區，留下 50 筆做乾淨 endpoint 測試
 - [config.angle_3class.balanced_sampling.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.balanced_sampling.yaml)：131° / 152° 三分類，使用原始資料並每個 epoch 隨機下採樣多數類
 - [config.angle_3class.balanced_sampling.augmentation.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.balanced_sampling.augmentation.yaml)：131° / 152° 三分類，training fold 內把 class 0/1 virtual augmentation 補到 20，再做每 epoch 少類平衡
 - [config.angle_3class.balanced_sampling.augmentation100.yaml](/home/felix/Research/nnMamba/regression/config.angle_3class.balanced_sampling.augmentation100.yaml)：131° / 152° 三分類，training fold 內把三個 class 都 virtual augmentation 補到 100，再做每 epoch 少類平衡
@@ -121,6 +130,9 @@ conda run -n nnMamba python train.py --config config.angle_3class.yaml
 conda run -n nnMamba python train.py --config config.angle_binary_extreme.yaml
 conda run -n nnMamba python train.py --config config.angle_binary_extreme.balanced_sampling.augmentation100.yaml
 conda run -n nnMamba python train.py --config config.angle_binary_extreme.tapct_late_fusion.majority_ensemble.yaml
+conda run -n nnMamba python train.py --config config.oi.tapct_late_fusion.yaml
+conda run -n nnMamba python train.py --config config.oi.emphysema.tapct_late_fusion.yaml
+conda run -n nnMamba python train.py --config config.oi.emphysema.tapct_late_fusion.gray_zone.yaml
 conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.yaml
 conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation.yaml
 conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation100.yaml
@@ -128,11 +140,12 @@ conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampl
 conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation_x12.yaml
 ```
 
-目前三個模型都支援同一套切換方式：
+目前常用模型都支援同一套切換方式：
 
 - `mamba`
 - `hybrid_mamba_attention`
 - `swinunetr`
+- `hybrid_mamba_tapct_fusion`
 
 如果是 `gold` 模式：
 
@@ -176,6 +189,15 @@ conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampl
 - `config.angle_3class.balanced_sampling.augmentation_x12.yaml` 會在每個 epoch 先從 fold 內隨機抽少類平衡 base set；fold 1 會先抽成 4/4/4，再把每筆 base sample 展開成 12 個 views，所以每 epoch 會訓練 48/48/48。
 - 新增方法關閉 class weights，避免「已平衡抽樣」後又重複加權少數類。
 
+如果是 `oi` / `oi_emphysema` 模式：
+
+- `oi` 使用 66 筆 `oi_processed.json` 對應到 `by_angle_all/` CT，直接回歸連續 OI 值。
+- `oi_emphysema` 使用相同 66 筆資料做二分類，class 0 是 `Significant emphysema`，class 1 是 `No significant emphysema`。
+- 目前臨床 cutpoint 比較結果：`OI >= 3.0` 分成 34/32，`OI >= 4.38` 分成 24/42，`OI >= 7.0` 分成 17/49；因此正式 YAML 採 `3.0`。
+- 若要測試更乾淨的遠離切點病例，可使用 `data.oi_exclude_range: [2.5, 3.5]`；這會排除 `2.5 <= OI < 3.5` 的 16 筆灰區病例，留下 29/21。
+- OI emphysema TAP-CT late-fusion YAML 預設會為每個 best fold 產生 CT branch Grad-CAM，輸出在 `figures/OI_emphysema_classification/{run_uuid}/gradcam/fold{N}/`。
+- MEFV 曲線形狀與 inflection-point 視覺判定需要額外曲線標註或曲線特徵，不能只靠目前 `oi_processed.json` 直接產生。
+
 ## 6. 評估模型
 
 訓練完後，假設 run id 是 `<run_uuid>`：
@@ -187,6 +209,9 @@ conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.gold.y
 conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_3class.yaml
 conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_binary_extreme.yaml
 conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_binary_extreme.balanced_sampling.augmentation100.yaml
+conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.oi.tapct_late_fusion.yaml
+conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.oi.emphysema.tapct_late_fusion.yaml
+conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.oi.emphysema.tapct_late_fusion.gray_zone.yaml
 ```
 
 如果只想看某一個 fold：
@@ -318,4 +343,20 @@ conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_
 cd /home/felix/Research/nnMamba/regression
 conda run -n nnMamba python train.py --config config.angle_3class.balanced_sampling.augmentation_x12.yaml
 conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.angle_3class.balanced_sampling.augmentation_x12.yaml
+```
+
+如果你要跑 OI emphysema 二分類的 TAP-CT late fusion 版本：
+
+```bash
+cd /home/felix/Research/nnMamba/regression
+conda run -n nnMamba python train.py --config config.oi.emphysema.tapct_late_fusion.yaml
+conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.oi.emphysema.tapct_late_fusion.yaml
+```
+
+如果你要跑排除 `2.5 <= OI < 3.5` 灰區的 OI emphysema 版本：
+
+```bash
+cd /home/felix/Research/nnMamba/regression
+conda run -n nnMamba python train.py --config config.oi.emphysema.tapct_late_fusion.gray_zone.yaml
+conda run -n nnMamba python evaluate.py --uuid <run_uuid> --config config.oi.emphysema.tapct_late_fusion.gray_zone.yaml
 ```

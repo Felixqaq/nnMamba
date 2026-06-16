@@ -25,6 +25,7 @@ from .evaluator import (
     evaluate,
     save_predictions,
 )
+from .gradcam import generate_gradcam
 from .visualizer import plot_global_summary, plot_paper_results, plot_training_curves
 
 ATTENTION_HEAVY_MODELS = {
@@ -436,6 +437,12 @@ class Trainer:
                             task_type=self.task_type,
                             class_names=self.class_names,
                         )
+                        self._generate_gradcam_for_fold(
+                            model=model,
+                            test_dl=test_dl,
+                            fold_indices=self.loader_helper.fold_indices[fold][1],
+                            fold=fold,
+                        )
                         tqdm.write(
                             self._best_metric_message(
                                 fold=fold + 1,
@@ -596,6 +603,47 @@ class Trainer:
                 non_blocking=True,
             )
         return model_input
+
+    def _generate_gradcam_for_fold(
+        self,
+        model: nn.Module,
+        test_dl,
+        fold_indices: list[int],
+        fold: int,
+    ) -> None:
+        """Generate CT-branch Grad-CAM figures for a best validation checkpoint."""
+        cfg = self.config.gradcam
+        if not cfg.enabled:
+            return
+
+        model.to(self.device)
+        save_dir = (
+            self.config.paths.figures
+            / self.config.task
+            / self.uuid
+            / "gradcam"
+            / f"fold{fold + 1}"
+        )
+        try:
+            samples = generate_gradcam(
+                model=model,
+                dataloader=test_dl,
+                device=self.device,
+                save_dir=save_dir,
+                model_name=str(self.config.model.name),
+                dataset=self.loader_helper.dataset,
+                fold_indices=fold_indices,
+                class_names=self.class_names,
+                max_samples=cfg.max_samples,
+                target_layer_name=cfg.target_layer,
+                target_class=cfg.target_class,
+                task_type=self.task_type,
+            )
+        except (RuntimeError, ValueError, KeyError, TypeError) as exc:
+            tqdm.write(f"Grad-CAM skipped for fold {fold + 1}: {exc}")
+            return
+
+        tqdm.write(f"Grad-CAM saved {len(samples)} samples to {save_dir}")
 
     def _normalize_targets(
         self, targets: torch.Tensor, target_mean: float, target_std: float
@@ -863,6 +911,13 @@ class Trainer:
             "model_output_dim": self.config.model_output_dim(),
             "classification_mode": self.config.training.classification_mode,
             "target_mode": self.config.data.target_mode,
+            "gradcam": {
+                "enabled": self.config.gradcam.enabled,
+                "max_samples": self.config.gradcam.max_samples,
+                "target_layer": self.config.gradcam.target_layer,
+                "target_class": self.config.gradcam.target_class,
+                "scope": "ct_image_branch",
+            },
         }
         if self.config.data.tapct_features is not None:
             config_meta["tapct_features"] = str(self.config.data.tapct_features)
@@ -885,6 +940,23 @@ class Trainer:
                     "normal_rule": "AC >= 152 deg",
                 }
             )
+        if self.config.data.target_mode == "oi_emphysema":
+            threshold = self.config.data.oi_threshold
+            config_meta.update(
+                {
+                    "oi_threshold": threshold,
+                    "emphysema_rule": f"OI >= {threshold:g}",
+                    "no_emphysema_rule": f"OI < {threshold:g}",
+                }
+            )
+            if self.config.data.oi_exclude_range is not None:
+                low, high = self.config.data.oi_exclude_range
+                config_meta.update(
+                    {
+                        "oi_exclude_range": [low, high],
+                        "excluded_gray_zone_rule": f"{low:g} <= OI < {high:g}",
+                    }
+                )
 
         results = {
             "meta": {

@@ -23,6 +23,13 @@ data:
   pin_memory: true
   prefetch_factor: 4
 
+gradcam:
+  enabled: true          # Automatically generate Grad-CAM for each best fold
+  max_samples: 4         # Upper bound per layer; TP/TN/FP/FN need at most 4 samples
+  per_outcome: 1         # Render one TP, TN, FP, and FN sample when available
+  target_layers: [layer1, layer2, layer3]
+  target_class: 1        # Binary positive class (Abnormal/COPD/AD/pMCI)
+
 paths:
   weights: ../weights
   logs: ../train_log

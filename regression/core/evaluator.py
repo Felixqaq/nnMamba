@@ -23,6 +23,7 @@ CLASSIFICATION_TASK_TYPES = {
     "gold_severity4",
     "angle_3class",
     "angle_binary_extreme",
+    "oi_emphysema",
 }
 
 

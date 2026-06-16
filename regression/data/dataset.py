@@ -21,6 +21,7 @@ CLASSIFICATION_TARGET_MODES = {
     "gold_severity4",
     "angle_3class",
     "angle_binary_extreme",
+    "oi_emphysema",
 }
 
 
@@ -93,6 +94,8 @@ class AngleRegressionDataset(Dataset):
         labels_json: str | Path,
         pft_json: str | Path | None = None,
         oi_json: str | Path | None = None,
+        oi_threshold: float = 4.38,
+        oi_exclude_range: tuple[float, float] | list[float] | None = None,
         target_mode: str = "angle",
         image_size: tuple[int, int, int] = DEFAULT_IMAGE_SIZE,
         intensity_window: tuple[float, float] | None = None,
@@ -109,6 +112,12 @@ class AngleRegressionDataset(Dataset):
         self.labels_json = Path(labels_json)
         self.pft_json = Path(pft_json) if pft_json is not None else None
         self.oi_json = Path(oi_json) if oi_json is not None else None
+        self.oi_threshold = float(oi_threshold)
+        self.oi_exclude_range = (
+            (float(oi_exclude_range[0]), float(oi_exclude_range[1]))
+            if oi_exclude_range is not None
+            else None
+        )
         self.target_mode = target_mode
         self.image_size = image_size
         self.intensity_window = intensity_window
@@ -127,6 +136,8 @@ class AngleRegressionDataset(Dataset):
                 pft_json=self.pft_json,
                 target_mode=self.target_mode,
                 oi_json=self.oi_json,
+                oi_threshold=self.oi_threshold,
+                oi_exclude_range=self.oi_exclude_range,
                 gold_exclude_class_indices=self.gold_exclude_class_indices,
                 gold_remap_class_indices=self.gold_remap_class_indices,
             )

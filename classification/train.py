@@ -19,9 +19,16 @@ from models import build_model
 def main():
     parser = argparse.ArgumentParser(description="Train nnMamba classifier")
     parser.add_argument("--config", default="config.yaml", help="Config file path")
+    parser.add_argument(
+        "--no-gradcam",
+        action="store_true",
+        help="Skip automatic Grad-CAM generation during training",
+    )
     args = parser.parse_args()
 
     config = Config.from_yaml(args.config)
+    if args.no_gradcam:
+        config.gradcam.enabled = False
 
     print(f"🚀 Running on: {'CUDA' if torch.cuda.is_available() else 'CPU'}")
     if not torch.cuda.is_available():

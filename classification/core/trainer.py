@@ -20,6 +20,7 @@ from .evaluator import (
     compute_metrics,
     save_misclassified,
 )
+from .gradcam import generate_gradcam
 from .visualizer import plot_training_curves, plot_paper_results, plot_global_summary
 
 
@@ -238,10 +239,60 @@ class Trainer:
             )
             n_fn = len(errors.get("false_negatives", []))
             n_fp = len(errors.get("false_positives", []))
+            self._generate_gradcam_for_fold(
+                test_dl,
+                test_fold_indices,
+                fold,
+                test_result.threshold,
+            )
             tqdm.write(f"🎯 New best AUC: {test_result.auc} (FN={n_fn}, FP={n_fp})")
             return test_result.auc, test_result
 
         return best_auc, test_result
+
+    def _generate_gradcam_for_fold(
+        self,
+        test_dl,
+        test_fold_indices: list,
+        fold: int,
+        threshold: float,
+    ) -> None:
+        """Generate Grad-CAM figures for the current fold's best model."""
+        cfg = self.config.gradcam
+        if not cfg.enabled:
+            return
+
+        self.model.to(self.device)
+        save_dir = (
+            self.config.paths.figures
+            / self.config.task
+            / self.uuid
+            / "gradcam"
+            / f"fold{fold + 1}"
+        )
+        try:
+            samples = generate_gradcam(
+                model=self.model,
+                dataloader=test_dl,
+                device=self.device,
+                save_dir=save_dir,
+                model_name=self.config.model.name,
+                dataset=self.loader_helper.train_ds,
+                fold_indices=test_fold_indices,
+                labels=self.config.get_labels(),
+                max_samples=cfg.max_samples,
+                target_layer_name=cfg.target_layer,
+                target_layer_names=cfg.target_layers,
+                target_class=cfg.target_class,
+                threshold=threshold,
+                per_class=cfg.per_class,
+                per_outcome=cfg.per_outcome,
+            )
+        except (RuntimeError, ValueError) as exc:
+            tqdm.write(f"⚠️  Grad-CAM skipped for fold {fold + 1}: {exc}")
+            return
+
+        tqdm.write(f"🧠 Grad-CAM saved {len(samples)} samples to {save_dir}")
 
     def _save_and_plot(
         self,
@@ -303,6 +354,15 @@ class Trainer:
                     "weight_decay": cfg.training.weight_decay,
                     "k_folds": cfg.training.k_folds,
                     "seed": cfg.training.seed,
+                    "gradcam": {
+                        "enabled": cfg.gradcam.enabled,
+                        "max_samples": cfg.gradcam.max_samples,
+                        "target_layer": cfg.gradcam.target_layer,
+                        "target_layers": list(cfg.gradcam.target_layers),
+                        "target_class": cfg.gradcam.target_class,
+                        "per_class": cfg.gradcam.per_class,
+                        "per_outcome": cfg.gradcam.per_outcome,
+                    },
                 },
             },
             "folds": fold_entries,

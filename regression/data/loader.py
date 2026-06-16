@@ -38,6 +38,7 @@ CLASSIFICATION_TARGET_MODES = {
     "gold_severity4",
     "angle_3class",
     "angle_binary_extreme",
+    "oi_emphysema",
 }
 
 
@@ -248,6 +249,8 @@ class RegressionLoaderHelper:
         labels_json: str | Path = "../patient_angle_classification_by_group.json",
         pft_json: str | Path = "../pft.json",
         oi_json: str | Path = "./oi_processed.json",
+        oi_threshold: float = 4.38,
+        oi_exclude_range: tuple[float, float] | list[float] | None = None,
         target_mode: str = "angle",
         image_size: tuple[int, int, int] = DEFAULT_IMAGE_SIZE,
         k_folds: int = 5,
@@ -278,6 +281,8 @@ class RegressionLoaderHelper:
             labels_json = config.data.labels_json
             pft_json = config.data.pft_json
             oi_json = config.data.oi_json
+            oi_threshold = config.data.oi_threshold
+            oi_exclude_range = config.data.oi_exclude_range
             target_mode = config.data.target_mode
             image_size = config.data.image_size
             k_folds = config.training.k_folds
@@ -318,6 +323,12 @@ class RegressionLoaderHelper:
         self.labels_json = Path(labels_json)
         self.pft_json = Path(pft_json) if pft_json is not None else None
         self.oi_json = Path(oi_json) if oi_json is not None else None
+        self.oi_threshold = float(oi_threshold)
+        self.oi_exclude_range = (
+            (float(oi_exclude_range[0]), float(oi_exclude_range[1]))
+            if oi_exclude_range is not None
+            else None
+        )
         self.target_mode = str(target_mode)
         self.image_size = image_size
         self.k_folds = k_folds
@@ -355,6 +366,8 @@ class RegressionLoaderHelper:
             pft_json=self.pft_json,
             target_mode=self.target_mode,
             oi_json=self.oi_json,
+            oi_threshold=self.oi_threshold,
+            oi_exclude_range=self.oi_exclude_range,
             gold_exclude_class_indices=self.gold_exclude_class_indices,
             gold_remap_class_indices=self.gold_remap_class_indices,
         )
@@ -388,6 +401,8 @@ class RegressionLoaderHelper:
             self.labels_json,
             pft_json=self.pft_json,
             oi_json=self.oi_json,
+            oi_threshold=self.oi_threshold,
+            oi_exclude_range=self.oi_exclude_range,
             target_mode=self.target_mode,
             image_size=self.image_size,
             intensity_window=self.intensity_window,

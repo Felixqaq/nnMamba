@@ -1,14 +1,14 @@
-# nnMamba Angle Extreme Binary Classification with TAP-CT Late Fusion
-# ===================================================================
+# nnMamba Angle Three-Class Classification with TAP-CT-S-3D Late Fusion, 100/Class
+# ==================================================================================
 
 experiment:
-  name: TAP-CT late fusion extreme binary + aug100/class
-  description: Gray-zone excluded binary classification using Hybrid Mamba-Attention CT features fused with frozen TAP-CT-S patient-level embeddings.
+  name: TAP-CT-S-3D late fusion + aug100/class
+  description: Hybrid Mamba-Attention CT features are concatenated with frozen TAP-CT-S-3D patient-level embeddings before the original MLP classification head; train-fold augmentation balances each class to 100 samples.
 
 model:
   name: hybrid_mamba_tapct_fusion
   in_channels: 1
-  num_classes: 2
+  num_classes: 3
   hidden_dim: 256
   dropout: 0.3
   base_channels: 32
@@ -53,20 +53,13 @@ early_stopping:
   patience: 6
   min_delta: 0.005
 
-gradcam:
-  enabled: true
-  max_samples: 8
-  target_layer: image_encoder.attention_layers
-  # Zero-based angle_binary_extreme labels: 0=Abnormal/emphysema-like, 1=Normal-like.
-  target_class: 0
-
 data:
-  target_mode: angle_binary_extreme
+  target_mode: angle_3class
   source_dir: ../by_angle_all
   labels_json: ../patient_angle_classification_by_group.json
   pft_json: ../pft.json
   angle_split_manifest: ../by_angle_all/reclassification_manifest.json
-  manifest: ./datasets/generated/angle_binary_extreme_manifest.tapct_late_fusion.json
+  manifest: ./datasets/generated/angle_3class_manifest.tapct_s3d_late_fusion_aug100.json
   tapct_features: ./embeddings/tapct_s_3d/features.npz
   image_size: [112, 136, 112]
   intensity_window: [-1000.0, 400.0]
@@ -83,8 +76,8 @@ data:
     balance_to_majority: false
     target_per_class: 100
     probability: 1.0
-    # Zero-based angle_binary_extreme labels: 0=Abnormal/emphysema-like, 1=Normal-like.
-    class_indices: [0, 1]
+    # Zero-based angle_3class labels: 0=Abnormal, 1=Intermediate, 2=Normal.
+    class_indices: [0, 1, 2]
     rotation_degrees: 5.0
     translation_fraction: 0.03
     scale_range: [0.97, 1.03]
@@ -98,7 +91,7 @@ paths:
   figures: ./figures
   graphs: ./graphs
 
-task: Angle_extreme_binary_classification
+task: Angle_3class_classification
 
 resume:
   enabled: false

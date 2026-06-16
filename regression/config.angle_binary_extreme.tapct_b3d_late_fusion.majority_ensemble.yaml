@@ -1,9 +1,9 @@
-# nnMamba Angle Extreme Binary Classification with TAP-CT Late Fusion
-# ===================================================================
+# nnMamba Angle Extreme Binary Classification with TAP-CT-B-3D Late Fusion Majority Ensemble
+# ==========================================================================================
 
 experiment:
-  name: TAP-CT late fusion extreme binary + aug100/class
-  description: Gray-zone excluded binary classification using Hybrid Mamba-Attention CT features fused with frozen TAP-CT-S patient-level embeddings.
+  name: TAP-CT-B-3D late fusion extreme binary + aug100/class majority ensemble
+  description: Gray-zone excluded binary classification using Hybrid Mamba-Attention CT features fused with frozen TAP-CT-B-3D patient-level embeddings, trained as multiple seeds and evaluated by hard majority vote for 3, 5, and 7 members.
 
 model:
   name: hybrid_mamba_tapct_fusion
@@ -17,7 +17,7 @@ model:
   attn_layers: 1
   attn_mlp_ratio: 2.0
   attn_dropout: 0.1
-  tapct_embedding_dim: 1152
+  tapct_embedding_dim: 2304
   fusion_projection_dim: 128
   fusion_dropout: 0.1
 
@@ -53,12 +53,14 @@ early_stopping:
   patience: 6
   min_delta: 0.005
 
-gradcam:
+ensemble:
   enabled: true
-  max_samples: 8
-  target_layer: image_encoder.attention_layers
-  # Zero-based angle_binary_extreme labels: 0=Abnormal/emphysema-like, 1=Normal-like.
-  target_class: 0
+  member_count: 7
+  vote_sizes: [3, 5, 7]
+  voting: majority
+  split_seed: 42
+  member_seeds: [42, 43, 44, 45, 46, 47, 48]
+  train_missing_members: true
 
 data:
   target_mode: angle_binary_extreme
@@ -66,8 +68,8 @@ data:
   labels_json: ../patient_angle_classification_by_group.json
   pft_json: ../pft.json
   angle_split_manifest: ../by_angle_all/reclassification_manifest.json
-  manifest: ./datasets/generated/angle_binary_extreme_manifest.tapct_late_fusion.json
-  tapct_features: ./embeddings/tapct_s_3d/features.npz
+  manifest: ./datasets/generated/angle_binary_extreme_manifest.tapct_b3d_late_fusion.json
+  tapct_features: ./embeddings/tapct_b_3d/features.npz
   image_size: [112, 136, 112]
   intensity_window: [-1000.0, 400.0]
   input_normalization: zscore

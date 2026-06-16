@@ -132,6 +132,27 @@ def angle_binary_extreme_label(angle: float) -> tuple[int, str] | None:
     return None
 
 
+def oi_emphysema_class_names(threshold: float) -> list[str]:
+    """Return the two class names for the OI obstruction-index cutpoint.
+
+    The abnormal (emphysema) endpoint is listed first so that binary
+    sensitivity/specificity is reported for the disease-positive class,
+    matching the angle binary-extreme convention.
+    """
+    return [
+        f"Significant emphysema (OI >= {threshold:g})",
+        f"No significant emphysema (OI < {threshold:g})",
+    ]
+
+
+def oi_emphysema_label(oi: float, threshold: float) -> tuple[int, str]:
+    """Map an OI obstruction index into the emphysema two-class target."""
+    names = oi_emphysema_class_names(threshold)
+    if float(oi) >= float(threshold):
+        return 0, names[0]
+    return 1, names[1]
+
+
 def _gold_stage_sort_key(stage_name: str) -> tuple[int, str]:
     """Sort GOLD labels by their numeric stage when available."""
     match = re.search(r"(\d+)", stage_name)
@@ -333,6 +354,8 @@ def build_angle_manifest(
     pft_json: str | Path | None = None,
     target_mode: str = "angle",
     oi_json: str | Path | None = None,
+    oi_threshold: float = 4.38,
+    oi_exclude_range: tuple[float, float] | list[float] | None = None,
     gold_exclude_class_indices: tuple[int, ...] | list[int] | None = None,
     gold_remap_class_indices: bool = False,
 ) -> AngleManifest:
@@ -341,15 +364,23 @@ def build_angle_manifest(
     labels_json = Path(labels_json)
     target_mode = str(target_mode)
     is_gold_target = target_mode in {"gold", "gold_severity4"}
+    is_oi_target = target_mode in {"oi", "oi_emphysema"}
+    oi_exclude_bounds = (
+        (float(oi_exclude_range[0]), float(oi_exclude_range[1]))
+        if oi_exclude_range is not None
+        else None
+    )
+    if oi_exclude_bounds is not None and oi_exclude_bounds[0] >= oi_exclude_bounds[1]:
+        raise ValueError("oi_exclude_range must satisfy low < high.")
     excluded_gold_classes = {
         int(class_idx) for class_idx in (gold_exclude_class_indices or [])
     }
     label_map = load_angle_label_map(labels_json) if labels_json.exists() else {}
     oi_label_map: dict[str, dict[str, float | None]] = {}
     oi_path = Path(oi_json) if oi_json is not None else None
-    if target_mode == "oi":
+    if is_oi_target:
         if oi_path is None:
-            raise ValueError("target_mode='oi' requires data.oi_json.")
+            raise ValueError(f"target_mode={target_mode!r} requires data.oi_json.")
         oi_label_map = load_oi_label_map(oi_path)
     gold_label_map: dict[str, dict[str, float | int | str | None]] = {}
     gold_class_names: list[str] = []
@@ -385,6 +416,8 @@ def build_angle_manifest(
         class_names = list(ANGLE_3CLASS_NAMES)
     elif target_mode == "angle_binary_extreme":
         class_names = list(ANGLE_BINARY_EXTREME_NAMES)
+    elif target_mode == "oi_emphysema":
+        class_names = oi_emphysema_class_names(oi_threshold)
     else:
         class_names = []
 
@@ -392,18 +425,25 @@ def build_angle_manifest(
     source_ids: set[str] = set()
     missing_from_source: list[str] = []
     missing_gold_labels: list[str] = []
+    excluded_oi_range_count = 0
 
     for ct_path in iter_ct_files(data_root):
         patient_id = _extract_patient_id(ct_path)
         source_ids.add(patient_id)
         oi_meta = None
-        if target_mode == "oi":
+        if is_oi_target:
             oi_meta = oi_label_map.get(patient_id)
             if oi_meta is None:
                 missing_from_source.append(patient_id)
                 continue
             angle = label_map.get(patient_id, float("nan"))
             target = float(oi_meta["oi"])
+            if (
+                oi_exclude_bounds is not None
+                and oi_exclude_bounds[0] <= target < oi_exclude_bounds[1]
+            ):
+                excluded_oi_range_count += 1
+                continue
         else:
             angle = label_map.get(patient_id)
             if angle is None:
@@ -443,6 +483,10 @@ def build_angle_manifest(
             if extreme_label is None:
                 continue
             class_index, class_label = extreme_label
+        elif target_mode == "oi_emphysema" and oi_meta is not None:
+            class_index, class_label = oi_emphysema_label(
+                float(oi_meta["oi"]), oi_threshold
+            )
 
         source_group = ct_path.parent.name
         records.append(
@@ -487,7 +531,7 @@ def build_angle_manifest(
             )
         )
 
-    active_label_ids = oi_label_map.keys() if target_mode == "oi" else label_map.keys()
+    active_label_ids = oi_label_map.keys() if is_oi_target else label_map.keys()
     extra_in_source_not_in_json = sorted(
         patient_id for patient_id in active_label_ids if patient_id not in source_ids
     )
@@ -498,6 +542,8 @@ def build_angle_manifest(
         "low_angle_group": sum(1 for record in records if "low" in record.source_group),
         "high_angle_group": sum(1 for record in records if "high" in record.source_group),
     }
+    if oi_exclude_bounds is not None:
+        counts["excluded_oi_range"] = excluded_oi_range_count
     if target_mode == "gold_severity4":
         gold_count_names = [
             class_name
@@ -520,7 +566,7 @@ def build_angle_manifest(
     }
 
     return AngleManifest(
-        source_json=str(oi_path if target_mode == "oi" else labels_json),
+        source_json=str(oi_path if is_oi_target else labels_json),
         data_root=str(data_root),
         records=records,
         counts=counts,

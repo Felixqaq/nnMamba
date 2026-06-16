@@ -61,7 +61,7 @@ def test_gold_severity4_tapct_late_fusion_config() -> None:
     assert config.training.batch_size == 12
     assert config.training.swin_batch_size == 5
     assert config.training.loss == "focal"
-    assert config.training.focal_gamma == 2.0
+    assert config.training.focal_gamma == 1.0
     assert config.training.class_weight_mode == "none"
     assert config.data.image_size == (112, 136, 112)
     assert config.data.cache_data is True

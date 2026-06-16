@@ -17,9 +17,16 @@ from models import build_model
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train nnMamba CT angle regressor")
     parser.add_argument("--config", default="config.yaml", help="Config file path")
+    parser.add_argument(
+        "--no-gradcam",
+        action="store_true",
+        help="Skip automatic Grad-CAM generation during training",
+    )
     args = parser.parse_args()
 
     config = Config.from_yaml(args.config)
+    if args.no_gradcam:
+        config.gradcam.enabled = False
     os.environ["CUDA_VISIBLE_DEVICES"] = config.gpu.device_id
     configure_torch_runtime()
 

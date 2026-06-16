@@ -13,7 +13,11 @@ from data.loader import RegressionLoaderHelper
 from data.manifest import build_angle_manifest, load_oi_label_map
 
 
-OI_PATIENT_IDS = {"0781915", "1261736", "1596038", "1604378", "1663485"}
+OI_PATIENT_COUNT = 66
+# A stable subset known to be present. The OI cohort was expanded from 5 to 66
+# patients and the pef field was dropped, so membership/count checks replace the
+# old exact-set and exact-value assertions.
+OI_SAMPLE_IDS = {"0781915", "1261736", "1596038", "1604378", "1663485"}
 
 
 def test_oi_tapct_late_fusion_config() -> None:
@@ -42,11 +46,12 @@ def test_load_oi_label_map_reads_processed_json() -> None:
 
     labels = load_oi_label_map(regression_root / "oi_processed.json")
 
-    assert set(labels) == OI_PATIENT_IDS
+    assert len(labels) == OI_PATIENT_COUNT
+    assert OI_SAMPLE_IDS <= set(labels)
     assert labels["0781915"]["oi"] == 1.64
     assert labels["0781915"]["a"] == 1.6
     assert labels["0781915"]["fvc"] == 2.62
-    assert labels["0781915"]["pef"] == 7.02
+    assert labels["0781915"]["pef"] is None
 
 
 def test_oi_manifest_matches_cts_and_preserves_metadata() -> None:
@@ -62,9 +67,9 @@ def test_oi_manifest_matches_cts_and_preserves_metadata() -> None:
     )
 
     assert manifest.source_json.endswith("oi_processed.json")
-    assert manifest.counts["total"] == 5
-    assert manifest.counts["unique_patients"] == 5
-    assert {record.patient_id for record in manifest.records} == OI_PATIENT_IDS
+    assert manifest.counts["total"] == OI_PATIENT_COUNT
+    assert manifest.counts["unique_patients"] == OI_PATIENT_COUNT
+    assert OI_SAMPLE_IDS <= {record.patient_id for record in manifest.records}
     assert manifest.class_names == []
     assert manifest.class_counts == {}
     assert manifest.extra_in_source_not_in_json == []
@@ -74,7 +79,7 @@ def test_oi_manifest_matches_cts_and_preserves_metadata() -> None:
     assert first.target == first.oi == 1.64
     assert first.a == 1.6
     assert first.fvc == 2.62
-    assert first.pef == 7.02
+    assert first.pef is None
     assert first.angle == 176.0
 
 
@@ -105,17 +110,15 @@ def test_oi_loader_uses_oi_targets_and_tapct_embeddings() -> None:
         load_ct_data=False,
     )
 
-    assert len(loader.records) == 5
+    assert len(loader.records) == OI_PATIENT_COUNT
     assert loader.tapct_embedding_dim == 2304
-    assert set(loader.patient_ids) == OI_PATIENT_IDS
-    assert sorted(round(float(value), 2) for value in loader.targets.tolist()) == [
-        1.64,
-        2.11,
-        2.59,
-        2.64,
-        7.05,
-    ]
-    assert loader.split_strategy == "kfold"
+    assert OI_SAMPLE_IDS <= set(loader.patient_ids)
+    # Targets are the raw OI values straight from oi_processed.json.
+    patient_to_target = dict(zip(loader.patient_ids, loader.targets.tolist()))
+    assert round(float(patient_to_target["0781915"]), 2) == 1.64
+    assert round(float(loader.targets.min()), 2) == 1.61
+    assert round(float(loader.targets.max()), 2) == 26.89
+    assert loader.split_strategy == "stratified_bins"
 
     sample = loader.dataset[0]
     record = loader.records[0]
@@ -181,4 +184,5 @@ def test_oi_prediction_export_uses_oi_field_names(tmp_path: Path) -> None:
     assert "true_angle" not in row
     assert row["a"] is not None
     assert row["fvc"] is not None
-    assert row["pef"] is not None
+    # pef was dropped from the expanded oi_processed.json, so it is omitted.
+    assert "pef" not in row

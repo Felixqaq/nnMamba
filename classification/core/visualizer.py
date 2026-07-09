@@ -6,6 +6,7 @@ import matplotlib
 
 matplotlib.use("Agg")  # Enforce non-interactive backend
 import matplotlib.pyplot as plt
+import seaborn as sns
 from torchmetrics import ROC, ConfusionMatrix, PrecisionRecallCurve
 import torch
 
@@ -433,6 +434,7 @@ def plot_combined_confusion_matrix(
     all_results: list,
     save_dir: Path,
     class_names: list[str] = ["Normal", "Abnormal"],
+    method_label: str | None = None,
 ) -> None:
     """Plot combined confusion matrix for all folds using per-fold thresholds."""
     cm_metric = ConfusionMatrix(task="binary")
@@ -489,11 +491,36 @@ def plot_combined_confusion_matrix(
     plt.savefig(save_dir / "total_cm.png", dpi=300)
     plt.close()
 
+    # Styled version (seaborn heatmap with "Count" colorbar + optional method note)
+    title = "Confusion Matrix - All Folds"
+    if method_label:
+        title = f"{title}\nMethod: {method_label}"
+    with plt.rc_context({"font.family": "sans-serif", "axes.grid": False}):
+        fig, ax = plt.subplots(figsize=(8, 6))
+        sns.heatmap(
+            cm,
+            annot=True,
+            fmt="d",
+            cmap="Blues",
+            xticklabels=class_names,
+            yticklabels=class_names,
+            cbar_kws={"label": "Count"},
+            annot_kws={"size": 16},
+            ax=ax,
+        )
+        ax.set_xlabel("Predicted Label", fontsize=12, fontweight="bold")
+        ax.set_ylabel("True Label", fontsize=12, fontweight="bold")
+        ax.set_title(title, fontsize=14, fontweight="bold")
+        fig.tight_layout()
+        fig.savefig(save_dir / "total_confusion_matrix.png", dpi=300, bbox_inches="tight")
+        plt.close(fig)
+
 
 def plot_global_summary(
     all_results: list,
     save_dir: Path,
     class_names: list[str] = ["Normal", "Abnormal"],
+    method_label: str | None = None,
 ) -> None:
     """Generate aggregate plots for all folds."""
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -504,4 +531,6 @@ def plot_global_summary(
     if len(all_labels) > 0:
         plot_combined_roc(all_labels, all_preds, save_dir)
         plot_combined_pr(all_labels, all_preds, save_dir)
-        plot_combined_confusion_matrix(all_results, save_dir, class_names)
+        plot_combined_confusion_matrix(
+            all_results, save_dir, class_names, method_label=method_label
+        )

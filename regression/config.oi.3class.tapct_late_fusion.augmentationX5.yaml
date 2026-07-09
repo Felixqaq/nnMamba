@@ -1,0 +1,126 @@
+# nnMamba OI 3-Class Severity Classification with TAP-CT Late Fusion (5x augmentation)
+# =====================================================================================
+# Three-class emphysema severity from the OI obstruction index alone (no FEV1
+# stratification), using the two clinical cutpoints from regression/OI.pdf:
+#   OI < 3.0          -> class 0: No significant emphysema      (n=32)
+#   3.0 <= OI < 7.0   -> class 1: Moderate emphysema            (n=17)
+#   OI >= 7.0         -> class 2: Severe emphysema              (n=17)
+# Classes are ordered by ascending severity (0 = none, 2 = severe).
+#
+# Training set is expanded 5x with train-only CT augmentation: each base sample
+# emits one original view plus four augmented views (views_per_sample: 5).
+# Augmented copies are kept out of validation, so reported metrics stay
+# leakage-free. This reuses the same augmentation recipe as
+# config.oi.emphysema.tapct_late_fusion.augmentationX5.yaml.
+
+experiment:
+  name: OI 3-class severity TAP-CT late fusion (3.0/7.0, 5x aug)
+  description: Three-class emphysema severity (none / moderate / severe) from the OI obstruction index at cutpoints 3.0 and 7.0, fusing CT features with frozen TAP-CT-B 3D embeddings. Training set expanded 5x with train-only augmentation.
+
+model:
+  name: hybrid_mamba_tapct_fusion
+  in_channels: 1
+  num_classes: 3
+  hidden_dim: 256
+  dropout: 0.3
+  base_channels: 32
+  blocks: 3
+  attn_heads: 8
+  attn_layers: 1
+  attn_mlp_ratio: 2.0
+  attn_dropout: 0.1
+  tapct_embedding_dim: 2304
+  fusion_projection_dim: 128
+  fusion_dropout: 0.1
+
+  # SwinUNETR-only settings. Kept for consistency with other configs.
+  feature_size: 24
+  depths: [2, 2, 2, 2]
+  num_heads: [3, 6, 12, 24]
+  window_size: 4
+  patch_size: 2
+  use_checkpoint: false
+  use_v2: true
+
+training:
+  epochs: 160
+  batch_size: 12
+  eval_batch_size: 12
+  swin_batch_size: 5
+  swin_eval_batch_size: 6
+  learning_rate: 0.0001
+  weight_decay: 0.001
+  k_folds: 5
+  eval_interval: 5
+  save_interval: 10
+  seed: 42
+  loss: cross_entropy
+  clip_grad_norm: 1.0
+  amp: false
+  track_train_metrics: false
+  class_weight_mode: none
+
+early_stopping:
+  enabled: true
+  patience: 6
+  min_delta: 0.005
+
+gradcam:
+  enabled: true
+  max_samples: 8
+  target_layer: image_encoder.attention_layers
+  target_class: 2
+
+data:
+  target_mode: oi_3class
+  oi_thresholds: [3.0, 7.0]
+  source_dir: ../by_angle_all
+  labels_json: ../patient_angle_classification_by_group.json
+  pft_json: ../pft.json
+  oi_json: ./oi_processed.json
+  angle_split_manifest: ../by_angle_all/reclassification_manifest.json
+  manifest: ./datasets/generated/oi_3class_manifest.tapct_late_fusion.aug5.json
+  tapct_features: ./embeddings/tapct_b_3d/features.npz
+  image_size: [112, 136, 112]
+  intensity_window: [-1000.0, 400.0]
+  input_normalization: zscore
+  target_normalization: none
+  cache_data: true
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 4
+  angle_bin_count: 5
+  balanced_sampling: true
+  # 5x training-set expansion: 1 original + 4 augmented views per base sample.
+  # balance_then_augment first undersamples to the minority class each epoch,
+  # then emits views_per_sample copies of every selected sample.
+  augmentation:
+    enabled: true
+    balance_then_augment: true
+    views_per_sample: 5
+    probability: 1.0
+    class_indices: [0, 1, 2]
+    rotation_degrees: 7.0
+    translation_fraction: 0.05
+    scale_range: [0.95, 1.05]
+    # Intensity jitter runs after zscore normalization, so values are in
+    # normalized units (matches the binary OI emphysema aug config).
+    intensity_scale_range: [0.95, 1.05]
+    intensity_shift_range: [-0.1, 0.1]
+    noise_std: 0.03
+
+paths:
+  weights: ./weights
+  logs: ./train_log
+  figures: ./figures
+  graphs: ./graphs
+
+task: OI_3class_classification
+
+resume:
+  enabled: false
+  uuid: null
+  start_fold: 0
+
+gpu:
+  device_id: "0"

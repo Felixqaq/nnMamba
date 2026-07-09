@@ -13,7 +13,7 @@ import torch.optim.lr_scheduler as lr_scheduler
 from tqdm import tqdm
 
 from .config import Config
-from .checkpoints import save_checkpoint, generate_uuid
+from .checkpoints import save_checkpoint, load_checkpoint, generate_uuid
 from .evaluator import (
     get_predictions,
     find_optimal_threshold,
@@ -74,7 +74,10 @@ class Trainer:
         # Generate global summary for all folds
         fig_dir = self.config.paths.figures / self.config.task / self.uuid
         plot_global_summary(
-            self.best_results, fig_dir, class_names=self.config.get_labels()
+            self.best_results,
+            fig_dir,
+            class_names=self.config.get_labels(),
+            method_label=self.config.model.name,
         )
         self._save_results_json(fig_dir)
 
@@ -145,6 +148,10 @@ class Trainer:
                         train_metrics,
                         eval_epochs,
                     )
+
+        self._generate_gradcam_from_best(
+            fold, test_dl, test_fold_indices, best_fold_result
+        )
 
         return best_fold_result
 
@@ -239,16 +246,56 @@ class Trainer:
             )
             n_fn = len(errors.get("false_negatives", []))
             n_fp = len(errors.get("false_positives", []))
-            self._generate_gradcam_for_fold(
-                test_dl,
-                test_fold_indices,
-                fold,
-                test_result.threshold,
-            )
+            # Grad-CAM is generated once per fold from the saved best checkpoint
+            # (see _generate_gradcam_from_best), not here, so the figures stay
+            # tied to a single model instead of being overwritten every time the
+            # AUC ties its best.
             tqdm.write(f"🎯 New best AUC: {test_result.auc} (FN={n_fn}, FP={n_fp})")
             return test_result.auc, test_result
 
         return best_auc, test_result
+
+    def _generate_gradcam_from_best(
+        self,
+        fold: int,
+        test_dl,
+        test_fold_indices: list,
+        best_fold_result,
+    ) -> None:
+        """Render Grad-CAM once per fold from the saved best checkpoint.
+
+        Generating after training (instead of every epoch the AUC ties its
+        best) keeps the figures tied to one reproducible model, so the same
+        patient's slice positions no longer drift between epochs.
+        """
+        if best_fold_result is None or not self.config.gradcam.enabled:
+            return
+
+        best_path = (
+            self.config.paths.weights
+            / self.config.task
+            / self.uuid
+            / "best_weight.pth"
+        )
+        if not best_path.exists():
+            return
+
+        # Swap in the best checkpoint just for figure generation, then restore
+        # the live weights so the next fold continues training unchanged.
+        current_state = {
+            k: v.detach().clone() for k, v in self.model.state_dict().items()
+        }
+        load_checkpoint(best_path, self.model, self.device)
+        try:
+            self._generate_gradcam_for_fold(
+                test_dl,
+                test_fold_indices,
+                fold,
+                best_fold_result.threshold,
+            )
+        finally:
+            self.model.load_state_dict(current_state)
+            self.model.to(self.device)
 
     def _generate_gradcam_for_fold(
         self,

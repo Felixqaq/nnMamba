@@ -36,6 +36,7 @@ class DataConfig:
     num_workers: int = 6
     pin_memory: bool = True
     prefetch_factor: int = 4
+    root: str | None = None  # Override dataset root dir (must end with '/'); None uses task default
 
 
 @dataclass
@@ -108,6 +109,7 @@ class Config:
                 num_workers=data.get("data", {}).get("num_workers", 6),
                 pin_memory=data.get("data", {}).get("pin_memory", True),
                 prefetch_factor=data.get("data", {}).get("prefetch_factor", 4),
+                root=data.get("data", {}).get("root", None),
             ),
             paths=PathConfig(
                 weights=Path(data.get("paths", {}).get("weights", "../weights")),

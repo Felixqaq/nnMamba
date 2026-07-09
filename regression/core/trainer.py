@@ -957,6 +957,16 @@ class Trainer:
                         "excluded_gray_zone_rule": f"{low:g} <= OI < {high:g}",
                     }
                 )
+        if self.config.data.target_mode == "oi_3class":
+            low, high = self.config.data.oi_thresholds or (3.0, 7.0)
+            config_meta.update(
+                {
+                    "oi_thresholds": [low, high],
+                    "no_emphysema_rule": f"OI < {low:g}",
+                    "moderate_emphysema_rule": f"{low:g} <= OI < {high:g}",
+                    "severe_emphysema_rule": f"OI >= {high:g}",
+                }
+            )
 
         results = {
             "meta": {

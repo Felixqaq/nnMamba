@@ -1,0 +1,103 @@
+# nnMamba GOLD 1-4 Severity Classification with TAP-CT-S-3D Late Fusion, 13/Class
+# =================================================================================
+
+experiment:
+  name: GOLD severity4 TAP-CT-S-3D late fusion + aug13/class + focal-gamma1
+  description: GOLD 1-4 severity classification with a four-class focal-loss head using gamma=1.0, fusing frozen TAP-CT-S-3D patient-level embeddings; augmenting each train fold to 13 samples/class while reusing underrepresented GOLD 1 validation patients across 5 folds without same-fold train/val leakage.
+
+model:
+  name: hybrid_mamba_tapct_fusion
+  in_channels: 1
+  num_classes: 4
+  hidden_dim: 256
+  dropout: 0.3
+  base_channels: 32
+  blocks: 3
+  attn_heads: 8
+  attn_layers: 1
+  attn_mlp_ratio: 2.0
+  attn_dropout: 0.1
+  tapct_embedding_dim: 1152
+  fusion_projection_dim: 128
+  fusion_dropout: 0.1
+
+  feature_size: 24
+  depths: [2, 2, 2, 2]
+  num_heads: [3, 6, 12, 24]
+  window_size: 4
+  patch_size: 2
+  use_checkpoint: false
+  use_v2: true
+
+training:
+  epochs: 160
+  batch_size: 12
+  eval_batch_size: 12
+  swin_batch_size: 5
+  swin_eval_batch_size: 6
+  learning_rate: 0.0001
+  weight_decay: 0.001
+  k_folds: 5
+  eval_interval: 5
+  save_interval: 10
+  seed: 42
+  loss: focal
+  focal_gamma: 1.0
+  clip_grad_norm: 1.0
+  amp: false
+  track_train_metrics: false
+  class_weight_mode: none
+
+early_stopping:
+  enabled: true
+  patience: 6
+  min_delta: 0.005
+
+data:
+  target_mode: gold_severity4
+  source_dir: ../by_angle_all
+  labels_json: ../patient_angle_classification_by_group.json
+  pft_json: ./GOLD_2026_classification.json
+  angle_split_manifest: ../by_angle_all/reclassification_manifest.json
+  manifest: ./datasets/generated/gold_severity4_2026_manifest.tapct_aug13.json
+  tapct_features: ./embeddings/tapct_s_3d/features.npz
+  image_size: [112, 136, 112]
+  intensity_window: [-1000.0, 400.0]
+  input_normalization: zscore
+  target_normalization: none
+  cache_data: true
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 4
+  angle_bin_count: 5
+  balanced_sampling: true
+  reuse_underrepresented_classes_in_folds: true
+  augmentation:
+    enabled: true
+    balance_to_majority: false
+    target_per_class: 13
+    probability: 1.0
+    # GOLD severity4 class indices: GOLD 1, GOLD 2, GOLD 3, GOLD 4.
+    class_indices: [0, 1, 2, 3]
+    rotation_degrees: 7.0
+    translation_fraction: 0.05
+    scale_range: [0.95, 1.05]
+    intensity_scale_range: [0.95, 1.05]
+    intensity_shift_range: [-0.1, 0.1]
+    noise_std: 0.03
+
+paths:
+  weights: ./weights
+  logs: ./train_log
+  figures: ./figures
+  graphs: ./graphs
+
+task: GOLD_severity4_classification
+
+resume:
+  enabled: false
+  uuid: null
+  start_fold: 0
+
+gpu:
+  device_id: "0"

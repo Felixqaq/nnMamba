@@ -1,1 +1,4 @@
-把最新做的ordinal 實作把 4-class imbalance改掉 或是刪除
+
+python train.py --config config.gold.severity4.tapct_s3d_late_fusion.augmentation13.yaml
+
+

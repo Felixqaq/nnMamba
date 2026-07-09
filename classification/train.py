@@ -24,11 +24,19 @@ def main():
         action="store_true",
         help="Skip automatic Grad-CAM generation during training",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Override the random seed from the config",
+    )
     args = parser.parse_args()
 
     config = Config.from_yaml(args.config)
     if args.no_gradcam:
         config.gradcam.enabled = False
+    if args.seed is not None:
+        config.training.seed = args.seed
 
     print(f"🚀 Running on: {'CUDA' if torch.cuda.is_available() else 'CPU'}")
     if not torch.cuda.is_available():
@@ -36,7 +44,9 @@ def main():
 
     # Build components
     task_enum = Task[config.task]
-    loader_helper = LoaderHelper(task=task_enum, k_folds=config.training.k_folds)
+    loader_helper = LoaderHelper(
+        task=task_enum, k_folds=config.training.k_folds, data_root=config.data.root
+    )
     model = build_model(config.model.name)
 
     # Train

@@ -1,0 +1,119 @@
+# nnMamba Normal vs Abnormal Binary Classification with TAP-CT-S-3D Late Fusion (5x aug)
+# ======================================================================================
+# Runs the regression pipeline's late-fusion model (hybrid_mamba_tapct_fusion) on the
+# original 54-case Normal/Abnormal cohort. CT features are fused with frozen
+# TAP-CT-S-3D patient-level embeddings (1152-d).
+#
+# Label comes directly from the parent folder name (Normal/ or Abnormal/), not from
+# any threshold. Class 0 is Abnormal (disease-positive) so reported binary
+# sensitivity/specificity describe the abnormal class, matching the OI/angle binary
+# convention. Training set is expanded 5x with train-only augmentation (1 original +
+# 4 augmented views per sample); augmented copies stay out of validation.
+
+experiment:
+  name: Normal vs Abnormal TAP-CT-S-3D late fusion (5x aug)
+  description: Binary Normal/Abnormal classification on the original 54-case cohort, fusing Hybrid Mamba-Attention CT features with frozen TAP-CT-S-3D patient embeddings. Training set expanded 5x with train-only augmentation.
+
+model:
+  name: hybrid_mamba_tapct_fusion
+  in_channels: 1
+  num_classes: 2
+  hidden_dim: 256
+  dropout: 0.3
+  base_channels: 32
+  blocks: 3
+  attn_heads: 8
+  attn_layers: 1
+  attn_mlp_ratio: 2.0
+  attn_dropout: 0.1
+  tapct_embedding_dim: 1152
+  fusion_projection_dim: 128
+  fusion_dropout: 0.1
+
+  # SwinUNETR-only settings. Kept for consistency with other configs.
+  feature_size: 24
+  depths: [2, 2, 2, 2]
+  num_heads: [3, 6, 12, 24]
+  window_size: 4
+  patch_size: 2
+  use_checkpoint: false
+  use_v2: true
+
+training:
+  epochs: 160
+  batch_size: 12
+  eval_batch_size: 12
+  swin_batch_size: 5
+  swin_eval_batch_size: 6
+  learning_rate: 0.0001
+  weight_decay: 0.001
+  k_folds: 5
+  eval_interval: 5
+  save_interval: 10
+  seed: 42
+  loss: cross_entropy
+  clip_grad_norm: 1.0
+  amp: false
+  track_train_metrics: false
+  class_weight_mode: none
+
+early_stopping:
+  enabled: true
+  patience: 6
+  min_delta: 0.005
+
+gradcam:
+  enabled: true
+  max_samples: 8
+  target_layer: image_encoder.attention_layers
+  target_class: 0
+
+data:
+  target_mode: normal_v_abnormal
+  source_dir: ../classification/datasets/normal_v_abnormal_54
+  labels_json: ../patient_angle_classification_by_group.json
+  manifest: ./datasets/generated/normal_v_abnormal_manifest.tapct_s3d_late_fusion.aug5.json
+  tapct_features: ./embeddings/tapct_s_3d/features.npz
+  image_size: [112, 136, 112]
+  intensity_window: [-1000.0, 400.0]
+  input_normalization: zscore
+  target_normalization: none
+  cache_data: true
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 4
+  angle_bin_count: 5
+  balanced_sampling: true
+  # 5x training-set expansion: 1 original + 4 augmented views per base sample.
+  # balance_then_augment first undersamples to the minority class each epoch,
+  # then emits views_per_sample copies of every selected sample.
+  augmentation:
+    enabled: true
+    balance_then_augment: true
+    views_per_sample: 5
+    probability: 1.0
+    class_indices: [0, 1]
+    rotation_degrees: 7.0
+    translation_fraction: 0.05
+    scale_range: [0.95, 1.05]
+    # Intensity jitter runs after zscore normalization, so values are in
+    # normalized units (matches the GOLD severity4 aug config).
+    intensity_scale_range: [0.95, 1.05]
+    intensity_shift_range: [-0.1, 0.1]
+    noise_std: 0.03
+
+paths:
+  weights: ./weights
+  logs: ./train_log
+  figures: ./figures
+  graphs: ./graphs
+
+task: Normal_v_Abnormal_classification
+
+resume:
+  enabled: false
+  uuid: null
+  start_fold: 0
+
+gpu:
+  device_id: "0"

@@ -24,6 +24,9 @@ ANGLE_BINARY_EXTREME_NAMES = [
     "Abnormal/emphysema-like (AC <=131 deg)",
     "Normal-like (AC >=152 deg)",
 ]
+# Disease-positive class listed first (index 0), matching the angle/OI binary
+# convention so the evaluator reports sensitivity for the abnormal class.
+NORMAL_V_ABNORMAL_NAMES = ["Abnormal", "Normal"]
 GOLD_2026_CLASS_NAMES = [
     "Class 0 (No COPD)",
     "GOLD 1 (Mild)",
@@ -132,6 +135,16 @@ def angle_binary_extreme_label(angle: float) -> tuple[int, str] | None:
     return None
 
 
+def normal_v_abnormal_label(source_group: str) -> tuple[int, str] | None:
+    """Map the parent folder name (Normal/Abnormal) into the two-class target."""
+    group = str(source_group).strip().lower()
+    if group.startswith("abnormal"):
+        return 0, NORMAL_V_ABNORMAL_NAMES[0]
+    if group.startswith("normal"):
+        return 1, NORMAL_V_ABNORMAL_NAMES[1]
+    return None
+
+
 def oi_emphysema_class_names(threshold: float) -> list[str]:
     """Return the two class names for the OI obstruction-index cutpoint.
 
@@ -151,6 +164,36 @@ def oi_emphysema_label(oi: float, threshold: float) -> tuple[int, str]:
     if float(oi) >= float(threshold):
         return 0, names[0]
     return 1, names[1]
+
+
+OI_3CLASS_DEFAULT_THRESHOLDS = (3.0, 7.0)
+
+
+def oi_3class_class_names(thresholds: tuple[float, float]) -> list[str]:
+    """Return the three OI-severity class names for the given cutpoints.
+
+    Classes are ordered by ascending emphysema severity (0 = none) using the
+    OI obstruction index alone (no FEV1 stratification):
+      0 -> OI < low, 1 -> low <= OI < high, 2 -> OI >= high.
+    """
+    low, high = float(thresholds[0]), float(thresholds[1])
+    return [
+        f"No significant emphysema (OI < {low:g})",
+        f"Moderate emphysema ({low:g} <= OI < {high:g})",
+        f"Severe emphysema (OI >= {high:g})",
+    ]
+
+
+def oi_3class_label(oi: float, thresholds: tuple[float, float]) -> tuple[int, str]:
+    """Map an OI obstruction index into the three-class severity target."""
+    low, high = float(thresholds[0]), float(thresholds[1])
+    names = oi_3class_class_names(thresholds)
+    oi = float(oi)
+    if oi < low:
+        return 0, names[0]
+    if oi < high:
+        return 1, names[1]
+    return 2, names[2]
 
 
 def _gold_stage_sort_key(stage_name: str) -> tuple[int, str]:
@@ -355,6 +398,7 @@ def build_angle_manifest(
     target_mode: str = "angle",
     oi_json: str | Path | None = None,
     oi_threshold: float = 4.38,
+    oi_thresholds: tuple[float, float] | list[float] | None = None,
     oi_exclude_range: tuple[float, float] | list[float] | None = None,
     gold_exclude_class_indices: tuple[int, ...] | list[int] | None = None,
     gold_remap_class_indices: bool = False,
@@ -364,7 +408,15 @@ def build_angle_manifest(
     labels_json = Path(labels_json)
     target_mode = str(target_mode)
     is_gold_target = target_mode in {"gold", "gold_severity4"}
-    is_oi_target = target_mode in {"oi", "oi_emphysema"}
+    is_oi_target = target_mode in {"oi", "oi_emphysema", "oi_3class"}
+    is_folder_label_target = target_mode == "normal_v_abnormal"
+    oi_3class_thresholds = (
+        (float(oi_thresholds[0]), float(oi_thresholds[1]))
+        if oi_thresholds is not None
+        else OI_3CLASS_DEFAULT_THRESHOLDS
+    )
+    if oi_3class_thresholds[0] >= oi_3class_thresholds[1]:
+        raise ValueError("oi_thresholds must satisfy low < high.")
     oi_exclude_bounds = (
         (float(oi_exclude_range[0]), float(oi_exclude_range[1]))
         if oi_exclude_range is not None
@@ -418,6 +470,10 @@ def build_angle_manifest(
         class_names = list(ANGLE_BINARY_EXTREME_NAMES)
     elif target_mode == "oi_emphysema":
         class_names = oi_emphysema_class_names(oi_threshold)
+    elif target_mode == "oi_3class":
+        class_names = oi_3class_class_names(oi_3class_thresholds)
+    elif target_mode == "normal_v_abnormal":
+        class_names = list(NORMAL_V_ABNORMAL_NAMES)
     else:
         class_names = []
 
@@ -444,6 +500,11 @@ def build_angle_manifest(
             ):
                 excluded_oi_range_count += 1
                 continue
+        elif is_folder_label_target:
+            # Label comes from the parent folder name, not the angle JSON, so do
+            # not skip patients that lack an angle annotation.
+            angle = label_map.get(patient_id, float("nan"))
+            target = float("nan")
         else:
             angle = label_map.get(patient_id)
             if angle is None:
@@ -487,6 +548,16 @@ def build_angle_manifest(
             class_index, class_label = oi_emphysema_label(
                 float(oi_meta["oi"]), oi_threshold
             )
+        elif target_mode == "oi_3class" and oi_meta is not None:
+            class_index, class_label = oi_3class_label(
+                float(oi_meta["oi"]), oi_3class_thresholds
+            )
+        elif target_mode == "normal_v_abnormal":
+            folder_label = normal_v_abnormal_label(ct_path.parent.name)
+            if folder_label is None:
+                continue
+            class_index, class_label = folder_label
+            target = float(class_index)
 
         source_group = ct_path.parent.name
         records.append(

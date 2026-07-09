@@ -24,6 +24,8 @@ CLASSIFICATION_TASK_TYPES = {
     "angle_3class",
     "angle_binary_extreme",
     "oi_emphysema",
+    "oi_3class",
+    "normal_v_abnormal",
 }
 
 

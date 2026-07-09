@@ -39,6 +39,8 @@ CLASSIFICATION_TARGET_MODES = {
     "angle_3class",
     "angle_binary_extreme",
     "oi_emphysema",
+    "oi_3class",
+    "normal_v_abnormal",
 }
 
 
@@ -250,6 +252,7 @@ class RegressionLoaderHelper:
         pft_json: str | Path = "../pft.json",
         oi_json: str | Path = "./oi_processed.json",
         oi_threshold: float = 4.38,
+        oi_thresholds: tuple[float, float] | list[float] | None = None,
         oi_exclude_range: tuple[float, float] | list[float] | None = None,
         target_mode: str = "angle",
         image_size: tuple[int, int, int] = DEFAULT_IMAGE_SIZE,
@@ -282,6 +285,7 @@ class RegressionLoaderHelper:
             pft_json = config.data.pft_json
             oi_json = config.data.oi_json
             oi_threshold = config.data.oi_threshold
+            oi_thresholds = config.data.oi_thresholds
             oi_exclude_range = config.data.oi_exclude_range
             target_mode = config.data.target_mode
             image_size = config.data.image_size
@@ -324,6 +328,11 @@ class RegressionLoaderHelper:
         self.pft_json = Path(pft_json) if pft_json is not None else None
         self.oi_json = Path(oi_json) if oi_json is not None else None
         self.oi_threshold = float(oi_threshold)
+        self.oi_thresholds = (
+            (float(oi_thresholds[0]), float(oi_thresholds[1]))
+            if oi_thresholds is not None
+            else None
+        )
         self.oi_exclude_range = (
             (float(oi_exclude_range[0]), float(oi_exclude_range[1]))
             if oi_exclude_range is not None
@@ -367,6 +376,7 @@ class RegressionLoaderHelper:
             target_mode=self.target_mode,
             oi_json=self.oi_json,
             oi_threshold=self.oi_threshold,
+            oi_thresholds=self.oi_thresholds,
             oi_exclude_range=self.oi_exclude_range,
             gold_exclude_class_indices=self.gold_exclude_class_indices,
             gold_remap_class_indices=self.gold_remap_class_indices,

@@ -46,6 +46,8 @@ TargetMode = Literal[
     "angle_binary_extreme",
     "oi",
     "oi_emphysema",
+    "oi_3class",
+    "normal_v_abnormal",
 ]
 CLASSIFICATION_TARGET_MODES = {
     "gold",
@@ -53,6 +55,8 @@ CLASSIFICATION_TARGET_MODES = {
     "angle_3class",
     "angle_binary_extreme",
     "oi_emphysema",
+    "oi_3class",
+    "normal_v_abnormal",
 }
 
 
@@ -151,6 +155,7 @@ class DataConfig:
     pft_json: Path = field(default_factory=lambda: Path("../pft.json"))
     oi_json: Path = field(default_factory=lambda: Path("./oi_processed.json"))
     oi_threshold: float = 4.38
+    oi_thresholds: tuple[float, float] | None = None
     oi_exclude_range: tuple[float, float] | None = None
     target_mode: TargetMode = "angle"
     angle_split_manifest: Path = field(
@@ -322,6 +327,12 @@ class Config:
         elif target_mode == "oi_emphysema":
             default_num_classes = 2
             default_task = "OI_emphysema_classification"
+        elif target_mode == "oi_3class":
+            default_num_classes = 3
+            default_task = "OI_3class_classification"
+        elif target_mode == "normal_v_abnormal":
+            default_num_classes = 2
+            default_task = "Normal_v_Abnormal_classification"
         else:
             default_num_classes = 1
             default_task = "PFT_angle_regression"
@@ -388,6 +399,9 @@ class Config:
                 pft_json=Path(data_section.get("pft_json", default_pft_json)),
                 oi_json=Path(data_section.get("oi_json", "./oi_processed.json")),
                 oi_threshold=float(data_section.get("oi_threshold", 4.38)),
+                oi_thresholds=cls._parse_optional_float_range(
+                    data_section.get("oi_thresholds")
+                ),
                 oi_exclude_range=cls._parse_optional_float_range(
                     data_section.get("oi_exclude_range")
                 ),

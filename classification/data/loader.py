@@ -26,11 +26,20 @@ class LoaderHelper:
         Task.Normal_v_Abnormal: ("../", "../"),
     }
 
-    def __init__(self, task: Task = Task.NC_v_AD, k_folds: int = 5, seed: int = 42):
+    def __init__(
+        self,
+        task: Task = Task.NC_v_AD,
+        k_folds: int = 5,
+        seed: int = 42,
+        data_root: str | None = None,
+    ):
         self.task = task
         self.labels = self.TASK_LABELS[task]
 
-        train_root, _ = self.TASK_PATHS[task]
+        if data_root:
+            train_root = data_root
+        else:
+            train_root, _ = self.TASK_PATHS[task]
         transform = transforms.Compose([ToTensor()])
 
         self.train_ds = MRIDataset(

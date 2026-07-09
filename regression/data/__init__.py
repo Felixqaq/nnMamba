@@ -8,6 +8,8 @@ from .manifest import (
     build_angle_manifest,
     load_angle_label_map,
     load_oi_label_map,
+    oi_3class_class_names,
+    oi_3class_label,
     oi_emphysema_class_names,
     oi_emphysema_label,
 )
@@ -23,6 +25,8 @@ __all__ = [
     "build_angle_manifest",
     "load_angle_label_map",
     "load_oi_label_map",
+    "oi_3class_class_names",
+    "oi_3class_label",
     "oi_emphysema_class_names",
     "oi_emphysema_label",
 ]

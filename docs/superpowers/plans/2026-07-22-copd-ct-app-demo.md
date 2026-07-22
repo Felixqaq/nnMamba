@@ -890,7 +890,7 @@ git commit -m "feat: DICOM series to NIfTI conversion"
 
 ---
 
-### Task 6: Staging (capture writes + log)
+### Task 6: Staging (capture writes + log) ✅ DONE
 
 **Files:**
 - Create: `~/Research/copd-ct-app/core/staging.py`

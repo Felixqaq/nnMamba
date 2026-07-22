@@ -1228,7 +1228,7 @@ git commit -m "feat: predict_and_capture public API"
 
 ---
 
-### Task 8: Grad-CAM heatmap
+### Task 8: Grad-CAM heatmap ✅ DONE
 
 **Files:**
 - Create: `~/Research/copd-ct-app/core/gradcam.py`

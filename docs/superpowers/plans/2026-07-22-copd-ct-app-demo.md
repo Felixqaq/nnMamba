@@ -731,7 +731,7 @@ git commit -m "feat: ensemble loader with soft-vote"
 
 ---
 
-### Task 5: DICOM series → NIfTI
+### Task 5: DICOM series → NIfTI ✅ DONE
 
 **Files:**
 - Create: `~/Research/copd-ct-app/core/dicom_io.py`

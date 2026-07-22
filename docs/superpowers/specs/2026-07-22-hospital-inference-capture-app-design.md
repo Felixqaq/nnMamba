@@ -6,7 +6,7 @@
 
 ## 1. Purpose
 
-A small tool to take to the hospital to demo the Normal-vs-Abnormal (COPD-related)
+A tool to take to the hospital to demo the Normal-vs-Abnormal (COPD-related)
 CT classifier with clinicians, and to **grow the training dataset as a side effect
 of clinical use**: while a doctor runs inference on a patient's CT, the same CT +
 patient number is captured into a staging area for later labeling.
@@ -15,17 +15,44 @@ patient number is captured into a staging area for later labeling.
 - **Phase later:** possible migration to a hospital-hosted service / cloud. The
   architecture keeps this cheap without building it now.
 
+### Delivery model — two repos
+
+The code will be **handed to hospital staff**, so it cannot carry the whole nnMamba
+research codebase. The system is split across two repos:
+
+- **`~/Research/copd-ct-app/`** (NEW, hospital-facing, self-contained) — the Gradio
+  app + inference/capture core. No dependency on nnMamba. This is what the hospital
+  runs. Hospital staff only run inference + capture; they never retrain or backfill.
+- **nnMamba / research side** (NOT handed over) — production retraining, label
+  backfill (touches the dataset), and release packaging. Stays with the researcher.
+
+**Why this resolves the preprocessing-drift risk:** the hospital does not retrain, so
+preprocessing is **frozen and shipped alongside each checkpoint release**. Each
+release = 5 checkpoints + the exact preprocessing used to train them, bundled
+together. Drift cannot occur at the hospital (they never change preprocessing). The
+only place drift could occur is between training and packaging on the research side,
+and that is caught at **release time** by a bit-for-bit consistency test in
+`package_release.py`. Drift is a release-time concern (researcher's), not a runtime
+concern (hospital's).
+
+**Data flow back:** captured CTs accumulate in the hospital machine's `staging/`. The
+researcher periodically collects `staging/` back to their own machine, runs
+`label_backfill` (matches PFT, ingests into the dataset), and after enough
+accumulation retrains and packages a new release for the hospital.
+
 ## 2. Key Decisions (locked)
 
 | Topic | Decision |
 |---|---|
-| App form factor | Gradio local web app, runs on the researcher's NVIDIA GPU machine (localhost) |
+| Repo split | New self-contained hospital repo `~/Research/copd-ct-app/` (app + capture); training + backfill + packaging stay research-side, not handed over |
+| Preprocessing consistency | Frozen and shipped with each checkpoint release; drift caught at release time by `package_release.py` consistency test, never at the hospital |
+| App form factor | Gradio local web app, runs on an NVIDIA GPU machine (localhost) |
 | CT input | DICOM series exported from PACS (a folder / zip) |
 | Ground-truth at capture time | Not available. App stores CT + patient ID only; labels added later offline |
 | Patient number storage | **Real patient number as filename** (matches existing `{patient_id}_*.nii.gz`). De-identification is a config toggle, default OFF, interface kept in code |
 | Deployed model | 5-member soft-vote ensemble, **retrained on ALL data** (no held-out) — production checkpoints, not the CV fold models |
 | Retrain cadence | Human-in-the-loop, periodic. Script trains on whatever is in the dataset at run time; the researcher decides when to run it |
-| Model version switching | App loads `checkpoints/current/` at startup; promoting a new version = update symlink + restart app |
+| Model version switching | App loads `models/current/` at startup; promoting a new release = repoint `models/current` + restart app |
 | Disclaimer | "研究用途、非診斷" line shown in UI, config toggle, **default ON** |
 | Cloud readiness | Keep core stateless/config-driven and storage access behind one module. Do NOT build cloud infra now. PHI-in-cloud is a regulatory gate, decided later with IRB/hospital |
 
@@ -42,32 +69,45 @@ best-epoch 0.833/0.879 numbers, when describing expected performance.
 
 ## 3. Architecture
 
-A Gradio app plus an offline batch labeling script, sharing one inference/preprocess
-core. New directory `deploy/`; existing `regression/` training code is not modified.
+Two repos. The hospital repo is self-contained (a Gradio app + inference/capture
+core, plus a frozen preprocessing module and a bundled checkpoint release). The
+research side owns retraining, backfill, and release packaging, and does not modify
+`regression/` training code.
 
+### Hospital repo — `~/Research/copd-ct-app/` (handed over)
 ```
-deploy/
+copd-ct-app/
 ├── app.py                 # Gradio UI shell (thin, ~50 lines)
 ├── core/
 │   ├── api.py             # predict_and_capture(dicom_dir, *, capture=True) -> PredictionResult  (ONLY public entry)
 │   ├── dicom_io.py        # DICOM series -> NIfTI (SimpleITK)
-│   ├── preprocess.py      # clip[-1000,400] + resize[112,136,112] + zscore, aligned to regression/data/dataset.py
+│   ├── preprocess.py      # FROZEN copy: clip[-1000,400] + resize[112,136,112] + zscore (shipped with the release)
 │   ├── ensemble.py        # load 5 checkpoints -> soft-vote -> probability
 │   ├── gradcam.py         # Grad-CAM heatmap for one representative member
 │   └── staging.py         # ALL staging read/write; storage backend swappable (local now, object store later)
-├── scripts/
-│   ├── train_production_ensemble.py  # retrain 5 seed-diverse members on ALL data -> checkpoints/<date>/
-│   ├── promote.py                    # update checkpoints/current symlink
-│   └── label_backfill.py             # staging -> match PFT -> label -> move into dataset
-├── checkpoints/
-│   ├── <YYYY-MM-DD>/member_1.pth ... member_5.pth, metrics.json
-│   └── current -> <YYYY-MM-DD>/
+├── models/
+│   └── current/           # bundled release: member_1.pth ... member_5.pth, metrics.json, PREPROCESS_HASH
 ├── staging/
 │   ├── incoming/{patient_id}_{YYYYMMDD_HHMMSS}.nii.gz
 │   └── capture_log.jsonl
-├── config.yaml            # checkpoint dir, staging path, image_size, disclaimer + de-id toggles
-└── tests/
+├── config.yaml            # model dir, staging path, image_size, disclaimer + de-id toggles
+├── environment.yml / Dockerfile
+└── tests/                 # incl. preprocess consistency test against the frozen hash
 ```
+
+### Research side — nnMamba / private (NOT handed over)
+```
+scripts/
+├── train_production_ensemble.py  # retrain 5 seed-diverse members on ALL data -> release/<date>/
+├── label_backfill.py             # collected staging -> match PFT -> label -> move into dataset
+└── package_release.py            # bit-for-bit check (frozen preprocess == training preprocess),
+                                  #   then bundle 5 checkpoints + frozen preprocess -> a release for copd-ct-app
+```
+
+`label_backfill.py` and retraining reuse the real `regression/data/dataset.py`
+preprocessing and `regression/data/manifest.py` label rules directly (same repo, no
+drift). The hospital repo's `core/preprocess.py` is a frozen copy whose equality to
+the training preprocessing is asserted by `package_release.py` at release time.
 
 ### Principles
 - **core/ fully decoupled from UI.** `app.py` only calls `predict_and_capture`.
@@ -99,7 +139,7 @@ PFT to assign labels and move data into the dataset.
 (skimage, same params) → z-score. Aligned to `regression/data/dataset.py`. Any
 mismatch shifts the distribution and silently degrades predictions.
 
-**③ Ensemble (`ensemble.py`)** — load 5 checkpoints from `checkpoints/current/` to
+**③ Ensemble (`ensemble.py`)** — load 5 checkpoints from `models/current/` to
 GPU at startup (~0.1GB VRAM, resident). Per case: forward through all 5 → mean of
 softmax probabilities (soft-vote) → Abnormal probability.
 
@@ -132,36 +172,42 @@ Behavior:
 
 ## 6. Data Growth Loop (§ retraining)
 
-Human-in-the-loop, not automatic:
+Human-in-the-loop, not automatic, and crosses the two-repo boundary:
 
 ```
-① Deploy current 5-member ensemble
-② Doctor uses app -> new CT into staging/incoming/ (label=null)
-③ Offline: label_backfill.py matches PFT -> labels available data -> moves into dataset
-④ After enough accumulation -> researcher manually runs train_production_ensemble.py
-   on the current (enlarged) dataset -> new checkpoints/<date>/ -> promote + restart
--> back to ① (dataset is larger)
+① Hospital runs copd-ct-app with the current release (models/current/)
+② Doctor uses app -> new CT into the hospital machine's staging/incoming/ (label=null)
+③ Researcher periodically collects staging/ back to their own machine
+④ Research side: label_backfill.py matches PFT -> labels available data -> moves into dataset
+⑤ After enough accumulation -> train_production_ensemble.py on the enlarged dataset
+   -> release/<date>/  (does NOT touch the hospital)
+⑥ package_release.py: bit-for-bit check (frozen preprocess == training preprocess),
+   bundle 5 checkpoints + frozen preprocess -> a release
+⑦ Ship release to the hospital repo; on the hospital machine, promote models/current
+   + restart app
+-> back to ① (dataset is larger, model is newer)
 ```
 
-- `train_production_ensemble.py` trains on **all data present in the dataset folder
-  at run time**, no fold split; 5 members differ only by seed (init + augmentation
-  sampling). Reuses model/training settings from
+- `train_production_ensemble.py` (research side) trains on **all data present in the
+  dataset folder at run time**, no fold split; 5 members differ only by seed (init +
+  augmentation sampling). Reuses model/training settings from
   `config.normal_v_abnormal.imageonly.aug5.ensemble.yaml` (160ep, 5× aug, early-stop).
-  Writes to `checkpoints/<date>/` with a `metrics.json` (nested-CV reference numbers,
-  training set size). **Does not touch `current`.**
+  Writes to `release/<date>/` with a `metrics.json` (nested-CV reference numbers,
+  training set size). **Does not touch the hospital.**
 - Not automatic/real-time because: new data needs PFT ground truth first (days–weeks);
   adding 3–5 cases isn't worth a retrain (wait for ~+20–30); and model swaps should
   be reviewed, not unsupervised.
-- `label_backfill.py` owns staging → dataset; `train_production_ensemble.py` only
-  reads the dataset folder, never staging. Separate responsibilities.
+- `label_backfill.py` owns collected-staging → dataset; `train_production_ensemble.py`
+  only reads the dataset folder, never staging. Separate responsibilities.
 
-### Version switching
-- App reads only `checkpoints/current/`; it doesn't know about dates.
-- Training writes a new dated dir only (not live).
-- Promote is an explicit action: review `metrics.json` diff → `promote.py <date>`
-  (updates symlink) → restart app (loads new checkpoints; startup-only load, no
-  hot-reload by design).
-- Rollback: point `current` back to an older dated dir, restart. Old checkpoints kept.
+### Version switching (hospital machine)
+- App reads only `models/current/`; it doesn't know about dates.
+- A new release is bundled by `package_release.py` and shipped as a dated dir; it is
+  not live until promoted.
+- Promote is an explicit action on the hospital machine: review `metrics.json` diff →
+  point `models/current` at the new release → restart app (loads new checkpoints;
+  startup-only load, no hot-reload by design).
+- Rollback: point `models/current` back to an older release, restart. Old releases kept.
 
 ## 7. Label Backfill (§4 detail)
 
@@ -197,9 +243,12 @@ overlay on a CT slice. Config toggle, default ON. One member only (5 is too heav
 folder / unresolved multi-series / abnormal HU / bad shape → clear error to the
 frontend, never a raw traceback, and bad data never reaches the model or staging.
 
-**Packaging** — `environment.yml` (torch cu124 + mamba-ssm + SimpleITK + gradio) +
-README. Recommended **Dockerfile (CUDA base)** because mamba-ssm builds are fragile;
-start with `python app.py`.
+**Packaging** — hospital repo ships `environment.yml` (torch cu124 + mamba-ssm +
+SimpleITK + gradio) + README; recommended **Dockerfile (CUDA base)** because
+mamba-ssm builds are fragile; start with `python app.py`. Research side ships model
+updates via `package_release.py`, which asserts the frozen `core/preprocess.py`
+matches the training preprocessing (bit-for-bit / hash) before bundling — a failed
+check blocks the release.
 
 **Testing** — per-module inline tests (this project has no pytest; use the `nnMamba`
 conda env inline runner): DICOM conversion (small fixture series), preprocess

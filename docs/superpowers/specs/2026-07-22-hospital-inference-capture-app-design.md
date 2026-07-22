@@ -8,8 +8,13 @@
 
 一個能帶去醫院、跟臨床醫生 demo Normal-vs-Abnormal(COPD 相關)CT 分類器的工具,並且**在臨床使用的同時順便長大訓練資料集**:醫生對某位病人的 CT 跑推論時,同一份 CT + 病人號碼被擷取進 staging 區,供日後補標籤。
 
-- **現階段:** Gradio 本地 web app,供當面 demo(兩個月開發期)。
-- **未來:** 可能搬到醫院自架服務 / 雲端。架構讓這件事之後做起來便宜,但現在不蓋。
+### Roadmap(前端演進)
+
+1. **第一階段(~2 週):Gradio demo。** 故意做成**拋棄式外殼** —— 不美化 UI、不投入 polish,因為它兩週後就換掉。它的價值只是「當面 demo + 驗證 core」。
+2. **第二階段:正式 web app = 醫院端前端(同一個)。** 換掉 Gradio,做成正式前端。這跟「交給醫院的那個」是**同一個**,不是中間再多一段。
+3. 兩個階段都吃**同一個 `predict_and_capture`** —— 換前端 = 換外殼,core 一行不動。因此 `predict_and_capture` 的回傳結構(`PredictionResult`)要當成**穩定 API contract** 認真定,因為它馬上要被第二個前端消費。
+
+兩個階段都以 **Docker** 交付(見 §8)。未來可能再搬到醫院自架服務 / 雲端;架構讓這件事之後做起來便宜,但現在不蓋。
 
 ### 交付模式 —— 兩個 repo
 
@@ -28,7 +33,9 @@
 |---|---|
 | Repo 切分 | 新的自足醫院 repo `~/Research/copd-ct-app/`(app + 擷取);訓練 + backfill + 打包留研究端,不交出 |
 | 前處理一致性 | 凍結並隨每次 checkpoint release 一起送;漂移在發版時由 `package_release.py` 一致性測試擋,絕不在醫院端發生 |
-| App 型態 | Gradio 本地 web app,跑在有 NVIDIA GPU 的機器(localhost) |
+| App 型態 | 第一階段 Gradio demo(拋棄式),第二階段換成正式 web app = 醫院端前端;兩者吃同一個 core |
+| 前端演進 | Gradio(~2 週,勿美化)→ 正式 web app(醫院端,同一個);`predict_and_capture` 回傳當穩定 API contract |
+| 交付方式 | **Docker**(定案,非「建議」)。CUDA base image + NVIDIA GPU passthrough(nvidia-container-toolkit),因 mamba-ssm 編譯脆弱且強制 CUDA |
 | CT 輸入 | 從 PACS 匯出的 DICOM series(一個資料夾 / zip) |
 | 擷取時的真值標籤 | 當下拿不到。App 只存 CT + 病人號;標籤日後離線補 |
 | 病人號碼儲存 | **真實病人號當檔名**(沿用現有 `{patient_id}_*.nii.gz`)。去識別化做成 config 開關,預設關,程式接口保留 |
@@ -177,10 +184,10 @@ Human-in-the-loop、非自動,且跨兩個 repo 邊界:
 
 **錯誤處理 / 輸入檢查** —— 擋在 core 入口:非 DICOM / 空資料夾 / 多 series 未選 / HU 異常 / shape 不合理 → 回清楚的錯誤給前端,不吐 traceback,壞資料絕不進模型或 staging。
 
-**打包** —— 醫院 repo 送 `environment.yml`(torch cu124 + mamba-ssm + SimpleITK + gradio)+ README;建議 **Dockerfile(CUDA base)**,因為 mamba-ssm 常編譯失敗;啟動一行 `python app.py`。研究端經 `package_release.py` 送模型更新,它在打包前斷言凍結的 `core/preprocess.py` 與訓練前處理相符(逐位元 / hash),比對失敗就擋下 release。
+**打包(Docker,定案)** —— 醫院 repo 以 **Docker** 交付(不是選項)。**CUDA base image**(對上 torch cu124),裝 mamba-ssm + SimpleITK + gradio;跑起來要 **NVIDIA GPU passthrough**(`--gpus all` / nvidia-container-toolkit)。用 Docker 的主因就是 mamba-ssm 原生編譯脆弱 —— 把它固化在 image 裡,醫院端不用自己 build。image 只裝 app + core;checkpoint release 以 volume 掛載 `models/`(換版不用重 build image)。第一階段 Gradio 與第二階段正式 web app **共用同一個 Dockerfile 骨架**,只換前端層。另附 `environment.yml` 供本機開發。研究端經 `package_release.py` 送模型更新,它在打包前斷言凍結的 `core/preprocess.py` 與訓練前處理相符(逐位元 / hash),比對失敗就擋下 release。
 
 **測試** —— 每個模組可單獨測(本專案無 pytest;用 `nnMamba` conda env inline runner):DICOM 轉檔(小 fixture series)、前處理與訓練逐位元一致、ensemble soft-vote 數值、staging 冪等 + 失敗解耦、backfill 冪等 / dry-run / 衝突。UI 不寫自動測試(手動 demo 驗)。
 
 ## 9. 範圍外(YAGNI)
 
-容器化/K8s/autoscaling、真的接物件儲存 SDK、多使用者登入 / API 金鑰、雲端部署腳本、熱重載、桌面 GUI。接口留乾淨,日後可加而不用重寫;實作延後。
+K8s/autoscaling、真的接物件儲存 SDK、多使用者登入 / API 金鑰、雲端部署腳本、熱重載、桌面 GUI。(單機 Docker 在範圍內、已定案;這裡排除的是叢集編排那一層。)接口留乾淨,日後可加而不用重寫;實作延後。

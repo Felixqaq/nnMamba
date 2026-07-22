@@ -1,263 +1,186 @@
-# Hospital Inference + Data-Capture App — Design Spec
+# 醫院推論 + 資料擷取 App — 設計 Spec
 
-**Date:** 2026-07-22
-**Status:** Approved design, pending implementation plan
-**Author:** felixchang
+**日期:** 2026-07-22
+**狀態:** 設計已核可,待實作計畫
+**作者:** felixchang
 
-## 1. Purpose
+## 1. 目的
 
-A tool to take to the hospital to demo the Normal-vs-Abnormal (COPD-related)
-CT classifier with clinicians, and to **grow the training dataset as a side effect
-of clinical use**: while a doctor runs inference on a patient's CT, the same CT +
-patient number is captured into a staging area for later labeling.
+一個能帶去醫院、跟臨床醫生 demo Normal-vs-Abnormal(COPD 相關)CT 分類器的工具,並且**在臨床使用的同時順便長大訓練資料集**:醫生對某位病人的 CT 跑推論時,同一份 CT + 病人號碼被擷取進 staging 區,供日後補標籤。
 
-- **Phase now:** Gradio local web app for face-to-face demo (2-month build window).
-- **Phase later:** possible migration to a hospital-hosted service / cloud. The
-  architecture keeps this cheap without building it now.
+- **現階段:** Gradio 本地 web app,供當面 demo(兩個月開發期)。
+- **未來:** 可能搬到醫院自架服務 / 雲端。架構讓這件事之後做起來便宜,但現在不蓋。
 
-### Delivery model — two repos
+### 交付模式 —— 兩個 repo
 
-The code will be **handed to hospital staff**, so it cannot carry the whole nnMamba
-research codebase. The system is split across two repos:
+程式碼**要交給醫院的人**,所以不能夾帶整個 nnMamba 研究碼。系統拆成兩個 repo:
 
-- **`~/Research/copd-ct-app/`** (NEW, hospital-facing, self-contained) — the Gradio
-  app + inference/capture core. No dependency on nnMamba. This is what the hospital
-  runs. Hospital staff only run inference + capture; they never retrain or backfill.
-- **nnMamba / research side** (NOT handed over) — production retraining, label
-  backfill (touches the dataset), and release packaging. Stays with the researcher.
+- **`~/Research/copd-ct-app/`**(新,面向醫院,自足)—— Gradio app + 推論/擷取核心。不依賴 nnMamba。這是醫院實際跑的東西。醫院端只跑推論 + 擷取,永不重訓或 backfill。
+- **nnMamba / 研究端**(不交出)—— production 重訓、label backfill(會動 dataset)、發版打包。留在研究者這邊。
 
-**Why this resolves the preprocessing-drift risk:** the hospital does not retrain, so
-preprocessing is **frozen and shipped alongside each checkpoint release**. Each
-release = 5 checkpoints + the exact preprocessing used to train them, bundled
-together. Drift cannot occur at the hospital (they never change preprocessing). The
-only place drift could occur is between training and packaging on the research side,
-and that is caught at **release time** by a bit-for-bit consistency test in
-`package_release.py`. Drift is a release-time concern (researcher's), not a runtime
-concern (hospital's).
+**為什麼這樣化解前處理漂移風險:** 醫院不重訓,所以前處理是**凍結的、隨每次 checkpoint 發版一起送**。每個 release = 5 個 checkpoint + 訓練當時用的那份前處理,綁成一包。醫院端不可能漂移(他們永不改前處理)。唯一可能漂移的地方是研究端「訓練 → 打包」之間,而那個在**發版時**由 `package_release.py` 的逐位元一致性測試擋掉。漂移是發版時的事(研究者的責任),不是執行時的事(醫院的責任)。
 
-**Data flow back:** captured CTs accumulate in the hospital machine's `staging/`. The
-researcher periodically collects `staging/` back to their own machine, runs
-`label_backfill` (matches PFT, ingests into the dataset), and after enough
-accumulation retrains and packages a new release for the hospital.
+**資料如何流回:** 擷取的 CT 累積在醫院機器的 `staging/`。研究者定期把 `staging/` 收回自己的機器,跑 `label_backfill`(比對 PFT、入庫),累積夠了再重訓、打包新 release 給醫院。
 
-## 2. Key Decisions (locked)
+## 2. 已定案的決策
 
-| Topic | Decision |
+| 主題 | 決策 |
 |---|---|
-| Repo split | New self-contained hospital repo `~/Research/copd-ct-app/` (app + capture); training + backfill + packaging stay research-side, not handed over |
-| Preprocessing consistency | Frozen and shipped with each checkpoint release; drift caught at release time by `package_release.py` consistency test, never at the hospital |
-| App form factor | Gradio local web app, runs on an NVIDIA GPU machine (localhost) |
-| CT input | DICOM series exported from PACS (a folder / zip) |
-| Ground-truth at capture time | Not available. App stores CT + patient ID only; labels added later offline |
-| Patient number storage | **Real patient number as filename** (matches existing `{patient_id}_*.nii.gz`). De-identification is a config toggle, default OFF, interface kept in code |
-| Deployed model | 5-member soft-vote ensemble, **retrained on ALL data** (no held-out) — production checkpoints, not the CV fold models |
-| Retrain cadence | Human-in-the-loop, periodic. Script trains on whatever is in the dataset at run time; the researcher decides when to run it |
-| Model version switching | App loads `models/current/` at startup; promoting a new release = repoint `models/current` + restart app |
-| Disclaimer | "研究用途、非診斷" line shown in UI, config toggle, **default ON** |
-| Cloud readiness | Keep core stateless/config-driven and storage access behind one module. Do NOT build cloud infra now. PHI-in-cloud is a regulatory gate, decided later with IRB/hospital |
+| Repo 切分 | 新的自足醫院 repo `~/Research/copd-ct-app/`(app + 擷取);訓練 + backfill + 打包留研究端,不交出 |
+| 前處理一致性 | 凍結並隨每次 checkpoint release 一起送;漂移在發版時由 `package_release.py` 一致性測試擋,絕不在醫院端發生 |
+| App 型態 | Gradio 本地 web app,跑在有 NVIDIA GPU 的機器(localhost) |
+| CT 輸入 | 從 PACS 匯出的 DICOM series(一個資料夾 / zip) |
+| 擷取時的真值標籤 | 當下拿不到。App 只存 CT + 病人號;標籤日後離線補 |
+| 病人號碼儲存 | **真實病人號當檔名**(沿用現有 `{patient_id}_*.nii.gz`)。去識別化做成 config 開關,預設關,程式接口保留 |
+| 部署的模型 | 5-member soft-vote ensemble,**用全部資料重訓**(無 held-out)—— production checkpoint,不是 CV 的 fold 模型 |
+| 重訓時機 | Human-in-the-loop、週期性。腳本訓練「執行當下 dataset 裡的資料」;何時跑由研究者決定 |
+| 模型換版 | App 啟動時載 `models/current/`;換新版 = 重指 `models/current` + 重啟 app |
+| Disclaimer | UI 顯示「研究用途、非診斷」,config 開關,**預設開** |
+| 雲端準備 | core 維持無狀態/config 驅動、儲存存取收斂到單一模組。現在不蓋雲端基礎設施。PHI 上雲是法規題,日後跟 IRB/醫院決定 |
 
-### Hard constraint
-The model uses `mamba_ssm` (CUDA-only selective-scan kernel). **An NVIDIA GPU is
-mandatory** — no CPU / AMD / Intel-GPU deployment is possible. Measured footprint:
-1.15M params, ~5.8MB per checkpoint (~29MB for 5), ~0.1GB inference VRAM, ~6ms
-GPU forward per volume per member.
+### 硬限制
+模型用 `mamba_ssm`(CUDA-only 的 selective-scan kernel)。**NVIDIA GPU 是必要條件** —— 不可能用 CPU / AMD / Intel GPU 部署。實測佔用:1.15M 參數、每個 checkpoint ~5.8MB(5 個共 ~29MB)、推論 VRAM ~0.1GB、每 volume 每 member 的 GPU forward ~6ms。
 
-### Honest performance note
-Production checkpoints are trained on all data, so they have **no clean held-out
-metric**. Cite the nested-CV reference (~0.73 Acc / 0.80 AUC), never the
-best-epoch 0.833/0.879 numbers, when describing expected performance.
+### 誠實效能註記
+Production checkpoint 用全部資料訓練,所以**沒有乾淨的 held-out 數字**。描述預期效能時要引用 nested-CV 參考值(~0.73 Acc / 0.80 AUC),絕不用 best-epoch 的 0.833/0.879。
 
-## 3. Architecture
+## 3. 架構
 
-Two repos. The hospital repo is self-contained (a Gradio app + inference/capture
-core, plus a frozen preprocessing module and a bundled checkpoint release). The
-research side owns retraining, backfill, and release packaging, and does not modify
-`regression/` training code.
+兩個 repo。醫院 repo 自足(Gradio app + 推論/擷取核心,加一份凍結的前處理模組和一包 checkpoint release)。研究端負責重訓、backfill、發版打包,且不修改 `regression/` 訓練碼。
 
-### Hospital repo — `~/Research/copd-ct-app/` (handed over)
+### 醫院 repo —— `~/Research/copd-ct-app/`(交出)
 ```
 copd-ct-app/
-├── app.py                 # Gradio UI shell (thin, ~50 lines)
+├── app.py                 # Gradio UI 外殼(薄,~50 行)
 ├── core/
-│   ├── api.py             # predict_and_capture(dicom_dir, *, capture=True) -> PredictionResult  (ONLY public entry)
-│   ├── dicom_io.py        # DICOM series -> NIfTI (SimpleITK)
-│   ├── preprocess.py      # FROZEN copy: clip[-1000,400] + resize[112,136,112] + zscore (shipped with the release)
-│   ├── ensemble.py        # load 5 checkpoints -> soft-vote -> probability
-│   ├── gradcam.py         # Grad-CAM heatmap for one representative member
-│   └── staging.py         # ALL staging read/write; storage backend swappable (local now, object store later)
+│   ├── api.py             # predict_and_capture(dicom_dir, *, capture=True) -> PredictionResult(唯一對外入口)
+│   ├── dicom_io.py        # DICOM series -> NIfTI(SimpleITK)
+│   ├── preprocess.py      # 凍結副本:clip[-1000,400] + resize[112,136,112] + zscore(隨 release 一起送)
+│   ├── ensemble.py        # load 5 個 checkpoint -> soft-vote -> 機率
+│   ├── gradcam.py         # 取一個代表 member 的 Grad-CAM 熱圖
+│   └── staging.py         # 所有 staging 讀寫;儲存後端可抽換(現在本地,未來物件儲存)
 ├── models/
-│   └── current/           # bundled release: member_1.pth ... member_5.pth, metrics.json, PREPROCESS_HASH
+│   └── current/           # 打包的 release:member_1.pth ... member_5.pth、metrics.json、PREPROCESS_HASH
 ├── staging/
 │   ├── incoming/{patient_id}_{YYYYMMDD_HHMMSS}.nii.gz
 │   └── capture_log.jsonl
-├── config.yaml            # model dir, staging path, image_size, disclaimer + de-id toggles
+├── config.yaml            # 模型目錄、staging 路徑、image_size、disclaimer + 去識別化開關
 ├── environment.yml / Dockerfile
-└── tests/                 # incl. preprocess consistency test against the frozen hash
+└── tests/                 # 含「前處理對凍結 hash」的一致性測試
 ```
 
-### Research side — nnMamba / private (NOT handed over)
+### 研究端 —— nnMamba / 私有(不交出)
 ```
 scripts/
-├── train_production_ensemble.py  # retrain 5 seed-diverse members on ALL data -> release/<date>/
-├── label_backfill.py             # collected staging -> match PFT -> label -> move into dataset
-└── package_release.py            # bit-for-bit check (frozen preprocess == training preprocess),
-                                  #   then bundle 5 checkpoints + frozen preprocess -> a release for copd-ct-app
+├── train_production_ensemble.py  # 用全部資料重訓 5 個 seed-diverse member -> release/<date>/
+├── label_backfill.py             # 收回的 staging -> 比對 PFT -> 補標籤 -> 搬進 dataset
+└── package_release.py            # 逐位元比對(凍結前處理 == 訓練前處理),
+                                  #   通過才打包 5 checkpoints + 凍結前處理 -> 給 copd-ct-app 的一包 release
 ```
 
-`label_backfill.py` and retraining reuse the real `regression/data/dataset.py`
-preprocessing and `regression/data/manifest.py` label rules directly (same repo, no
-drift). The hospital repo's `core/preprocess.py` is a frozen copy whose equality to
-the training preprocessing is asserted by `package_release.py` at release time.
+`label_backfill.py` 與重訓**直接重用**真正的 `regression/data/dataset.py` 前處理和 `regression/data/manifest.py` label 規則(同 repo,不漂移)。醫院 repo 的 `core/preprocess.py` 是凍結副本,它與訓練前處理相等這件事由 `package_release.py` 在發版時斷言。
 
-### Principles
-- **core/ fully decoupled from UI.** `app.py` only calls `predict_and_capture`.
-  A future FastAPI/CLI/desktop frontend wraps the same entry, core unchanged.
-- **`PredictionResult` is pure data** (probability, predicted class, patient_id,
-  staging path, optional Grad-CAM image) — no UI concepts.
-- **Preprocessing must be bit-for-bit identical to training.** Reuse
-  `regression/data/dataset.py` logic; do not fork a version that can drift.
-- **Inference and capture are decoupled.** Capture wrapped in try/except; a capture
-  failure only logs an error and never blocks the doctor from seeing the prediction.
-- **Storage access is centralized in `staging.py`** so the backend (local FS now,
-  object storage later) is swappable in one place.
+### 設計原則
+- **core/ 與 UI 完全解耦。** `app.py` 只呼叫 `predict_and_capture`。未來的 FastAPI/CLI/桌面前端包同一個入口,core 不動。
+- **`PredictionResult` 是純資料**(機率、預測類別、patient_id、staging 路徑、可選 Grad-CAM 圖)—— 不含任何 UI 概念。
+- **前處理必須與訓練逐位元一致。** 研究端重用 `regression/data/dataset.py`;醫院端用凍結副本 + hash 把關。絕不放任兩份各自漂移。
+- **推論與擷取解耦。** 擷取包在 try/except;擷取失敗只記 log,絕不擋醫生看到預測。
+- **儲存存取集中在 `staging.py`**,好讓後端(現在本地 FS、未來物件儲存)一處抽換。
 
-### Data flow
-Doctor uploads DICOM → `dicom_io` → NIfTI → `preprocess` → `ensemble` → probability
-shown to doctor → same NIfTI handed to `staging` (filename = real patient number) +
-one line appended to `capture_log.jsonl`. Later, `label_backfill.py` reads staging +
-PFT to assign labels and move data into the dataset.
+### 資料流
+醫生上傳 DICOM → `dicom_io` → NIfTI → `preprocess` → `ensemble` → 顯示機率給醫生 → 同一份 NIfTI 交給 `staging`(檔名 = 真實病人號)+ 在 `capture_log.jsonl` append 一行。日後 `label_backfill.py` 讀 staging + PFT 指派標籤、搬進 dataset。
 
-## 4. Inference Flow (§2 detail)
+## 4. 推論流程(§2 細節)
 
-**① DICOM → NIfTI (`dicom_io.py`)** — SimpleITK reads the folder. Handle:
-- HU rescale (`RescaleSlope`/`RescaleIntercept`) — verify applied, else clip range is wrong.
-- Slice ordering / spacing / orientation — sort by `ImagePositionPatient`, normalize to training orientation (RAS).
-- Multiple series in one folder — group by `SeriesInstanceUID`, select the correct one (or let doctor pick).
-- Extract `PatientID` from DICOM header for the filename.
+**① DICOM → NIfTI(`dicom_io.py`)** —— SimpleITK 讀資料夾。要處理:
+- HU 校正(`RescaleSlope`/`RescaleIntercept`)—— 驗證有套,否則 clip 範圍就錯。
+- slice 排序 / spacing / orientation —— 依 `ImagePositionPatient` 排序,統一到訓練方向(RAS)。
+- 一個資料夾多個 series —— 依 `SeriesInstanceUID` 分組,選正確那個(或讓醫生選)。
+- 從 DICOM 檔頭抽 `PatientID` 當檔名。
 
-**② Preprocess (`preprocess.py`)** — clip `[-1000, 400]` → resize `[112,136,112]`
-(skimage, same params) → z-score. Aligned to `regression/data/dataset.py`. Any
-mismatch shifts the distribution and silently degrades predictions.
+**② 前處理(`preprocess.py`)** —— clip `[-1000, 400]` → resize `[112,136,112]`(skimage,同參數)→ z-score。與 `regression/data/dataset.py` 對齊。任何不一致都會讓分布飄移、預測靜默變差。
 
-**③ Ensemble (`ensemble.py`)** — load 5 checkpoints from `models/current/` to
-GPU at startup (~0.1GB VRAM, resident). Per case: forward through all 5 → mean of
-softmax probabilities (soft-vote) → Abnormal probability.
+**③ Ensemble(`ensemble.py`)** —— 啟動時把 5 個 checkpoint 從 `models/current/` 載到 GPU(~0.1GB VRAM,常駐)。每例對 5 個 model forward → softmax 機率平均(soft-vote)→ Abnormal 機率。
 
-**④ Presentation** — Abnormal probability (0–100% bar), predicted class, disclaimer
-(config toggle, default ON). Grad-CAM heatmap added in §7 below.
+**④ 呈現** —— Abnormal 機率(0–100% 機率條)、預測類別、disclaimer(config 開關,預設開)。Grad-CAM 熱圖見下方 §8。
 
-## 5. Capture Flow & Staging (§3 detail)
+## 5. 擷取流程與 Staging(§3 細節)
 
-Capture happens in the same request as the prediction. Capture failure must never
-affect the doctor seeing the prediction.
+擷取在跟預測同一個 request 內發生。擷取失敗絕不能影響醫生看到預測。
 
 ```
 staging/
-├── incoming/{patient_id}_{YYYYMMDD_HHMMSS}.nii.gz   # converted NIfTI, real patient number
-└── capture_log.jsonl                                # one line per capture, append-only
+├── incoming/{patient_id}_{YYYYMMDD_HHMMSS}.nii.gz   # 轉好的 NIfTI,真實病人號
+└── capture_log.jsonl                                # 每次擷取一行,append-only
 ```
 
-`capture_log.jsonl` per record: `patient_id`, nii filename, capture timestamp,
-model prediction (prob/class), source `SeriesInstanceUID`, `label: null` (pending).
+`capture_log.jsonl` 每筆:`patient_id`、nii 檔名、擷取時間、模型預測(機率/類別)、來源 `SeriesInstanceUID`、`label: null`(待補)。
 
-Behavior:
-- Capture wrapped in try/except: failure logs an error line, doctor still sees prediction.
-- Duplicate patient: distinguish by timestamp, keep both (same patient may have multiple CTs), never overwrite.
-- Store the **converted NIfTI at original resolution** (not the resized volume), so
-  future retraining at a different `image_size` is not locked out.
-- De-identification toggle (default OFF, real number): when enabled, `staging.py`
-  swaps filename to a study code, strips DICOM PHI headers, and writes a separate
-  mapping table. Interface kept in code now, not activated.
-- **All staging read/write goes through `staging.py`**; storage backend swappable.
+行為:
+- 擷取包在 try/except:失敗記一行 error,醫生照樣看到預測。
+- 重複病人:用時間戳區分、兩筆都留(同病人可能多次 CT),不覆蓋。
+- 存**轉好的原始解析度 NIfTI**(不是 resize 後的),日後改用不同 `image_size` 重訓不會被鎖死。
+- 去識別化開關(預設關、真實號):開啟時 `staging.py` 把檔名換成研究代碼、strip DICOM PHI 檔頭、另存對照表。程式接口現在就留好,不啟用。
+- **所有 staging 讀寫走 `staging.py`**;儲存後端可抽換。
 
-## 6. Data Growth Loop (§ retraining)
+## 6. 資料成長迴圈(重訓)
 
-Human-in-the-loop, not automatic, and crosses the two-repo boundary:
+Human-in-the-loop、非自動,且跨兩個 repo 邊界:
 
 ```
-① Hospital runs copd-ct-app with the current release (models/current/)
-② Doctor uses app -> new CT into the hospital machine's staging/incoming/ (label=null)
-③ Researcher periodically collects staging/ back to their own machine
-④ Research side: label_backfill.py matches PFT -> labels available data -> moves into dataset
-⑤ After enough accumulation -> train_production_ensemble.py on the enlarged dataset
-   -> release/<date>/  (does NOT touch the hospital)
-⑥ package_release.py: bit-for-bit check (frozen preprocess == training preprocess),
-   bundle 5 checkpoints + frozen preprocess -> a release
-⑦ Ship release to the hospital repo; on the hospital machine, promote models/current
-   + restart app
--> back to ① (dataset is larger, model is newer)
+① 醫院用 copd-ct-app 跑目前的 release(models/current/)
+② 醫生用 app -> 新 CT 進醫院機器的 staging/incoming/(label=null)
+③ 研究者定期把 staging/ 收回自己的機器
+④ 研究端:label_backfill.py 比對 PFT -> 有真值的資料補標籤 -> 搬進 dataset
+⑤ 累積夠了 -> train_production_ensemble.py 用放大後的 dataset 重訓
+   -> release/<date>/(不動醫院)
+⑥ package_release.py:逐位元比對(凍結前處理 == 訓練前處理),
+   打包 5 checkpoints + 凍結前處理 -> 一包 release
+⑦ 把 release 送到醫院 repo;在醫院機器 promote models/current + 重啟 app
+-> 回到 ①(dataset 更大、模型更新)
 ```
 
-- `train_production_ensemble.py` (research side) trains on **all data present in the
-  dataset folder at run time**, no fold split; 5 members differ only by seed (init +
-  augmentation sampling). Reuses model/training settings from
-  `config.normal_v_abnormal.imageonly.aug5.ensemble.yaml` (160ep, 5× aug, early-stop).
-  Writes to `release/<date>/` with a `metrics.json` (nested-CV reference numbers,
-  training set size). **Does not touch the hospital.**
-- Not automatic/real-time because: new data needs PFT ground truth first (days–weeks);
-  adding 3–5 cases isn't worth a retrain (wait for ~+20–30); and model swaps should
-  be reviewed, not unsupervised.
-- `label_backfill.py` owns collected-staging → dataset; `train_production_ensemble.py`
-  only reads the dataset folder, never staging. Separate responsibilities.
+- `train_production_ensemble.py`(研究端)訓練「**執行當下 dataset 資料夾裡的全部資料**」,不切 fold;5 個 member 只差種子(init + augmentation 取樣)。沿用 `config.normal_v_abnormal.imageonly.aug5.ensemble.yaml`(160ep、5× aug、early-stop)。輸出到 `release/<date>/`,附 `metrics.json`(nested-CV 參考值、訓練資料筆數)。**不動醫院。**
+- 不自動/即時的原因:新資料要先等 PFT 真值(幾天~幾週);加 3~5 例不值得重訓(等 ~+20~30);換版該經人審,不無人監督。
+- `label_backfill.py` 負責 收回的 staging → dataset;`train_production_ensemble.py` 只讀 dataset,不碰 staging。職責分開。
 
-### Version switching (hospital machine)
-- App reads only `models/current/`; it doesn't know about dates.
-- A new release is bundled by `package_release.py` and shipped as a dated dir; it is
-  not live until promoted.
-- Promote is an explicit action on the hospital machine: review `metrics.json` diff →
-  point `models/current` at the new release → restart app (loads new checkpoints;
-  startup-only load, no hot-reload by design).
-- Rollback: point `models/current` back to an older release, restart. Old releases kept.
+### 換版(醫院機器)
+- App 只讀 `models/current/`;不需知道日期。
+- 新 release 由 `package_release.py` 打包、以帶日期的目錄送過去;promote 前不上線。
+- Promote 是醫院機器上的明確動作:看過 `metrics.json` 新舊差異 → 把 `models/current` 指向新 release → 重啟 app(啟動時載 checkpoint,不做熱重載)。
+- 回退:把 `models/current` 指回舊 release、重啟。舊 release 都留著。
 
-## 7. Label Backfill (§4 detail)
+## 7. Label Backfill(§4 細節)
 
-Offline, idempotent, re-runnable script mapping staging captures to PFT ground truth.
+離線、冪等、可重複執行的腳本,把 staging 擷取對上 PFT 真值。
 
-**Inputs:** `staging/capture_log.jsonl` + `staging/incoming/*.nii.gz`; PFT source
-(`pft.json` / `GOLD_2026_classification.json`, patient_id → PFT metrics).
+**輸入:** `staging/capture_log.jsonl` + `staging/incoming/*.nii.gz`;PFT 來源(`pft.json` / `GOLD_2026_classification.json`,patient_id → PFT 指標)。
 
-**Per pending capture:**
-1. Look up `patient_id` in PFT source.
-2. Not found → PFT not out yet → leave in staging, skip (idempotent, retried next run).
-3. Found → derive Normal (FEV1/FVC ≥ 70%) / Abnormal (< 70%) via
-   `regression/data/manifest.py` `normal_v_abnormal_label` (reuse rules; also store
-   GOLD 1–4 for future multiclass).
-4. Move NIfTI to `classification/datasets/normal_v_abnormal_XX/{Normal|Abnormal}/{patient_id}_*.nii.gz`.
-5. Write label/angle/GOLD into the labels JSON (existing
-   `patient_angle_classification_by_group.json` structure).
-6. Mark the `capture_log.jsonl` record as labeled + where it moved.
+**每筆 pending 擷取:**
+1. 用 `patient_id` 查 PFT 來源。
+2. 查不到 → PFT 還沒出 → 留在 staging、跳過(冪等,下次重試)。
+3. 查得到 → 用 FEV1/FVC ≥ 70% 判 Normal / < 70% 判 Abnormal,重用 `regression/data/manifest.py` 的 `normal_v_abnormal_label`(順便存 GOLD 1–4 供未來多分類)。
+4. 把 NIfTI 搬到 `classification/datasets/normal_v_abnormal_XX/{Normal|Abnormal}/{patient_id}_*.nii.gz`。
+5. 把標籤/角度/GOLD 寫進 labels JSON(沿用現有 `patient_angle_classification_by_group.json` 結構)。
+6. 在 `capture_log.jsonl` 標記該筆已補標籤 + 搬去哪。
 
-**Safety:**
-- Idempotent + `--dry-run` default (prints what would move + derived labels); `--commit` to act. Re-runs skip already-ingested.
-- Conflict check: patient_id already in dataset → report for decision (new CT vs duplicate), no silent overwrite.
-- PFT in gray zone / missing metrics → `needs_review` list, no guessing.
-- Validate NIfTI opens and shape is sane before ingest; bad files not ingested.
-- Output a backfill report (added N, per-class counts, still-waiting-on-PFT, needs-review).
+**安全:**
+- 冪等 + 預設 `--dry-run`(印出會搬什麼 + 判成什麼),`--commit` 才動作。重跑會跳過已入庫的。
+- 衝突檢查:patient_id 已在 dataset → 報出來讓人決定(同病人新 CT 還是重複),不靜默覆蓋。
+- PFT 落灰帶 / 指標缺漏 → 列進 `needs_review`,不猜。
+- 搬檔前驗證 NIfTI 讀得開、shape 合理;壞檔不入庫。
+- 產出 backfill 報告(新增 N、各類筆數、還在等 PFT、需人工複核)。
 
-## 8. Explainability / Error Handling / Packaging / Testing (§5–§8)
+## 8. 可解釋性 / 錯誤處理 / 打包 / 測試(§5–§8)
 
-**Grad-CAM** — reuse `regression/test_gradcam.py` logic on one representative member,
-overlay on a CT slice. Config toggle, default ON. One member only (5 is too heavy).
+**Grad-CAM** —— 重用 `regression/test_gradcam.py` 邏輯,對一個代表 member 產熱圖,疊在 CT 切面上。config 開關,預設開。只做一個 member(5 個太重)。
 
-**Error handling / input validation** — guard at the core entry: non-DICOM / empty
-folder / unresolved multi-series / abnormal HU / bad shape → clear error to the
-frontend, never a raw traceback, and bad data never reaches the model or staging.
+**錯誤處理 / 輸入檢查** —— 擋在 core 入口:非 DICOM / 空資料夾 / 多 series 未選 / HU 異常 / shape 不合理 → 回清楚的錯誤給前端,不吐 traceback,壞資料絕不進模型或 staging。
 
-**Packaging** — hospital repo ships `environment.yml` (torch cu124 + mamba-ssm +
-SimpleITK + gradio) + README; recommended **Dockerfile (CUDA base)** because
-mamba-ssm builds are fragile; start with `python app.py`. Research side ships model
-updates via `package_release.py`, which asserts the frozen `core/preprocess.py`
-matches the training preprocessing (bit-for-bit / hash) before bundling — a failed
-check blocks the release.
+**打包** —— 醫院 repo 送 `environment.yml`(torch cu124 + mamba-ssm + SimpleITK + gradio)+ README;建議 **Dockerfile(CUDA base)**,因為 mamba-ssm 常編譯失敗;啟動一行 `python app.py`。研究端經 `package_release.py` 送模型更新,它在打包前斷言凍結的 `core/preprocess.py` 與訓練前處理相符(逐位元 / hash),比對失敗就擋下 release。
 
-**Testing** — per-module inline tests (this project has no pytest; use the `nnMamba`
-conda env inline runner): DICOM conversion (small fixture series), preprocess
-bit-for-bit alignment with training, ensemble soft-vote values, staging idempotency
-+ failure decoupling, backfill idempotency / dry-run / conflict. No automated UI
-tests (validated by manual demo).
+**測試** —— 每個模組可單獨測(本專案無 pytest;用 `nnMamba` conda env inline runner):DICOM 轉檔(小 fixture series)、前處理與訓練逐位元一致、ensemble soft-vote 數值、staging 冪等 + 失敗解耦、backfill 冪等 / dry-run / 衝突。UI 不寫自動測試(手動 demo 驗)。
 
-## 9. Out of Scope (YAGNI)
+## 9. 範圍外(YAGNI)
 
-Containerization/K8s/autoscaling, real object-storage SDK wiring, multi-user auth /
-API keys, cloud deployment scripts, hot model reload, desktop GUI. Interfaces are
-kept clean so these can be added later without a rewrite; implementations are deferred.
+容器化/K8s/autoscaling、真的接物件儲存 SDK、多使用者登入 / API 金鑰、雲端部署腳本、熱重載、桌面 GUI。接口留乾淨,日後可加而不用重寫;實作延後。

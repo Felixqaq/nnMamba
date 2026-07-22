@@ -1377,7 +1377,7 @@ git commit -m "feat: Grad-CAM overlay wired into prediction"
 
 ---
 
-### Task 9: Gradio app shell
+### Task 9: Gradio app shell ✅ DONE
 
 **Files:**
 - Create: `~/Research/copd-ct-app/app.py`

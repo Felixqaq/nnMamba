@@ -1483,7 +1483,7 @@ git commit -m "feat: Gradio demo shell"
 
 ---
 
-### Task 10: Packaging — Docker, environment, README
+### Task 10: Packaging — Docker, environment, README ✅ DONE
 
 **Files:**
 - Create: `~/Research/copd-ct-app/environment.yml`

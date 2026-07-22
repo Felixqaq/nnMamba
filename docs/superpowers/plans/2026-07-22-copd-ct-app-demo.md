@@ -1037,7 +1037,7 @@ git commit -m "feat: staging capture with append-only log"
 
 ---
 
-### Task 7: Public API — predict_and_capture
+### Task 7: Public API — predict_and_capture ✅ DONE
 
 **Files:**
 - Create: `~/Research/copd-ct-app/core/api.py`

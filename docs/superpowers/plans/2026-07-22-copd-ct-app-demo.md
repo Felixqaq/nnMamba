@@ -59,7 +59,7 @@ copd-ct-app/
 
 ---
 
-### Task 1: Repo scaffold + config loader
+### Task 1: Repo scaffold + config loader ✅ DONE
 
 **Files:**
 - Create: `~/Research/copd-ct-app/.gitignore`

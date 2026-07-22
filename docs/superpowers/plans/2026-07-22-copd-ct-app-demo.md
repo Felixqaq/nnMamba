@@ -199,7 +199,7 @@ git commit -m "feat: repo scaffold and config loader"
 
 ---
 
-### Task 2: Frozen preprocessing + consistency test
+### Task 2: Frozen preprocessing + consistency test ✅ DONE
 
 **Files:**
 - Create: `~/Research/copd-ct-app/core/preprocess.py`

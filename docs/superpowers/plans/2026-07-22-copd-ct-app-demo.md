@@ -606,7 +606,7 @@ git commit -m "feat: vendored hybrid mamba-attention model + builder"
 
 ---
 
-### Task 4: Ensemble loader + soft-vote
+### Task 4: Ensemble loader + soft-vote ✅ DONE
 
 **Files:**
 - Create: `~/Research/copd-ct-app/core/ensemble.py`

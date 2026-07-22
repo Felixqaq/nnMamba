@@ -366,7 +366,7 @@ git commit -m "feat: frozen preprocessing with training-consistency test"
 
 ---
 
-### Task 3: Vendored model architecture + builder
+### Task 3: Vendored model architecture + builder ✅ DONE
 
 **Files:**
 - Create: `~/Research/copd-ct-app/core/model.py`

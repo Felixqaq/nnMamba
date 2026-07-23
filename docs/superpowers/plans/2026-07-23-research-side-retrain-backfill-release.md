@@ -698,7 +698,7 @@ git commit -m "feat: all-data production ensemble training script"
 
 ---
 
-### Task 3: `package_release.py` — drift check + bundle
+### Task 3: `package_release.py` — drift check + bundle ✅ DONE
 
 **Files:**
 - Create: `/home/felix/Research/nnMamba/regression/scripts/package_release.py`

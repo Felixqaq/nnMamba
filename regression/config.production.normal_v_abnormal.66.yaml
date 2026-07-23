@@ -36,7 +36,7 @@ model:
   use_v2: true
 
 training:
-  epochs: 160
+  epochs: 100
   batch_size: 12
   eval_batch_size: 12
   swin_batch_size: 5
@@ -54,7 +54,7 @@ training:
   class_weight_mode: none
 
 early_stopping:
-  enabled: true
+  enabled: false
   patience: 6
   min_delta: 0.005
 

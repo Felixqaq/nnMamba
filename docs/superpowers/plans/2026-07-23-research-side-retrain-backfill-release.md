@@ -447,7 +447,7 @@ git commit -m "feat: label_backfill script for ingesting captured CTs"
 
 ---
 
-### Task 2: `train_production_ensemble.py` — all-data 5-member retrain
+### Task 2: `train_production_ensemble.py` — all-data 5-member retrain ✅ DONE
 
 **Files:**
 - Create: `/home/felix/Research/nnMamba/regression/scripts/train_production_ensemble.py`

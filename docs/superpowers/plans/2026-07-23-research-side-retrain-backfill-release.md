@@ -42,7 +42,7 @@ Note: `regression/` currently keeps its test files at the top level (`regression
 
 ---
 
-### Task 1: `label_backfill.py` — ingest captured CTs into the dataset
+### Task 1: `label_backfill.py` — ingest captured CTs into the dataset ✅ DONE
 
 **Files:**
 - Create: `/home/felix/Research/nnMamba/regression/scripts/label_backfill.py`

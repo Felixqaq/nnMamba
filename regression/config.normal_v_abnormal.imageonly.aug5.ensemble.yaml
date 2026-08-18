@@ -1,0 +1,121 @@
+# nnMamba Normal vs Abnormal — image-only, 5x aug, MAJORITY-VOTE ENSEMBLE
+# =====================================================================
+# Same latest model as config.normal_v_abnormal.imageonly.augmentationX5.yaml,
+# but run as a seed-diverse 5-member majority-vote ensemble. The 5-fold split is
+# pinned by ensemble.split_seed so members only differ in init/augmentation
+# sampling. Member 1 reuses the existing 0.8145 run (seed 42) for free.
+# NOTE: per-member best epoch is still selected on the test fold, so ensemble
+# numbers remain mildly optimistic — do not treat as a clean held-out estimate.
+
+experiment:
+  name: Normal vs Abnormal image-only (5x aug) ensemble
+  description: Binary Normal/Abnormal classification on the 54-case cohort, Hybrid Mamba-Attention CT branch only, train-only 5x augmentation, 5-member seed-diverse majority-vote ensemble with pinned folds.
+
+model:
+  name: hybrid_mamba_attention
+  in_channels: 1
+  num_classes: 2
+  hidden_dim: 256
+  dropout: 0.3
+  base_channels: 32
+  blocks: 3
+  attn_heads: 8
+  attn_layers: 1
+  attn_mlp_ratio: 2.0
+  attn_dropout: 0.1
+  tapct_embedding_dim: 1152
+  fusion_projection_dim: 128
+  fusion_dropout: 0.1
+
+  feature_size: 24
+  depths: [2, 2, 2, 2]
+  num_heads: [3, 6, 12, 24]
+  window_size: 4
+  patch_size: 2
+  use_checkpoint: false
+  use_v2: true
+
+training:
+  epochs: 160
+  batch_size: 12
+  eval_batch_size: 12
+  swin_batch_size: 5
+  swin_eval_batch_size: 6
+  learning_rate: 0.0001
+  weight_decay: 0.001
+  k_folds: 5
+  eval_interval: 5
+  save_interval: 10
+  seed: 42
+  loss: cross_entropy
+  clip_grad_norm: 1.0
+  amp: false
+  track_train_metrics: false
+  class_weight_mode: none
+
+early_stopping:
+  enabled: true
+  patience: 6
+  min_delta: 0.005
+
+ensemble:
+  enabled: true
+  voting: majority
+  member_count: 5
+  vote_sizes: [1, 3, 5]
+  split_seed: 42
+  member_seeds: [42, 1, 7, 13, 23]
+  existing_member_uuids:
+    - "hybrid_mamba_attention_normal_vs_abnormal_image_only_5x_aug_2026-07-09_17:10:41"
+  train_missing_members: true
+
+gradcam:
+  enabled: false
+  max_samples: 8
+  target_layer: image_encoder.attention_layers
+  target_class: 0
+
+data:
+  target_mode: normal_v_abnormal
+  source_dir: ../classification/datasets/normal_v_abnormal_54
+  labels_json: ../patient_angle_classification_by_group.json
+  manifest: ./datasets/generated/normal_v_abnormal_manifest.imageonly.aug5.json
+  tapct_features: null
+  image_size: [112, 136, 112]
+  intensity_window: [-1000.0, 400.0]
+  input_normalization: zscore
+  target_normalization: none
+  cache_data: true
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 4
+  angle_bin_count: 5
+  balanced_sampling: true
+  augmentation:
+    enabled: true
+    balance_then_augment: true
+    views_per_sample: 5
+    probability: 1.0
+    class_indices: [0, 1]
+    rotation_degrees: 7.0
+    translation_fraction: 0.05
+    scale_range: [0.95, 1.05]
+    intensity_scale_range: [0.95, 1.05]
+    intensity_shift_range: [-0.1, 0.1]
+    noise_std: 0.03
+
+paths:
+  weights: ./weights
+  logs: ./train_log
+  figures: ./figures
+  graphs: ./graphs
+
+task: Normal_v_Abnormal_classification
+
+resume:
+  enabled: false
+  uuid: null
+  start_fold: 0
+
+gpu:
+  device_id: "0"

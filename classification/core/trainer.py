@@ -41,6 +41,10 @@ class Trainer:
         self.loader_helper = loader_helper
         self.best_results = []
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self._initial_model_state = {
+            name: tensor.detach().cpu().clone()
+            for name, tensor in model.state_dict().items()
+        }
 
         os.environ["CUDA_VISIBLE_DEVICES"] = config.gpu_device_id
         setup_seed(config.training.seed)
@@ -48,6 +52,11 @@ class Trainer:
         self.uuid = (
             config.resume.uuid if config.resume.enabled else generate_uuid("nnMamba")
         )
+
+    def _reset_model_for_fold(self) -> None:
+        """Restore the model to its initial weights before training a fold."""
+        self.model.to(self.device)
+        self.model.load_state_dict(self._initial_model_state)
 
     def train(self) -> str:
         """Run full training with k-fold cross-validation.
@@ -86,7 +95,7 @@ class Trainer:
     def _train_fold(self, fold: int):
         """Train a single fold. Returns best metrics object."""
         cfg = self.config.training
-        self.model.to(self.device)
+        self._reset_model_for_fold()
 
         train_dl = self.loader_helper.get_train_dl(fold)
         test_dl = self.loader_helper.get_test_dl(fold)

@@ -1,0 +1,108 @@
+# Controlled comparison — ARM A: TAP-CT late fusion
+# ==================================================
+# Fair apples-to-apples vs the image-only arm (config.cmp.normal_v_abnormal.imageonly.yaml):
+# identical protocol, only difference = with/without the frozen TAP-CT embedding.
+#   - early stopping OFF, full 50 epochs (matches the nnMamba baseline's budget)
+#   - seed 42 + 5 folds -> IDENTICAL fold partitions across both arms
+#   - argmax decisions (NO train-threshold tuning), gradcam off for speed
+
+experiment:
+  name: CMP fusion (no-earlystop 50ep)
+  description: Normal/Abnormal with TAP-CT-S-3D late fusion, controlled protocol for fusion-vs-image comparison.
+
+model:
+  name: hybrid_mamba_tapct_fusion
+  in_channels: 1
+  num_classes: 2
+  hidden_dim: 256
+  dropout: 0.3
+  base_channels: 32
+  blocks: 3
+  attn_heads: 8
+  attn_layers: 1
+  attn_mlp_ratio: 2.0
+  attn_dropout: 0.1
+  tapct_embedding_dim: 1152
+  fusion_projection_dim: 128
+  fusion_dropout: 0.1
+  feature_size: 24
+  depths: [2, 2, 2, 2]
+  num_heads: [3, 6, 12, 24]
+  window_size: 4
+  patch_size: 2
+  use_checkpoint: false
+  use_v2: true
+
+training:
+  epochs: 50
+  batch_size: 12
+  eval_batch_size: 12
+  swin_batch_size: 5
+  swin_eval_batch_size: 6
+  learning_rate: 0.0001
+  weight_decay: 0.001
+  k_folds: 5
+  eval_interval: 5
+  save_interval: 10
+  seed: 42
+  loss: cross_entropy
+  clip_grad_norm: 1.0
+  amp: false
+  track_train_metrics: false
+  class_weight_mode: none
+
+early_stopping:
+  enabled: false
+  patience: 6
+  min_delta: 0.005
+
+gradcam:
+  enabled: false
+  max_samples: 8
+  target_layer: image_encoder.attention_layers
+  target_class: 0
+
+data:
+  target_mode: normal_v_abnormal
+  source_dir: ../classification/datasets/normal_v_abnormal_54
+  labels_json: ../patient_angle_classification_by_group.json
+  manifest: ./datasets/generated/normal_v_abnormal_manifest.cmp.json
+  tapct_features: ./embeddings/tapct_s_3d/features.npz
+  image_size: [112, 136, 112]
+  intensity_window: [-1000.0, 400.0]
+  input_normalization: zscore
+  target_normalization: none
+  cache_data: true
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 4
+  angle_bin_count: 5
+  balanced_sampling: true
+  augmentation:
+    enabled: true
+    balance_then_augment: true
+    views_per_sample: 5
+    probability: 1.0
+    class_indices: [0, 1]
+    rotation_degrees: 7.0
+    translation_fraction: 0.05
+    scale_range: [0.95, 1.05]
+    intensity_scale_range: [0.95, 1.05]
+    intensity_shift_range: [-0.1, 0.1]
+    noise_std: 0.03
+
+paths:
+  weights: ./weights
+  logs: ./train_log
+  figures: ./figures
+  graphs: ./graphs
+
+task: Normal_v_Abnormal_cmp
+
+resume:
+  enabled: false
+  uuid: null
+  start_fold: 0
+
+gpu:
+  device_id: "0"

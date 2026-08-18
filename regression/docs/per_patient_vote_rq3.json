@@ -1,0 +1,2219 @@
+{
+  "meta": {
+    "generated_at": "2026-08-04T11:39:46",
+    "n_patients": 66,
+    "n_models": 3,
+    "model_names": [
+      "image",
+      "fusion",
+      "quant"
+    ],
+    "model_sources": {
+      "image": "figures/RQ3_oi_emphysema/hybrid_mamba_attention_rq3_oi_emphysema_image_2026-07-14_18:04:50",
+      "fusion": "figures/RQ3_oi_emphysema/hybrid_mamba_tapct_fusion_rq3_oi_emphysema_fusion_2026-07-14_19:04:41",
+      "quant": "models/rq_quant/param_aeropath__rq3_per_patient.json (export_quant_per_patient.py, param_aeropath, seed=42, 5-fold, 100 epochs, early stopping off)"
+    },
+    "vote": "hard majority",
+    "class_names": [
+      "Significant emphysema (OI >= 3)",
+      "No significant emphysema (OI < 3)"
+    ],
+    "positive_class": "Significant emphysema (OI >= 3)",
+    "caveat": "image / fusion 的 per-patient 預測取自每折的 best epoch,而該 epoch 是在 test fold 上選的(trainer.py 只在 fold 分數變好時呼叫 save_predictions),故此兩列偏樂觀。quant 則是固定 100 epoch 的最後一個 epoch、未用 test fold 選點,無此偏差。vote 列繼承了 image / fusion 的樂觀性。",
+    "fold_note": "`fold` 為深度模型 (image/fusion) 的折號;`quant_fold` 為量化模型自己的折號。兩者皆 seed=42 5-fold stratified,但世代排序不同故分組不同,不影響 per-patient 投票。"
+  },
+  "summary": {
+    "image": {
+      "n": 66,
+      "accuracy": 0.803,
+      "sensitivity": 0.7647,
+      "specificity": 0.8438,
+      "confusion": {
+        "tp": 26,
+        "fn": 8,
+        "tn": 27,
+        "fp": 5
+      }
+    },
+    "fusion": {
+      "n": 66,
+      "accuracy": 0.8333,
+      "sensitivity": 0.8529,
+      "specificity": 0.8125,
+      "confusion": {
+        "tp": 29,
+        "fn": 5,
+        "tn": 26,
+        "fp": 6
+      }
+    },
+    "quant": {
+      "n": 66,
+      "accuracy": 0.803,
+      "sensitivity": 0.7353,
+      "specificity": 0.875,
+      "confusion": {
+        "tp": 25,
+        "fn": 9,
+        "tn": 28,
+        "fp": 4
+      }
+    },
+    "vote": {
+      "n": 66,
+      "accuracy": 0.8333,
+      "sensitivity": 0.7647,
+      "specificity": 0.9062,
+      "confusion": {
+        "tp": 26,
+        "fn": 8,
+        "tn": 29,
+        "fp": 3
+      },
+      "status_counts": {
+        "decided": 66,
+        "pending": 0
+      },
+      "margin_counts": {
+        "3-0": 44,
+        "2-1": 22
+      }
+    }
+  },
+  "patients": [
+    {
+      "patient_id": "0781915",
+      "fold": 5,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.00193,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.04146,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1261736",
+      "fold": 3,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.97397,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1596038",
+      "fold": 2,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.14638,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.39227,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1604378",
+      "fold": 2,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.49591,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.49349,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1663485",
+      "fold": 4,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 2e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 6e-05,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.30936,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1687031",
+      "fold": 3,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.97261,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1746380",
+      "fold": 3,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.00028,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99999,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.39272,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 2,
+        "Significant emphysema (OI >= 3)": 1
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "1800944",
+      "fold": 4,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99999,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.44212,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 2,
+        "No significant emphysema (OI < 3)": 1
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "1814107",
+      "fold": 5,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.13591,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.18536,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2094528",
+      "fold": 2,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.05367,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2221276",
+      "fold": 4,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.00015,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.66603,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 2,
+        "Significant emphysema (OI >= 3)": 1
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 2,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "2256243",
+      "fold": 5,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99998,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.98475,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.83194,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2291134",
+      "fold": 4,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.00124,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.05061,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2500824",
+      "fold": 3,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99993,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99763,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.21966,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 2,
+        "No significant emphysema (OI < 3)": 1
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 3,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "2588424",
+      "fold": 2,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.91525,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2860903",
+      "fold": 1,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99988,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.06582,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.07978,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 1,
+        "No significant emphysema (OI < 3)": 2
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "2991621",
+      "fold": 4,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.89646,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "3097765",
+      "fold": 1,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.00521,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99553,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.01809,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 2,
+        "Significant emphysema (OI >= 3)": 1
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "3635301",
+      "fold": 1,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.07198,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.00013,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.21041,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "3647457",
+      "fold": 4,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99999,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.98662,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4204917",
+      "fold": 4,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 8e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.00566,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.03724,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4205212",
+      "fold": 4,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 1e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.03634,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4230847",
+      "fold": 2,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.00011,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.01287,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.1453,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4302294",
+      "fold": 5,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.79669,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.26734,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.05489,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 1,
+        "No significant emphysema (OI < 3)": 2
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 2,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "4372708",
+      "fold": 2,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.96524,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4710629",
+      "fold": 1,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.03407,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99999,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.9596,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 1,
+        "Significant emphysema (OI >= 3)": 2
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 1,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "4796667",
+      "fold": 5,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.00123,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.96936,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.07044,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 2,
+        "Significant emphysema (OI >= 3)": 1
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 5,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "4996166",
+      "fold": 2,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.50123,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.40863,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.06178,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 1,
+        "No significant emphysema (OI < 3)": 2
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 5,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "5046455",
+      "fold": 1,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.12186,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "5127217",
+      "fold": 1,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.60793,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.61922,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "5390303",
+      "fold": 5,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.03155,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.12338,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "5630846",
+      "fold": 1,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.00022,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.06706,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "5925853",
+      "fold": 1,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 1e-05,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.84118,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 2,
+        "Significant emphysema (OI >= 3)": 1
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "6212308",
+      "fold": 1,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0045,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.1669,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "6312603",
+      "fold": 4,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.00107,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.00025,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.12249,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "6757504",
+      "fold": 4,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.47416,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.17881,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "6858508",
+      "fold": 2,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.04151,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.14969,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 1,
+        "No significant emphysema (OI < 3)": 2
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "6887256",
+      "fold": 3,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.87502,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "7871759",
+      "fold": 3,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99998,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 3e-05,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.3402,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 1,
+        "No significant emphysema (OI < 3)": 2
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "8009284",
+      "fold": 2,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99999,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.73306,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "8126939",
+      "fold": 3,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.94915,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "8244460",
+      "fold": 5,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 1e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.02376,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.1489,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "8332556",
+      "fold": 3,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.00163,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 5e-05,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.28397,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "8404129",
+      "fold": 1,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.01538,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99974,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.15622,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 2,
+        "Significant emphysema (OI >= 3)": 1
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 4,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "8704416",
+      "fold": 2,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.90703,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.56893,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 1,
+        "Significant emphysema (OI >= 3)": 2
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "9075311",
+      "fold": 2,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99995,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.27417,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 2,
+        "Significant emphysema (OI >= 3)": 1
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 3,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "9529629",
+      "fold": 2,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.96142,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "A267542",
+      "fold": 3,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.61566,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 2,
+        "Significant emphysema (OI >= 3)": 1
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "A613117",
+      "fold": 3,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 2e-05,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99806,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.789,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 1,
+        "Significant emphysema (OI >= 3)": 2
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "A754735",
+      "fold": 5,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.00148,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.06122,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.20559,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "A762364",
+      "fold": 1,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99999,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99999,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.88342,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "B213449",
+      "fold": 1,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99999,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.94379,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "C041635",
+      "fold": 5,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.31315,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.33258,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 1,
+        "No significant emphysema (OI < 3)": 2
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 1,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "C081146",
+      "fold": 3,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.15567,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "C435832",
+      "fold": 1,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.82701,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "C543831",
+      "fold": 5,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.97529,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.16647,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 2,
+        "No significant emphysema (OI < 3)": 1
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "C586742",
+      "fold": 4,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.64761,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99974,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.87391,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "C905524",
+      "fold": 5,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99963,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99451,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "D132855",
+      "fold": 4,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.14236,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99996,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.86679,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 1,
+        "Significant emphysema (OI >= 3)": 2
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "D550510",
+      "fold": 3,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.96602,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99803,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "E353272",
+      "fold": 4,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99999,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.93124,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "E558113",
+      "fold": 1,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.98842,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "E647833",
+      "fold": 3,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.99998,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.98481,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "E717248",
+      "fold": 5,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.86558,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.08036,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 2,
+        "Significant emphysema (OI >= 3)": 1
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "E771850",
+      "fold": 5,
+      "true_label": "Significant emphysema (OI >= 3)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.987,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Significant emphysema (OI >= 3)",
+          "prob_positive": 0.84974,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Significant emphysema (OI >= 3)": 3
+      },
+      "vote_label": "Significant emphysema (OI >= 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "E797258",
+      "fold": 2,
+      "true_label": "No significant emphysema (OI < 3)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.01527,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "No significant emphysema (OI < 3)",
+          "prob_positive": 0.3446,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "No significant emphysema (OI < 3)": 3
+      },
+      "vote_label": "No significant emphysema (OI < 3)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    }
+  ]
+}

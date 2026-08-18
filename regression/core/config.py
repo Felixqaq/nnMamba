@@ -169,6 +169,11 @@ class DataConfig:
     tapct_allow_single_instance_fallback: bool = False
     load_ct: bool = True
     image_size: tuple[int, int, int] = (112, 136, 112)
+    target_spacing: tuple[float, float, float] | None = None
+    pad_hu: float = -1000.0
+    lung_mask_dir: Path | None = None
+    lung_mask_mode: str = "off"
+    lung_mask_dilate_mm: float = 0.0
     intensity_window: tuple[float, float] = (-1000.0, 400.0)
     input_normalization: InputNormType = "zscore"
     target_normalization: TargetNormType = "zscore"
@@ -428,6 +433,19 @@ class Config:
                 ),
                 load_ct=data_section.get("load_ct", True),
                 image_size=tuple(data_section.get("image_size", [112, 136, 112])),
+                target_spacing=(
+                    tuple(float(value) for value in data_section["target_spacing"])
+                    if data_section.get("target_spacing")
+                    else None
+                ),
+                pad_hu=float(data_section.get("pad_hu", -1000.0)),
+                lung_mask_dir=(
+                    Path(data_section["lung_mask_dir"])
+                    if data_section.get("lung_mask_dir")
+                    else None
+                ),
+                lung_mask_mode=data_section.get("lung_mask_mode", "off"),
+                lung_mask_dilate_mm=float(data_section.get("lung_mask_dilate_mm", 0.0)),
                 intensity_window=tuple(
                     data_section.get("intensity_window", [-1000.0, 400.0])
                 ),

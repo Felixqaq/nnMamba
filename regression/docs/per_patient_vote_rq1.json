@@ -1,0 +1,2209 @@
+{
+  "meta": {
+    "generated_at": "2026-07-28T13:32:05",
+    "n_patients": 66,
+    "n_models": 3,
+    "model_names": [
+      "image",
+      "fusion",
+      "quant"
+    ],
+    "model_sources": {
+      "image": "figures/RQ1_normal_v_abnormal/hybrid_mamba_attention_rq1_normal_v_abnormal_image_2026-07-14_15:15:09",
+      "fusion": "figures/RQ1_normal_v_abnormal/hybrid_mamba_tapct_fusion_rq1_normal_v_abnormal_fusion_2026-07-14_15:54:16",
+      "quant": "models/rq_quant/param_aeropath__rq1_per_patient.json (export_quant_per_patient_rq1.py, param_aeropath, seed=42, 5-fold, 100 epochs, early stopping off)"
+    },
+    "vote": "hard majority",
+    "positive_class": "Abnormal",
+    "caveat": "image / fusion 的 per-patient 預測取自每折的 best epoch,而該 epoch 是在 test fold 上選的(trainer.py 只在 fold 分數變好時呼叫 save_predictions),故此兩列偏樂觀。quant 則是固定 100 epoch 的最後一個 epoch、未用 test fold 選點,無此偏差。vote 列繼承了 image / fusion 的樂觀性。",
+    "fold_note": "`fold` 為深度模型 (image/fusion) 的折號;`quant_fold` 為量化模型自己的折號。兩者皆 seed=42 5-fold stratified,但世代排序不同故分組不同,不影響 per-patient 投票。"
+  },
+  "summary": {
+    "image": {
+      "n": 66,
+      "accuracy": 0.8788,
+      "sensitivity_abnormal": 0.8485,
+      "specificity_normal": 0.9091,
+      "confusion": {
+        "tp": 28,
+        "fn": 5,
+        "tn": 30,
+        "fp": 3
+      }
+    },
+    "fusion": {
+      "n": 66,
+      "accuracy": 0.8636,
+      "sensitivity_abnormal": 0.8485,
+      "specificity_normal": 0.8788,
+      "confusion": {
+        "tp": 28,
+        "fn": 5,
+        "tn": 29,
+        "fp": 4
+      }
+    },
+    "quant": {
+      "n": 66,
+      "accuracy": 0.8485,
+      "sensitivity_abnormal": 0.7879,
+      "specificity_normal": 0.9091,
+      "confusion": {
+        "tp": 26,
+        "fn": 7,
+        "tn": 30,
+        "fp": 3
+      }
+    },
+    "vote": {
+      "n": 66,
+      "accuracy": 0.8939,
+      "sensitivity_abnormal": 0.8485,
+      "specificity_normal": 0.9394,
+      "confusion": {
+        "tp": 28,
+        "fn": 5,
+        "tn": 31,
+        "fp": 2
+      },
+      "status_counts": {
+        "decided": 66,
+        "pending": 0
+      },
+      "margin_counts": {
+        "3-0": 50,
+        "2-1": 16
+      }
+    }
+  },
+  "patients": [
+    {
+      "patient_id": "0781915",
+      "fold": 2,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 1e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.00372,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1261736",
+      "fold": 5,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99891,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.98483,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1596038",
+      "fold": 2,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 4e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.15353,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1604378",
+      "fold": 1,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 1e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.00224,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.19975,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1663485",
+      "fold": 4,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 1e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.00194,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.16642,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1687031",
+      "fold": 3,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99999,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.97785,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1746380",
+      "fold": 1,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 3e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99921,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.13729,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 2,
+        "Abnormal": 1
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "1800944",
+      "fold": 4,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99996,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.2134,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 2,
+        "Normal": 1
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "1814107",
+      "fold": 4,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.21734,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2094528",
+      "fold": 3,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 1e-05,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.00254,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2221276",
+      "fold": 2,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.66882,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 2,
+        "Abnormal": 1
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "2256243",
+      "fold": 4,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99987,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.84493,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2291134",
+      "fold": 5,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 1e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.01672,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.05585,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2500824",
+      "fold": 5,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.03163,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.12707,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 1,
+        "Normal": 2
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "2588424",
+      "fold": 3,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99999,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.95362,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2860903",
+      "fold": 2,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 1e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.09104,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2991621",
+      "fold": 2,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99999,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.93343,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "3097765",
+      "fold": 1,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.00026,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.20835,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "3635301",
+      "fold": 3,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0001,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.29702,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.31758,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "3647457",
+      "fold": 2,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.97687,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4204917",
+      "fold": 5,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 1e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.09876,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.04727,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4205212",
+      "fold": 4,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.19419,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4230847",
+      "fold": 1,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 2e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.15397,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.06367,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4302294",
+      "fold": 3,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.00031,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 8e-05,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.08299,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4372708",
+      "fold": 3,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99999,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.95494,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4710629",
+      "fold": 4,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.66159,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99989,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.8909,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4796667",
+      "fold": 2,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99386,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.00011,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.02067,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 1,
+        "Normal": 2
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 4,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "4996166",
+      "fold": 4,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.88389,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.12278,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 2,
+        "Normal": 1
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 2,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "5046455",
+      "fold": 2,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.10741,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "5127217",
+      "fold": 1,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.01509,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.07326,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 1,
+        "Normal": 2
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 5,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "5390303",
+      "fold": 1,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 2e-05,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.05852,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "5630846",
+      "fold": 1,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.03953,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "5925853",
+      "fold": 5,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.00031,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.33614,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.94401,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 2,
+        "Abnormal": 1
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "6212308",
+      "fold": 1,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 2e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.91238,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.11784,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 2,
+        "Abnormal": 1
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "6312603",
+      "fold": 1,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.00421,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.12382,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "6757504",
+      "fold": 4,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.37722,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "6858508",
+      "fold": 4,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.17595,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "6887256",
+      "fold": 3,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99984,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.94081,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "7871759",
+      "fold": 2,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.00196,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.46228,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "8009284",
+      "fold": 1,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.8407,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "8126939",
+      "fold": 2,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.97777,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "8244460",
+      "fold": 3,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 3e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.00047,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.1529,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "8332556",
+      "fold": 5,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 3e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.2361,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.07003,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "8404129",
+      "fold": 2,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99939,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.68926,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "8704416",
+      "fold": 4,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.98945,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.79569,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "9075311",
+      "fold": 1,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.84975,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 1,
+        "Abnormal": 2
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "9529629",
+      "fold": 1,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.85363,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "A267542",
+      "fold": 3,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.00032,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.24386,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "A613117",
+      "fold": 5,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99976,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.24079,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.89029,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 2,
+        "Normal": 1
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "A754735",
+      "fold": 3,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0057,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.11471,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "A762364",
+      "fold": 1,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99959,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.92205,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "B213449",
+      "fold": 5,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99329,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.8973,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "C041635",
+      "fold": 4,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.52458,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.00568,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.21765,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 1,
+        "Normal": 2
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 5,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "C081146",
+      "fold": 5,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.00954,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.12466,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "C435832",
+      "fold": 5,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.96833,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.91359,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "C543831",
+      "fold": 4,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.98775,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.09014,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 2,
+        "Normal": 1
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "C586742",
+      "fold": 3,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99974,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.92968,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 1,
+        "Abnormal": 2
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "C905524",
+      "fold": 4,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.98487,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 1,
+        "Abnormal": 2
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "D132855",
+      "fold": 1,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.96306,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "D550510",
+      "fold": 3,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.85308,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99888,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "E353272",
+      "fold": 5,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99343,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.90542,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "E558113",
+      "fold": 2,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.90533,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "E647833",
+      "fold": 2,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.99739,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "E717248",
+      "fold": 5,
+      "true_label": "Normal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.08463,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.06069,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 3
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "E771850",
+      "fold": 3,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.9728,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.6784,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal": 3
+      },
+      "vote_label": "Abnormal",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "E797258",
+      "fold": 5,
+      "true_label": "Abnormal",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.0,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Abnormal",
+          "prob_abnormal": 0.61012,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal",
+          "prob_abnormal": 0.40976,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal": 2,
+        "Abnormal": 1
+      },
+      "vote_label": "Normal",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 5,
+      "vote_margin": "2-1"
+    }
+  ]
+}

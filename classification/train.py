@@ -10,7 +10,7 @@ import argparse
 import torch
 
 from core.config import Config
-from core.trainer import Trainer
+from core.trainer import Trainer, setup_seed
 from data.dataset import Task
 from data.loader import LoaderHelper
 from models import build_model
@@ -37,6 +37,8 @@ def main():
         config.gradcam.enabled = False
     if args.seed is not None:
         config.training.seed = args.seed
+
+    setup_seed(config.training.seed)
 
     print(f"🚀 Running on: {'CUDA' if torch.cuda.is_available() else 'CPU'}")
     if not torch.cuda.is_available():

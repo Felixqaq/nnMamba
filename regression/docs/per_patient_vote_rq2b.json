@@ -1,0 +1,2053 @@
+{
+  "meta": {
+    "generated_at": "2026-08-04T11:39:46",
+    "n_patients": 61,
+    "n_models": 3,
+    "model_names": [
+      "image",
+      "fusion",
+      "quant"
+    ],
+    "model_sources": {
+      "image": "figures/RQ2b_angle_binary_extreme/hybrid_mamba_attention_rq2b_angle_binary_extreme_image_2026-07-14_17:03:26",
+      "fusion": "figures/RQ2b_angle_binary_extreme/hybrid_mamba_tapct_fusion_rq2b_angle_binary_extreme_fusion_2026-07-14_17:24:43",
+      "quant": "models/rq_quant/param_aeropath__rq2b_per_patient.json (export_quant_per_patient.py, param_aeropath, seed=42, 5-fold, 100 epochs, early stopping off)"
+    },
+    "vote": "hard majority",
+    "class_names": [
+      "Abnormal/emphysema-like (AC <=131 deg)",
+      "Normal-like (AC >=152 deg)"
+    ],
+    "positive_class": "Abnormal/emphysema-like (AC <=131 deg)",
+    "caveat": "image / fusion 的 per-patient 預測取自每折的 best epoch,而該 epoch 是在 test fold 上選的(trainer.py 只在 fold 分數變好時呼叫 save_predictions),故此兩列偏樂觀。quant 則是固定 100 epoch 的最後一個 epoch、未用 test fold 選點,無此偏差。vote 列繼承了 image / fusion 的樂觀性。",
+    "fold_note": "`fold` 為深度模型 (image/fusion) 的折號;`quant_fold` 為量化模型自己的折號。兩者皆 seed=42 5-fold stratified,但世代排序不同故分組不同,不影響 per-patient 投票。"
+  },
+  "summary": {
+    "image": {
+      "n": 61,
+      "accuracy": 0.8852,
+      "sensitivity": 0.8571,
+      "specificity": 0.8936,
+      "confusion": {
+        "tp": 12,
+        "fn": 2,
+        "tn": 42,
+        "fp": 5
+      }
+    },
+    "fusion": {
+      "n": 61,
+      "accuracy": 0.8689,
+      "sensitivity": 0.8571,
+      "specificity": 0.8723,
+      "confusion": {
+        "tp": 12,
+        "fn": 2,
+        "tn": 41,
+        "fp": 6
+      }
+    },
+    "quant": {
+      "n": 61,
+      "accuracy": 0.7541,
+      "sensitivity": 0.7857,
+      "specificity": 0.7447,
+      "confusion": {
+        "tp": 11,
+        "fn": 3,
+        "tn": 35,
+        "fp": 12
+      }
+    },
+    "vote": {
+      "n": 61,
+      "accuracy": 0.9016,
+      "sensitivity": 0.9286,
+      "specificity": 0.8936,
+      "confusion": {
+        "tp": 13,
+        "fn": 1,
+        "tn": 42,
+        "fp": 5
+      },
+      "status_counts": {
+        "decided": 61,
+        "pending": 0
+      },
+      "margin_counts": {
+        "3-0": 45,
+        "2-1": 16
+      }
+    }
+  },
+  "patients": [
+    {
+      "patient_id": "0781915",
+      "fold": 1,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.36253,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0035,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1261736",
+      "fold": 4,
+      "true_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.99996,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.99998,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.88313,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 3
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1596038",
+      "fold": 1,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.34503,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.45192,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1604378",
+      "fold": 1,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 1e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.52119,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.15099,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 2,
+        "Abnormal/emphysema-like (AC <=131 deg)": 1
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "1663485",
+      "fold": 5,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.00082,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.05893,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1687031",
+      "fold": 4,
+      "true_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.99998,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.99983,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.76475,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 3
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1746380",
+      "fold": 1,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.00156,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.41497,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.13055,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "1800944",
+      "fold": 1,
+      "true_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.84805,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.58365,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.20328,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 2,
+        "Normal-like (AC >=152 deg)": 1
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "1814107",
+      "fold": 5,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.00021,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.03741,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2094528",
+      "fold": 1,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.28908,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.02146,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2221276",
+      "fold": 5,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.01034,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.02092,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2256243",
+      "fold": 3,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.00055,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.21726,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.50299,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 2,
+        "Abnormal/emphysema-like (AC <=131 deg)": 1
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "2291134",
+      "fold": 4,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.04579,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2500824",
+      "fold": 2,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.99951,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.04769,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 1,
+        "Normal-like (AC >=152 deg)": 2
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "2588424",
+      "fold": 5,
+      "true_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.58528,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.9975,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.9243,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 3
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2860903",
+      "fold": 3,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 4e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.03629,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.05927,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "2991621",
+      "fold": 2,
+      "true_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.99984,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.99998,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.91423,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 3
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "3097765",
+      "fold": 4,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0481,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "3635301",
+      "fold": 2,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.05801,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "3647457",
+      "fold": 2,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.99999,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.99999,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.61611,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 3
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4205212",
+      "fold": 2,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.01124,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4230847",
+      "fold": 4,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.08725,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4302294",
+      "fold": 3,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.00074,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.02896,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.03788,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4372708",
+      "fold": 3,
+      "true_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.82919,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.94159,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.81393,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 3
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "4710629",
+      "fold": 1,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 2e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.52799,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.18155,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 2,
+        "Abnormal/emphysema-like (AC <=131 deg)": 1
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "4996166",
+      "fold": 4,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0001,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.07987,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "5046455",
+      "fold": 1,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.32298,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.07371,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "5390303",
+      "fold": 4,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.08829,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "5925853",
+      "fold": 4,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.68005,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 2,
+        "Abnormal/emphysema-like (AC <=131 deg)": 1
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "6212308",
+      "fold": 3,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.00098,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.24108,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.04259,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "6312603",
+      "fold": 3,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.00022,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.08163,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.16592,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "6757504",
+      "fold": 5,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.00162,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.02659,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "6858508",
+      "fold": 2,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.04592,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "6887256",
+      "fold": 1,
+      "true_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.99995,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.55078,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.83279,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 3
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "7871759",
+      "fold": 4,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.05348,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "8009284",
+      "fold": 3,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.99804,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.81391,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.9478,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 3
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "8126939",
+      "fold": 2,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 1e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.10797,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.83829,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 2,
+        "Abnormal/emphysema-like (AC <=131 deg)": 1
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "8244460",
+      "fold": 5,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.00016,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.11671,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "8332556",
+      "fold": 5,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.11238,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.15929,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "8404129",
+      "fold": 1,
+      "true_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.08772,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.47494,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.03511,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "9075311",
+      "fold": 4,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 1e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.47442,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.27412,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "9529629",
+      "fold": 2,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 1.0,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.96564,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.94407,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 3
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "A267542",
+      "fold": 5,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.00021,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.03803,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "A613117",
+      "fold": 1,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 1e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.43981,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.46817,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "A754735",
+      "fold": 3,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 3e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.02387,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.05104,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "A762364",
+      "fold": 5,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.00347,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.83571,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 2,
+        "Abnormal/emphysema-like (AC <=131 deg)": 1
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "B213449",
+      "fold": 5,
+      "true_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.99239,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.99999,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.43308,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 2,
+        "Normal-like (AC >=152 deg)": 1
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "C041635",
+      "fold": 4,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 1e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.1965,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "C081146",
+      "fold": 3,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 8e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.02751,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.03962,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 2,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "C435832",
+      "fold": 2,
+      "true_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 1.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.74824,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 3
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "C543831",
+      "fold": 2,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0002,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.04695,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "C586742",
+      "fold": 1,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.01299,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.46108,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.68639,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 2,
+        "Abnormal/emphysema-like (AC <=131 deg)": 1
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "C905524",
+      "fold": 5,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.9882,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.00492,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.95095,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 2,
+        "Normal-like (AC >=152 deg)": 1
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 5,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "D132855",
+      "fold": 3,
+      "true_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.00198,
+          "correct": false
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.79346,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.84557,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 1,
+        "Abnormal/emphysema-like (AC <=131 deg)": 2
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "D550510",
+      "fold": 2,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 2 (Moderate)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.00022,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 2e-05,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.86247,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 2,
+        "Abnormal/emphysema-like (AC <=131 deg)": 1
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 3,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "E353272",
+      "fold": 4,
+      "true_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.87569,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 4e-05,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.89041,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 2,
+        "Normal-like (AC >=152 deg)": 1
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "E558113",
+      "fold": 2,
+      "true_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "gold_stage_label": "GOLD 4 (Very Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.99999,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.99999,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.93444,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 3
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 5,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "E647833",
+      "fold": 3,
+      "true_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.99974,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.64293,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.64191,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Abnormal/emphysema-like (AC <=131 deg)": 3
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "E717248",
+      "fold": 1,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 3e-05,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.3394,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.21334,
+          "correct": true
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 3
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 1,
+      "vote_margin": "3-0"
+    },
+    {
+      "patient_id": "E771850",
+      "fold": 3,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 3 (Severe)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.02069,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.56913,
+          "correct": false
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.76498,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 1,
+        "Abnormal/emphysema-like (AC <=131 deg)": 2
+      },
+      "vote_label": "Abnormal/emphysema-like (AC <=131 deg)",
+      "vote_status": "decided",
+      "vote_correct": false,
+      "quant_fold": 1,
+      "vote_margin": "2-1"
+    },
+    {
+      "patient_id": "E797258",
+      "fold": 5,
+      "true_label": "Normal-like (AC >=152 deg)",
+      "gold_stage_label": "GOLD 1 (Mild)",
+      "models": {
+        "image": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.00026,
+          "correct": true
+        },
+        "fusion": {
+          "pred_label": "Normal-like (AC >=152 deg)",
+          "prob_positive": 0.0,
+          "correct": true
+        },
+        "quant": {
+          "pred_label": "Abnormal/emphysema-like (AC <=131 deg)",
+          "prob_positive": 0.7568,
+          "correct": false
+        }
+      },
+      "missing_models": [],
+      "votes": {
+        "Normal-like (AC >=152 deg)": 2,
+        "Abnormal/emphysema-like (AC <=131 deg)": 1
+      },
+      "vote_label": "Normal-like (AC >=152 deg)",
+      "vote_status": "decided",
+      "vote_correct": true,
+      "quant_fold": 4,
+      "vote_margin": "2-1"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+# nnMamba Classification — Original 54-case cohort
+# =================================================
+# Same Normal_v_Abnormal task, but restricted to the original 54 patients
+# (33 Abnormal + 21 Normal) defined by regression/datasets/patient_angles_simple.json.
+# Dataset lives as symlinks under classification/datasets/normal_v_abnormal_54/.
+
+model:
+  name: nnmamba        # nnmamba | densenet | vit | crate
+  num_classes: 1
+  dropout: 0.5
+
+training:
+  epochs: 50
+  batch_size: 12
+  learning_rate: 0.0001
+  weight_decay: 0.001
+  k_folds: 5
+  eval_interval: 5     # Evaluate every N epochs
+  save_interval: 10    # Save checkpoint every N epochs
+  seed: 42
+  warmup_gamma: 1.4
+
+data:
+  image_size: [112, 136, 112]
+  num_workers: 6
+  pin_memory: true
+  prefetch_factor: 4
+  root: ./datasets/perm_normal_v_abnormal_54/   # 54-case cohort (must end with '/')
+
+gradcam:
+  enabled: false
+  max_samples: 4
+  per_outcome: 1
+  target_layers: [layer1, layer2, layer3]
+  target_class: 1
+
+paths:
+  weights: ../weights
+  logs: ../train_log
+  figures: ../figures
+  graphs: ../graphs
+
+task: Normal_v_Abnormal
+
+resume:
+  enabled: false
+  uuid: null
+  start_fold: 0
+
+gpu:
+  device_id: "0"

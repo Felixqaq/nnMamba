@@ -256,6 +256,11 @@ class RegressionLoaderHelper:
         oi_exclude_range: tuple[float, float] | list[float] | None = None,
         target_mode: str = "angle",
         image_size: tuple[int, int, int] = DEFAULT_IMAGE_SIZE,
+        target_spacing: tuple[float, float, float] | None = None,
+        pad_hu: float = -1000.0,
+        lung_mask_dir: str | Path | None = None,
+        lung_mask_mode: str = "off",
+        lung_mask_dilate_mm: float = 0.0,
         k_folds: int = 5,
         seed: int = 42,
         n_bins: int = 5,
@@ -289,6 +294,11 @@ class RegressionLoaderHelper:
             oi_exclude_range = config.data.oi_exclude_range
             target_mode = config.data.target_mode
             image_size = config.data.image_size
+            target_spacing = config.data.target_spacing
+            pad_hu = config.data.pad_hu
+            lung_mask_dir = config.data.lung_mask_dir
+            lung_mask_mode = config.data.lung_mask_mode
+            lung_mask_dilate_mm = config.data.lung_mask_dilate_mm
             k_folds = config.training.k_folds
             seed = (
                 config.split_seed()
@@ -340,6 +350,11 @@ class RegressionLoaderHelper:
         )
         self.target_mode = str(target_mode)
         self.image_size = image_size
+        self.target_spacing = target_spacing
+        self.pad_hu = pad_hu
+        self.lung_mask_dir = lung_mask_dir
+        self.lung_mask_mode = lung_mask_mode
+        self.lung_mask_dilate_mm = lung_mask_dilate_mm
         self.k_folds = k_folds
         self.seed = seed
         self.n_bins = n_bins
@@ -417,6 +432,11 @@ class RegressionLoaderHelper:
             image_size=self.image_size,
             intensity_window=self.intensity_window,
             input_normalization=self.input_normalization,
+            target_spacing=self.target_spacing,
+            pad_hu=self.pad_hu,
+            lung_mask_dir=self.lung_mask_dir,
+            lung_mask_mode=self.lung_mask_mode,
+            lung_mask_dilate_mm=self.lung_mask_dilate_mm,
             records=self.records,
             tapct_embeddings=self.tapct_embeddings,
             transform=transforms.Compose([ToTensor()]),

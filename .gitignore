@@ -27,6 +27,11 @@ ENV/
 env/
 .venv
 
+# CT-RATE external data (large medical volumes — never commit)
+regression/datasets/ctrate_pilot/
+regression/datasets/ctrate_raw_tmp/
+regression/datasets/generated/ctrate_*.json
+
 # Jupyter Notebook
 .ipynb_checkpoints
 *.ipynb_checkpoints/
@@ -113,3 +118,20 @@ site/
 *.claude_cache
 .codex
 醫院NormalDataset20260421/
+
+# 壓縮檔（all_roi_box.zip 有 1.7 GB，備份用的 tar 也不該進版控）
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+
+# ROI box 衍生資料（可由 pipeline 重跑）
+/all_roi_box/
+
+# 原始 DICOM（檔名無副檔名，*.dcm 抓不到）
+origin_dataset/
+
+# TotalSegmentator 產出的肺部遮罩（可重跑）
+regression/masks/

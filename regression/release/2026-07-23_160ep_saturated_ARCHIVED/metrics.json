@@ -1,0 +1,19 @@
+{
+  "created_at": "2026-07-23T21:03:10",
+  "n_training_cases": 66,
+  "epochs": 160,
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "held_out": false,
+  "note": "Trained on 100% of the dataset: no held-out set, no early stopping, no best-epoch selection. This release has NO measured performance. Quote the nested-CV reference below, labelled as a reference.",
+  "nested_cv_reference": {
+    "accuracy": 0.726,
+    "auc": 0.803,
+    "source": "nested CV, 66-case, RQ1 image-only"
+  }
+}

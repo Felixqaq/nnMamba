@@ -539,9 +539,14 @@ class Trainer:
             )
 
             def compute_loss(amp_enabled: bool) -> torch.Tensor:
+                # bf16, not fp16: fp16's exponent range is far narrower than
+                # fp32's and mamba's selective scan overflows to inf/NaN inside
+                # it. That produced 56 batches of invalid predictions and one
+                # dead fold on the 240-case run. bf16 keeps fp32's range, and on
+                # Ampere it is the same speed.
                 with torch.autocast(
                     device_type=self.device.type,
-                    dtype=torch.float16,
+                    dtype=torch.bfloat16,
                     enabled=amp_enabled,
                 ):
                     out = model(x)

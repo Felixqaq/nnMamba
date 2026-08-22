@@ -84,6 +84,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--labels-json", type=Path, default=DEFAULT_LABELS_JSON)
     parser.add_argument("--pft-json", type=Path, default=DEFAULT_PFT_JSON)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument(
+        "--resize-dim",
+        type=int,
+        default=0,
+        help="override the processor's in-plane resize (0 = keep its 224 default)",
+    )
+    parser.add_argument(
+        "--target-mode",
+        default="angle_3class",
+        help="manifest target mode used only to enumerate cases; use "
+        "normal_v_abnormal for cohorts whose label is the parent folder name",
+    )
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--dtype", choices=("float32", "float16"), default="float16")
     parser.add_argument("--depth-window", type=int, default=12)
@@ -115,12 +127,18 @@ def resolve_device(device: str) -> torch.device:
 
 
 def load_records(args: argparse.Namespace) -> list:
-    """Load all angle three-class records from the existing manifest builder."""
+    """Load records from the existing manifest builder for the chosen target mode.
+
+    The extractor itself is label-agnostic — it only needs the list of CT paths —
+    but the manifest builder drops any patient the target mode cannot label. Under
+    "angle_3class" that silently excludes every case without an angle annotation,
+    so cohorts labelled by folder name need "normal_v_abnormal" instead.
+    """
     manifest = build_angle_manifest(
         data_root=args.source_root,
         labels_json=args.labels_json,
         pft_json=args.pft_json if args.pft_json.exists() else None,
-        target_mode="angle_3class",
+        target_mode=args.target_mode,
     )
     records = list(manifest.records)
     if args.patient_id:
@@ -311,6 +329,7 @@ def write_feature_bundle(
         "model_id": model_id,
         "source_root": str(args.source_root),
         "labels_json": str(args.labels_json),
+        "target_mode": args.target_mode,
         "pft_json": str(args.pft_json),
         "depth_window": args.depth_window,
         "depth_stride": args.depth_stride,
@@ -342,6 +361,15 @@ def main() -> None:
         args.model_id,
         trust_remote_code=True,
     )
+    if args.resize_dim:
+        # The encoder interpolates its positional embeddings, so it accepts grids
+        # other than the 224x224 it was pretrained on. Raising this keeps more of
+        # the native 0.6 mm detail (emphysema is a 2-10 mm texture finding) at the
+        # cost of quadratic attention, and risks a scale mismatch: an 8x8 patch
+        # covers 11 mm at 224 but only 4.8 mm at 512, so every learned spatial
+        # relationship shifts. Whether that helps is empirical.
+        preprocessor.resize_dims = (args.resize_dim, args.resize_dim)
+        print(f"resize_dims overridden to {preprocessor.resize_dims}")
     model = AutoModel.from_pretrained(args.model_id, trust_remote_code=True)
     model.eval().to(device=device, dtype=dtype)
 

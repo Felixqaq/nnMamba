@@ -1,0 +1,136 @@
+# RQ1_normal_v_abnormal — image arm, on the merged 182-patient cohort.
+#
+# Identical to config.rq1.normal_v_abnormal.image.yaml except for the data:
+#   * the original 66 hospital patients, plus the 116 in copd_dataset that have
+#     both a PFT and a usable CT (the two sets are disjoint);
+#   * every one of them relabelled by the single GOLD fixed-ratio rule,
+#     FEV1/FVC < 70% = Abnormal, replacing the 66's older clinical grouping.
+# Built by scripts/build_fev1fvc70_dataset.py; that script's EXCLUDED table and
+# the cohort's build_summary.json record which series each patient came from.
+#
+# Class balance is 68 Abnormal / 114 Normal (1:1.68). The 66-case cohort this
+# was tuned on was 33/33, so balanced_sampling now does real undersampling and
+# results are not directly comparable with the published RQ1 numbers.
+#
+# Note the effective train batch is swin_batch_size (8), not batch_size —
+# hybrid_mamba_attention is in the loader's ATTENTION_HEAVY_MODELS set.
+experiment:
+  name: RQ1_normal_v_abnormal image (182, FEV1/FVC 70)
+  description: normal_v_abnormal | hybrid_mamba_attention | 182-patient (66+116)
+    FEV1/FVC<70 labelling (100ep, no early stop, seed 42, 5-fold).
+model:
+  name: hybrid_mamba_attention
+  num_classes: 2
+  in_channels: 1
+  hidden_dim: 256
+  dropout: 0.3
+  base_channels: 32
+  blocks: 3
+  attn_heads: 8
+  attn_layers: 1
+  attn_mlp_ratio: 2.0
+  attn_dropout: 0.1
+  tapct_embedding_dim: 1152
+  fusion_projection_dim: 128
+  fusion_dropout: 0.1
+  feature_size: 24
+  depths:
+  - 2
+  - 2
+  - 2
+  - 2
+  num_heads:
+  - 3
+  - 6
+  - 12
+  - 24
+  window_size: 4
+  patch_size: 2
+  use_checkpoint: false
+  use_v2: true
+training:
+  epochs: 100
+  batch_size: 12
+  eval_batch_size: 12
+  # 8 is the throughput sweet spot on this 8 GB card, measured: 9.2 ms/sample
+  # against 13.8 at batch 5. Larger is worse, not better — 10 and 12 both fall
+  # back to ~10.1 ms/sample because the card becomes bandwidth-bound.
+  swin_batch_size: 8
+  swin_eval_batch_size: 8
+  learning_rate: 0.0001
+  weight_decay: 0.001
+  k_folds: 5
+  eval_interval: 5
+  save_interval: 10
+  seed: 42
+  loss: cross_entropy
+  clip_grad_norm: 1.0
+  # fp16 autocast: 13.8 -> 11.2 ms/sample. TF32 and cudnn.benchmark are already
+  # on for every run via core.runtime.configure_torch_runtime, so this is the
+  # remaining GPU-side gain. Numerics differ slightly from the earlier fp32 runs.
+  amp: true
+  track_train_metrics: false
+  class_weight_mode: none
+early_stopping:
+  enabled: false
+  patience: 6
+  min_delta: 0.005
+gradcam:
+  enabled: false
+  max_samples: 8
+  target_layer: image_encoder.attention_layers
+  target_class: 0
+data:
+  target_mode: normal_v_abnormal
+  source_dir: ../classification/datasets/normal_v_abnormal_fev1fvc70
+  labels_json: ../patient_angle_classification_by_group.json
+  manifest: ./datasets/generated/rq1_fev1fvc70_manifest.image.json
+  tapct_features: null
+  image_size:
+  - 112
+  - 136
+  - 112
+  intensity_window:
+  - -1000.0
+  - 400.0
+  input_normalization: zscore
+  target_normalization: none
+  cache_data: true
+  # pin_memory is what died on this 8 GB card — the page-locked allocation in the
+  # loader's pin thread raised a CUDA OOM on the very first batch. Workers were
+  # not the cause and are needed: augmentation (affine grid_sample plus intensity
+  # jitter on a 112x136x112 volume, five views per sample) runs on the CPU, so
+  # with num_workers=0 it serialises against the GPU and leaves it ~26% busy while
+  # the main process burns 2.4 cores. Prefetching in workers overlaps the two.
+  num_workers: 8
+  pin_memory: false
+  prefetch_factor: 4
+  angle_bin_count: 5
+  balanced_sampling: true
+  augmentation:
+    enabled: true
+    balance_then_augment: true
+    views_per_sample: 5
+    probability: 1.0
+    class_indices:
+    - 0
+    - 1
+    rotation_degrees: 7.0
+    translation_fraction: 0.05
+    scale_range:
+    - 0.95
+    - 1.05
+    intensity_scale_range:
+    - 0.95
+    - 1.05
+    intensity_shift_range:
+    - -0.1
+    - 0.1
+    noise_std: 0.03
+task: RQ1_normal_v_abnormal_fev1fvc70
+resume:
+  enabled: false
+  uuid: null
+  start_fold: 0
+gpu:
+  device_id: '0'

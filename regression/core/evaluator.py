@@ -249,9 +249,12 @@ def get_regression_predictions(
             x = _extract_model_input(batch, device)
             target = _extract_regression_target(batch).to(device, non_blocking=True)
 
+            # bf16 for the same reason as in the trainer — and this path has
+            # no full-precision retry, so an fp16 NaN here silently becomes an
+            # invalid prediction rather than a caught error.
             with torch.autocast(
                 device_type=device.type,
-                dtype=torch.float16,
+                dtype=torch.bfloat16,
                 enabled=bool(use_amp and device.type == "cuda"),
             ):
                 preds = _extract_regression_predictions(model(x))
@@ -296,9 +299,12 @@ def get_classification_predictions(
             x = _extract_model_input(batch, device)
             target = _extract_classification_target(batch).to(device, non_blocking=True)
 
+            # bf16 for the same reason as in the trainer — and this path has
+            # no full-precision retry, so an fp16 NaN here silently becomes an
+            # invalid prediction rather than a caught error.
             with torch.autocast(
                 device_type=device.type,
-                dtype=torch.float16,
+                dtype=torch.bfloat16,
                 enabled=bool(use_amp and device.type == "cuda"),
             ):
                 logits = _extract_classification_logits(model(x))

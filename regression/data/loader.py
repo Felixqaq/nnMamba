@@ -238,6 +238,10 @@ class AugmentedSubset(Dataset):
         if self.augment_flags is not None and not self.augment_flags[idx]:
             output = dict(sample)
             output["augmented"] = False
+            if getattr(self.augmentation, "defer_to_device", False):
+                # Every row of a deferred batch must carry the key, or
+                # default_collate trips over the mismatched sample dicts.
+                output["augment"] = torch.tensor(False)
             return output
         return self.augmentation(sample)
 
@@ -261,6 +265,8 @@ class RegressionLoaderHelper:
         lung_mask_dir: str | Path | None = None,
         lung_mask_mode: str = "off",
         lung_mask_dilate_mm: float = 0.0,
+        laa_density_dir: str | Path | None = None,
+        laa_density_mode: str = "density",
         k_folds: int = 5,
         seed: int = 42,
         n_bins: int = 5,
@@ -283,8 +289,10 @@ class RegressionLoaderHelper:
         gold_remap_class_indices: bool = False,
         reuse_underrepresented_classes_in_folds: bool = False,
     ):
+        configured_in_channels: int | None = None
         if hasattr(data_root, "data") and hasattr(data_root, "training"):
             config = data_root
+            configured_in_channels = int(config.model.in_channels)
             data_root = config.data.source_dir
             labels_json = config.data.labels_json
             pft_json = config.data.pft_json
@@ -299,6 +307,8 @@ class RegressionLoaderHelper:
             lung_mask_dir = config.data.lung_mask_dir
             lung_mask_mode = config.data.lung_mask_mode
             lung_mask_dilate_mm = config.data.lung_mask_dilate_mm
+            laa_density_dir = config.data.laa_density_dir
+            laa_density_mode = config.data.laa_density_mode
             k_folds = config.training.k_folds
             seed = (
                 config.split_seed()
@@ -306,12 +316,41 @@ class RegressionLoaderHelper:
                 else config.training.seed
             )
             n_bins = config.data.angle_bin_count
-            if str(config.model.name).lower() in ATTENTION_HEAVY_MODELS:
+            # Attention-heavy models read swin_batch_size, so a config that sets
+            # training.batch_size for one of them has that value silently
+            # discarded. Which field wins is left as it is -- past runs depend on
+            # it -- but the choice is announced, and a conflicting value is named
+            # rather than dropped in silence.
+            model_name = str(config.model.name).lower()
+            if model_name in ATTENTION_HEAVY_MODELS:
                 batch_size = config.training.swin_batch_size
                 val_batch_size = config.training.swin_eval_batch_size
+                print(
+                    f"batch size {batch_size} (eval {val_batch_size}) from "
+                    f"training.swin_batch_size: model {model_name!r} is attention-heavy",
+                    flush=True,
+                )
+                if config.training.batch_size != batch_size:
+                    print(
+                        f"  NOTE training.batch_size={config.training.batch_size} is "
+                        f"IGNORED for this model; edit swin_batch_size to change it",
+                        flush=True,
+                    )
+                if config.training.eval_batch_size != val_batch_size:
+                    print(
+                        f"  NOTE training.eval_batch_size="
+                        f"{config.training.eval_batch_size} is IGNORED; edit "
+                        f"swin_eval_batch_size to change it",
+                        flush=True,
+                    )
             else:
                 batch_size = config.training.batch_size
                 val_batch_size = config.training.eval_batch_size
+                print(
+                    f"batch size {batch_size} (eval {val_batch_size}) from "
+                    f"training.batch_size",
+                    flush=True,
+                )
             num_workers = config.data.num_workers
             cache_data = config.data.cache_data
             manifest_path = config.data.manifest
@@ -355,6 +394,18 @@ class RegressionLoaderHelper:
         self.lung_mask_dir = lung_mask_dir
         self.lung_mask_mode = lung_mask_mode
         self.lung_mask_dilate_mm = lung_mask_dilate_mm
+        self.laa_density_dir = Path(laa_density_dir) if laa_density_dir else None
+        self.laa_density_mode = str(laa_density_mode)
+        if self.laa_density_mode not in {"density", "density_and_occupancy"}:
+            raise ValueError(f"Unsupported laa_density_mode={self.laa_density_mode!r}")
+        if self.laa_density_dir is not None and configured_in_channels is not None:
+            auxiliary_channels = 1 if self.laa_density_mode == "density" else 2
+            expected_in_channels = 1 + auxiliary_channels
+            if configured_in_channels != expected_in_channels:
+                raise ValueError(
+                    "model.in_channels must match CT plus LAA auxiliary channels: "
+                    f"expected {expected_in_channels}, got {configured_in_channels}"
+                )
         self.k_folds = k_folds
         self.seed = seed
         self.n_bins = n_bins
@@ -437,6 +488,8 @@ class RegressionLoaderHelper:
             lung_mask_dir=self.lung_mask_dir,
             lung_mask_mode=self.lung_mask_mode,
             lung_mask_dilate_mm=self.lung_mask_dilate_mm,
+            laa_density_dir=self.laa_density_dir,
+            laa_density_mode=self.laa_density_mode,
             records=self.records,
             tapct_embeddings=self.tapct_embeddings,
             transform=transforms.Compose([ToTensor()]),
@@ -915,6 +968,8 @@ class RegressionLoaderHelper:
                 getattr(cfg, "intensity_shift_range", (-25.0, 25.0))
             ),
             noise_std=getattr(cfg, "noise_std", 8.0),
+            defer_to_device=str(getattr(cfg, "device", "cpu")).lower()
+            in {"gpu", "cuda", "device"},
         )
 
     def _should_balance_with_augmentation(self) -> bool:

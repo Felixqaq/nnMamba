@@ -528,8 +528,21 @@ class Trainer:
         total_loss = 0.0
         num_batches = max(len(dataloader), 1)
 
+        # With augmentation.device: gpu the workers hand over untouched volumes
+        # and the affine + intensity jitter happens here, batched, on the card.
+        # A 112x136x112 trilinear grid_sample is ~99 ms on one CPU core versus
+        # ~5 ms/view batched on the GPU, so on a 6-core box this is what keeps
+        # the loader from starving the card.
+        augmentation = getattr(
+            getattr(dataloader, "dataset", None), "augmentation", None
+        )
+        if not getattr(augmentation, "defer_to_device", False):
+            augmentation = None
+
         for batch in tqdm(dataloader, leave=False):
             x = self._extract_model_input(batch)
+            if augmentation is not None:
+                x = self._augment_on_device(augmentation, x, batch.get("augment"))
             optimizer.zero_grad(set_to_none=True)
 
             y = (
@@ -587,6 +600,15 @@ class Trainer:
             total_loss += loss.item()
 
         return total_loss / num_batches
+
+    @staticmethod
+    def _augment_on_device(augmentation, model_input, flags):
+        """Apply deferred augmentation to whichever tensor holds the CT."""
+        if isinstance(model_input, dict):
+            model_input = dict(model_input)
+            model_input["ct"] = augmentation.apply_batch(model_input["ct"], flags)
+            return model_input
+        return augmentation.apply_batch(model_input, flags)
 
     def _extract_model_input(self, batch: dict):
         """Move model inputs to the active device, including optional fusion features."""

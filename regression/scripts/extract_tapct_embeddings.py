@@ -336,6 +336,12 @@ def write_feature_bundle(
         "sw_batch_size": args.sw_batch_size,
         "pooling": args.pooling,
         "dtype": args.dtype,
+        # Without this a finished bundle cannot say what resolution produced it.
+        # An existing directory named tapct_s_r352 has no record of its own
+        # resize, so nothing can be concluded from it.
+        "resize_dim": int(args.resize_dim) if args.resize_dim else 224,
+        "resize_dim_source": ("--resize-dim override" if args.resize_dim
+                              else "TAP-CT processor default"),
         "num_cases": len(rows),
         "feature_dim": int(feature_matrix.shape[1]),
     }

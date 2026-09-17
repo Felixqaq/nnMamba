@@ -102,13 +102,19 @@ data:
   # jitter on a 112x136x112 volume, five views per sample) runs on the CPU, so
   # with num_workers=0 it serialises against the GPU and leaves it ~26% busy while
   # the main process burns 2.4 cores. Prefetching in workers overlaps the two.
-  num_workers: 8
+  num_workers: 4
   pin_memory: false
   prefetch_factor: 4
   angle_bin_count: 5
   balanced_sampling: true
   augmentation:
     enabled: true
+    # Augment on the card, not in the workers. Measured on this box
+    # (Ryzen 5 5600X, 6 cores): one 112x136x112 grid_sample is 99 ms
+    # on a worker core against 5.2 ms/view batched on the 3060 Ti, so
+    # the CPU path cost ~793 ms per batch of 8 and pinned the GPU at
+    # 16%. See RandomCTAugmentation.apply_batch.
+    device: gpu
     balance_then_augment: true
     views_per_sample: 5
     probability: 1.0

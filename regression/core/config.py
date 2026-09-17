@@ -144,6 +144,14 @@ class AugmentationConfig:
     intensity_scale_range: tuple[float, float] = (0.95, 1.05)
     intensity_shift_range: tuple[float, float] = (-25.0, 25.0)
     noise_std: float = 8.0
+    # "cpu" augments one view at a time inside each DataLoader worker;
+    # "gpu" defers the same maths to one batched call on the training
+    # device. The CT volumes here are 112x136x112, so a single CPU
+    # grid_sample costs ~99 ms against ~5 ms/view batched on the GPU --
+    # on a 6-core box that is the difference between being dataloader-
+    # bound and GPU-bound. Default stays "cpu" so existing configs are
+    # untouched.
+    device: str = "cpu"
 
 
 @dataclass
@@ -174,6 +182,8 @@ class DataConfig:
     lung_mask_dir: Path | None = None
     lung_mask_mode: str = "off"
     lung_mask_dilate_mm: float = 0.0
+    laa_density_dir: Path | None = None
+    laa_density_mode: str = "density"
     intensity_window: tuple[float, float] = (-1000.0, 400.0)
     input_normalization: InputNormType = "zscore"
     target_normalization: TargetNormType = "zscore"
@@ -446,6 +456,12 @@ class Config:
                 ),
                 lung_mask_mode=data_section.get("lung_mask_mode", "off"),
                 lung_mask_dilate_mm=float(data_section.get("lung_mask_dilate_mm", 0.0)),
+                laa_density_dir=(
+                    Path(data_section["laa_density_dir"])
+                    if data_section.get("laa_density_dir")
+                    else None
+                ),
+                laa_density_mode=data_section.get("laa_density_mode", "density"),
                 intensity_window=tuple(
                     data_section.get("intensity_window", [-1000.0, 400.0])
                 ),
@@ -503,6 +519,9 @@ class Config:
                         )
                     ),
                     noise_std=augmentation_section.get("noise_std", 8.0),
+                    device=str(
+                        augmentation_section.get("device", "cpu")
+                    ).lower(),
                 ),
             ),
             paths=PathConfig(

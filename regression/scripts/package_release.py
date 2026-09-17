@@ -84,7 +84,15 @@ def bundle_release(release_dir: Path, app_repo: Path, dest: Path) -> Path:
 
     preprocess_src = Path(app_repo) / "core" / "preprocess.py"
     shutil.copyfile(preprocess_src, dest / "preprocess.py")
-    digest = hashlib.sha256(preprocess_src.read_bytes()).hexdigest()
+    # Hash the LF-normalised bytes. The app repo is checked out on both Linux and
+    # Windows, and git rewrites line endings on the Windows checkout, so hashing the
+    # raw bytes makes this record depend on which machine packaged the release -- a
+    # later repackage on the other platform reads as preprocessing drift when nothing
+    # about the code has changed. The real gate is check_preprocess_matches(), which
+    # compares the produced arrays; this digest is provenance and must be stable.
+    digest = hashlib.sha256(
+        preprocess_src.read_bytes().replace(b"\r\n", b"\n")
+    ).hexdigest()
     (dest / "PREPROCESS_HASH").write_text(digest + "\n")
     return dest
 

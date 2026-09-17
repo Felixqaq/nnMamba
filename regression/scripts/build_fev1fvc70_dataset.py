@@ -49,6 +49,16 @@ DEFAULT_OUT = (
     REPO / "classification" / "datasets" / "normal_v_abnormal_fev1fvc70"
 )
 BATCH_DIR = re.compile(r"^\d{8}$")
+
+# Deliveries that sit outside the weekly <batch>/<pid> layout, as globs relative to
+# the DICOM root whose matches are folders of patient folders. Added 2026-09-15
+# after 21 patients turned out to have spirometry read but no CT in any batch:
+# their imaging was in these two places all along. `LDCT/*/non_PFT` is deliberately
+# not listed -- those 26 patients have no spirometry row, so no label.
+EXTRA_DELIVERIES: tuple[str, ...] = (
+    "LDCT/*/PFT",                  # low-dose pull, its PFT-matched subset
+    "醫生提供(乾淨資料集)",          # curated by the referring physician
+)
 RATIO_CUTOFF = 70.0
 
 # The batches this cohort is defined over. copd_dataset also holds later pulls that
@@ -57,30 +67,70 @@ RATIO_CUTOFF = 70.0
 # patient present in two pulls would have their source folder decided by sort order
 # rather than by the cohort definition. Set to None to scan every batch present.
 COHORT_BATCHES: set[str] | None = {
+    # Added 2026-09-15. The six weekly pulls that predate 20260108, which the
+    # 2026-08-31 pass started from and so never reached. All 103 carry both a
+    # FEV1FVC_pct row and a DICOM folder; 2 of them are already in the cohort
+    # through another pull, leaving 101 new patients (30 abnormal, 73 normal).
+    # Spirometry rows dated outside any of these batches exist -- 26 of them --
+    # but 6 are hospital_66 patients already present and the other 20 have no
+    # imaging at all, so none of those can join.
+    "20251127", "20251204", "20251211", "20251218", "20251225", "20260101",
+    # Added 2026-08-31. The three earliest pulls; their PFT pages were curated in
+    # the latest pass, which also completed 20260129 and filled two stragglers in
+    # 20260212 and 20260319 -- 78 patients in total still missing a NIfTI.
+    "20260108", "20260115", "20260122",
+    # Added 2026-08-29 after the corresponding PFT_JPG reports were curated.
+    # These eleven historical pulls contribute the newly available training
+    # patients while the already frozen 200-patient holdout remains unchanged.
+    "20260129", "20260205", "20260212", "20260219", "20260226",
+    "20260305", "20260312", "20260319", "20260326",
+    "20260402", "20260409",
+    # Added 2026-08-27. PFT_JPG/fev1_fvc.csv is the curated inclusion source;
+    # these five newly received batches contribute 99 labelled patients.
+    "20260416", "20260423", "20260430", "20260507", "20260514",
     "20260702", "20260709", "20260716",   # added 2026-08-21, spirometry now read
     "20260723", "20260730", "20260806", "20260813",
+    # Added 2026-08-26. These six batches are dated earlier than the seven above
+    # but arrived later; their PFT pages were extracted and read in the same pass,
+    # so every patient in them carries a FEV1FVC_pct row. 146 patients.
+    "20260521", "20260528", "20260604",
+    "20260611", "20260618", "20260625",
 }
 # |cos| between slice normal and patient z. A true axial stack sits at 1.0; tilted
 # gantry acquisitions stay well above 0.9, while sagittal/coronal reformats are ~0.
 AXIAL_MIN_COSINE = 0.85
 
-# Patients dropped from the cohort, with the reason. Excluded before conversion so
-# a re-run cannot silently resurrect them.
-EXCLUDED: dict[str, str] = {
-    # Contrast aortic study, no lung reconstruction anywhere in it. Its only
-    # positive-scoring series, "Aorta 3/3", is a SAGITTAL reformat (948x565
-    # in-plane, spine running across the frame) that the description-based
-    # _NON_AXIAL filter cannot catch because the name never says "sag". Every
-    # other series is a 5mm Br40 contrast phase or a coronal reformat.
-    "2404337": "no axial lung series; best candidate is a sagittal aortic reformat",
-    # Spirometry effort was inadequate, so the measured ratio is not a usable
-    # label. Sub-maximal effort truncates FVC more than FEV1 and therefore biases
-    # FEV1/FVC upward — an obstructed patient can be recorded as normal. Excluded
-    # on the validity of the test, not on how any model scored them: one had been
-    # classified correctly by both models, the other by one.
-    "2175556": "invalid spirometry — inadequate expiratory effort",
-    "2906076": "invalid spirometry — inadequate expiratory effort",
-}
+# Cohort decisions live in regression/cohort_decisions.local.json, not here.
+# Each one names patients by hospital ID next to a clinical reason -- invalid
+# spirometry, a non-thoracic scan, two spirometry sessions nineteen points apart --
+# and this repository is public, so an ID beside a reason is identifiable to
+# anyone with access to the hospital system. The file is gitignored and the build
+# refuses to run without it: an absent file must stop the build, never quietly
+# produce a cohort with no exclusions and no cross-cohort reconciliation.
+#
+# See cohort_decisions.example.json for the shape.
+_DECISIONS_PATH = REPO / "regression/cohort_decisions.local.json"
+
+
+def _load_decisions() -> dict:
+    if not _DECISIONS_PATH.is_file():
+        raise SystemExit(
+            f"{_DECISIONS_PATH} is missing. It holds the patient-level exclusions and "
+            "cross-cohort reconciliations and is deliberately not in version control; "
+            "copy it from the machine that has it, or rebuild it from "
+            "cohort_decisions.example.json. Refusing to build a cohort without it."
+        )
+    payload = json.loads(_DECISIONS_PATH.read_text(encoding="utf-8"))
+    for key in ("cross_cohort_keep", "cross_cohort_ratio_override", "excluded"):
+        if key not in payload:
+            raise SystemExit(f"{_DECISIONS_PATH}: no {key!r} section")
+    return payload
+
+
+_DECISIONS = _load_decisions()
+CROSS_COHORT_KEEP: dict[str, str] = _DECISIONS["cross_cohort_keep"]
+CROSS_COHORT_RATIO_OVERRIDE: dict[str, dict] = _DECISIONS["cross_cohort_ratio_override"]
+EXCLUDED: dict[str, str] = _DECISIONS["excluded"]
 
 
 def label_for(ratio: float) -> str:
@@ -185,7 +235,7 @@ def find_staged_dirs(dicom_root: Path, batches: set[str]) -> dict[str, list[Path
 def find_dicom_dirs(dicom_root: Path) -> dict[str, Path]:
     """Map patient_id -> DICOM folder, for copd_dataset's <batch>/<pid> layout.
 
-    A patient can appear in more than one pull (2043242 sits in both 20260716 and
+    A patient can appear in more than one pull (one sits in both 20260716 and
     20260723 as byte-identical copies). Batches are visited oldest first and each
     assignment overwrites, so the most recent pull wins — the later export is the
     more complete one, and tying the choice to the date makes it reproducible
@@ -233,15 +283,58 @@ def _dicom_subdirs(patient_dir: Path) -> list[Path]:
     return candidates or [patient_dir]
 
 
+def find_extra_delivery_dirs(
+    dicom_root: Path,
+    already: set[str],
+) -> tuple[dict[str, Path], list[tuple[str, str]]]:
+    """Map patient_id -> DICOM folder for deliveries outside the weekly layout.
+
+    Two folders arrived as one-off deliveries rather than dated pulls, so
+    `find_dicom_dirs` never sees them: the LDCT pull keeps its PFT-matched
+    patients under `LDCT/<date>/PFT/`, and the referring physician's curated set
+    has no date level at all. Between them they carry the imaging for patients
+    whose spirometry was already read but whose CT appeared to be missing.
+
+    A patient who also has a weekly batch folder is returned as a conflict rather
+    than overridden. The two folders can hold different studies -- one patient has
+    spirometry from two visits nineteen ratio points apart -- and silently
+    preferring one is how a label stops describing the image it is attached to.
+    """
+    found: dict[str, Path] = {}
+    conflicts: list[tuple[str, str]] = []
+    for pattern in EXTRA_DELIVERIES:
+        for parent in sorted(dicom_root.glob(pattern)):
+            if not parent.is_dir():
+                continue
+            for patient in sorted(parent.iterdir()):
+                if not patient.is_dir():
+                    continue
+                if patient.name in already:
+                    conflicts.append((patient.name, pattern))
+                    continue
+                inner = patient / "DICOM"
+                found.setdefault(patient.name, inner if inner.is_dir() else patient)
+    return found, conflicts
+
+
 def find_hospital66_dirs(root: Path) -> dict[str, list[Path]]:
     """Map patient_id -> candidate DICOM folders, for the <class>/<pid> layout.
 
     The class folder is the older clinical grouping and is deliberately not read
     as a label; labels come from the measured FEV1/FVC ratio instead.
     """
+    # Only the two clinical grouping folders are patient containers. The root also
+    # accumulates backups and tooling (copd_backup_A_raw_ct, nnmamba_backup_*,
+    # _deid_tool, DicomToNii_essentials_*), and walking those enumerated 28
+    # repo directories as if they were patients. They were harmless only because
+    # none happened to be named like a real ID -- and setdefault keeps the first
+    # match in sort order, so "DicomToNii_essentials_20260820" would have won
+    # against "Normal" for any that did.
+    CLASS_DIRS = {"Normal", "Abnormal"}
+
     found: dict[str, list[Path]] = {}
     for cls in sorted(root.iterdir()):
-        if not cls.is_dir():
+        if not cls.is_dir() or cls.name not in CLASS_DIRS:
             continue
         for patient in sorted(cls.iterdir()):
             if not patient.is_dir():
@@ -515,15 +608,65 @@ def main() -> None:
     dicom_dirs: dict[str, list[Path]] = {}
     if args.cohorts in ("both", "copd117"):
         labels.update(load_labels(args.csv))
-        dicom_dirs.update(
-            {pid: [d] for pid, d in find_dicom_dirs(args.dicom_root).items()}
+        batch_dirs = find_dicom_dirs(args.dicom_root)
+        dicom_dirs.update({pid: [d] for pid, d in batch_dirs.items()})
+        extra, extra_clashes = find_extra_delivery_dirs(
+            args.dicom_root, set(batch_dirs)
         )
+        for pid, folder in sorted(extra.items()):
+            dicom_dirs[pid] = [folder]
+            print(f"EXTRA DELIVERY   : {pid} — {folder.parent.parent.name}/"
+                  f"{folder.parent.name}")
+        for pid, pattern in sorted(extra_clashes):
+            print(f"EXTRA SKIPPED    : {pid} — also in a weekly batch, keeping the "
+                  f"batch copy rather than {pattern}")
     if args.cohorts in ("both", "hospital66"):
         gold_labels = load_gold_labels(args.gold_json)
         gold_dirs = find_hospital66_dirs(args.hospital66_root)
         # A shared ID would mean the same patient under two ratios; the merge
-        # below would silently keep one. Verified disjoint, but check anyway.
+        # below would silently keep one. Any clash is fatal unless it is named in
+        # CROSS_COHORT_KEEP *and* both sources agree on the ratio -- a later
+        # copd_dataset pull re-collecting one of the original 66 is benign, two
+        # different ratios for one ID never is.
         clash = (set(gold_labels) & set(labels)) | (set(gold_dirs) & set(dicom_dirs))
+        for pid in sorted(clash & set(CROSS_COHORT_KEEP)):
+            a = labels.get(pid, {}).get("ratio")
+            b = gold_labels.get(pid, {}).get("ratio")
+            if a is not None and b is not None and float(a) != float(b):
+                override = CROSS_COHORT_RATIO_OVERRIDE.get(pid)
+                if override is None:
+                    raise SystemExit(
+                        f"{pid}: copd_dataset ratio {a} but hospital66 ratio {b}. "
+                        "Refusing to reconcile a genuine disagreement."
+                    )
+                # An override still has to describe the disagreement it permits,
+                # or it would keep applying after the underlying data changed.
+                if (float(override["copd_dataset_ratio"]) != float(a)
+                        or float(override["hospital66_ratio"]) != float(b)):
+                    raise SystemExit(
+                        f"{pid}: recorded override is for {override['copd_dataset_ratio']}"
+                        f" vs {override['hospital66_ratio']}, but the data now reads "
+                        f"{a} vs {b}. Re-decide before this runs."
+                    )
+                print(f"OVERRIDE         : {pid} — {a} vs {b}, keeping "
+                      f"{CROSS_COHORT_KEEP[pid]} ({override['reason']}; "
+                      f"decided by {override['decided_by']})")
+            keep = CROSS_COHORT_KEEP[pid]
+            drop = "copd_dataset" if keep == "hospital66" else "hospital66"
+            if drop == "copd_dataset":
+                labels.pop(pid, None)
+                dicom_dirs.pop(pid, None)
+            else:
+                gold_labels.pop(pid, None)
+                gold_dirs.pop(pid, None)
+            # Say "in both" only when it is true; the override case already
+            # printed the two differing ratios above.
+            if a is not None and b is not None and float(a) != float(b):
+                print(f"RECONCILED       : {pid} — kept {keep} ratio {b}, "
+                      f"dropped {drop} ratio {a}")
+            else:
+                print(f"RECONCILED       : {pid} — ratio {a} in both; keeping {keep}")
+        clash -= set(CROSS_COHORT_KEEP)
         if clash:
             raise SystemExit(f"patient IDs present in both cohorts: {sorted(clash)}")
         labels.update(gold_labels)

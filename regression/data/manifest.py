@@ -386,9 +386,27 @@ def _extract_patient_id(path: Path) -> str:
 
 
 def iter_ct_files(data_root: str | Path) -> list[Path]:
-    """List CT files under the angle-organized folders."""
+    """List CT files under the angle-organized folders.
+
+    Both NIfTI spellings count. Cohorts arrive as ``.nii.gz``; a cohort
+    pre-resampled for one run is written uncompressed so training does not pay to
+    gunzip the same volumes every epoch. One patient holding both spellings is
+    raised rather than passed on, because the split would then contain the same
+    person twice and no later check names the cause.
+    """
     data_root = Path(data_root)
-    return sorted(p for p in data_root.rglob("*.nii.gz") if p.is_file())
+    files = sorted(p for p in data_root.rglob("*.nii.gz") if p.is_file())
+    files += sorted(p for p in data_root.rglob("*.nii") if p.is_file())
+    seen: dict[str, Path] = {}
+    for path in files:
+        patient_id = _extract_patient_id(path)
+        if patient_id in seen:
+            raise ValueError(
+                f"patient {patient_id} has two CT files under {data_root}: "
+                f"{seen[patient_id].name} and {path.name}"
+            )
+        seen[patient_id] = path
+    return sorted(files)
 
 
 def build_angle_manifest(

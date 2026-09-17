@@ -1,0 +1,189 @@
+# RQ1 image arm on the 240-patient cohort, as a 5-member majority-vote ensemble.
+#
+# Members differ only in their training seed; split_seed is pinned so all five see
+# the identical folds and can therefore be voted per patient. Member 1 reuses the
+# seed-42 run finished 2026-08-21, so only four are trained here — about 7 hours
+# rather than 8.75.
+#
+# Worth carrying into the read-out: hard majority voting buys little when members
+# are badly calibrated, and this model outputs almost exclusively 0.000 or 1.000 —
+# five confidently-wrong members vote the same way. vote_sizes therefore also scores
+# 1 and 3, so the gain per added member is visible rather than assumed.
+
+experiment:
+  name: RQ1_normal_v_abnormal image (712, FEV1/FVC 70) COPDxNet BASELINE majority-5
+  description: normal_v_abnormal | copdxnet | 384-patient (66+318)
+    FEV1/FVC<70 labelling (100ep, no early stop, 5-fold, 5-member majority).
+model:
+  name: copdxnet
+  num_classes: 2
+  in_channels: 1
+  hidden_dim: 256
+  dropout: 0.3
+  # 40 gives 5.57 M parameters against the 5.4 M the COPDxNet paper states;
+  # 32 would be 3.58 M and would understate the published capacity.
+  base_channels: 40
+  blocks: 3
+  attn_heads: 8
+  attn_layers: 1
+  attn_mlp_ratio: 2.0
+  attn_dropout: 0.1
+  tapct_embedding_dim: 1152
+  fusion_projection_dim: 128
+  fusion_dropout: 0.1
+  feature_size: 24
+  depths:
+  - 2
+  - 2
+  - 2
+  - 2
+  num_heads:
+  - 3
+  - 6
+  - 12
+  - 24
+  window_size: 4
+  patch_size: 2
+  use_checkpoint: false
+  use_v2: true
+training:
+  epochs: 100
+  # COPDxNet is not in the loader's ATTENTION_HEAVY_MODELS set, so it reads
+  # these, not swin_batch_size. Batch 2 is not a preference -- it is the largest
+  # that fits: the network keeps full-resolution activations through its first
+  # two blocks, so batch 8 already peaks at 6.57 GiB and runs 40x slower as the
+  # driver starts paging, and batch 12 needs 9.79 GiB on an 8 GiB card.
+  # Measured ms/sample: 106 at batch 1, 104 at 2, 233 at 4, 4333 at 8.
+  # The caveat this forces: BatchNorm statistics over 2 samples are noisy, and
+  # every block here has two BN layers. Report that alongside any result.
+  batch_size: 2
+  eval_batch_size: 4
+  # Re-measured 2026-08-22 with augmentation on the GPU, timing a full training
+  # step (augment + forward + backward + clip + AdamW) on the real model. The
+  # old "batch 8 is the sweet spot" note was taken while the CPU augmentation
+  # was the bottleneck, so it described the dataloader, not the card:
+  #
+  #   batch   ms/sample   peak VRAM   s/epoch
+  #       8       18.48    1.22 GiB      11.7
+  #      12       14.14    1.80 GiB       9.0   <- fastest
+  #      16       14.58    2.36 GiB       9.3
+  #      24       19.31    3.49 GiB      12.5
+  #
+  # VRAM is not the constraint here at all; batch 12 simply saturates the SMs
+  # and anything larger just queues. Eval has no backward pass and peaks at 16
+  # (2.7 s against 3.2 s at batch 8).
+  swin_batch_size: 12
+  swin_eval_batch_size: 16
+  # Left at 1e-4 despite batch 8 -> 12. The linear-scaling rule is an SGD
+  # result and does not transfer cleanly to AdamW, and this model's problem
+  # is overfitting (train loss 0.01 with validation falling from epoch 35),
+  # not slow convergence -- so there is nothing to buy with a hotter LR,
+  # and holding it fixed keeps the change to a single variable.
+  learning_rate: 0.0001
+  weight_decay: 0.001
+  k_folds: 5
+  eval_interval: 5
+  save_interval: 10
+  seed: 42
+  loss: cross_entropy
+  clip_grad_norm: 1.0
+  # fp16 autocast: 13.8 -> 11.2 ms/sample. TF32 and cudnn.benchmark are already
+  # on for every run via core.runtime.configure_torch_runtime, so this is the
+  # remaining GPU-side gain. Numerics differ slightly from the earlier fp32 runs.
+  amp: true
+  track_train_metrics: false
+  class_weight_mode: none
+early_stopping:
+  enabled: false
+  patience: 6
+  min_delta: 0.005
+gradcam:
+  enabled: false
+  max_samples: 8
+  target_layer: null
+  target_class: 0
+ensemble:
+  enabled: true
+  member_count: 5
+  vote_sizes: [1, 3, 5]
+  voting: majority
+  split_seed: 42
+  member_seeds: [42, 43, 44, 45, 46]
+  # Nothing reused. The old seed-42 run was batch 8 on the CPU augmentation
+  # path, so it is not exchangeable with these five; all members are trained
+  # fresh under identical settings.
+  existing_member_uuids: []
+  train_missing_members: true
+
+data:
+  target_mode: normal_v_abnormal
+  source_dir: ../classification/datasets/normal_v_abnormal_fev1fvc70
+  labels_json: ../patient_angle_classification_by_group.json
+  manifest: ./datasets/generated/rq1_fev1fvc70_manifest.image.json
+  tapct_features: null
+  image_size:
+  - 112
+  - 136
+  - 112
+  intensity_window:
+  - -1000.0
+  - 400.0
+  input_normalization: zscore
+  target_normalization: none
+  cache_data: true
+  # pin_memory is what died on this 8 GB card — the page-locked allocation in the
+  # loader's pin thread raised a CUDA OOM on the very first batch. Workers were
+  # not the cause and are needed: augmentation (affine grid_sample plus intensity
+  # jitter on a 112x136x112 volume, five views per sample) runs on the CPU, so
+  # with num_workers=0 it serialises against the GPU and leaves it ~26% busy while
+  # the main process burns 2.4 cores. Prefetching in workers overlaps the two.
+  # Back to 8. They were cut to 4 when augmentation moved to the GPU, but
+  # that overcorrected: the workers now only read the RAM cache and collate
+  # (12% CPU each, load average 1.44 on six cores) and at batch 12 they had
+  # become the ceiling again -- 10.89 s/epoch measured against 9.16 s of
+  # actual GPU work, i.e. the card idle ~16% of the step waiting for data.
+  num_workers: 8
+  # Leave this off. It has now failed twice on this card, the second time at
+  # only 4 workers x prefetch 2 (~416 MiB) -- so it is not a volume problem and
+  # lowering the worker count does not rescue it. An isolated benchmark pins
+  # that much happily; inside the training process, with the model and the
+  # 240-CT cache already resident, DataLoader's pin thread raises
+  # "CUDA error: out of memory" on the first batch. The 3 ms/batch a pinned
+  # host->device copy would save is not worth re-testing.
+  pin_memory: false
+  prefetch_factor: 2
+  angle_bin_count: 5
+  balanced_sampling: true
+  augmentation:
+    enabled: true
+    # Augment on the card, not in the workers. Measured on this box
+    # (Ryzen 5 5600X, 6 cores): one 112x136x112 grid_sample is 99 ms
+    # on a worker core against 5.2 ms/view batched on the 3060 Ti, so
+    # the CPU path cost ~793 ms per batch of 8 and pinned the GPU at
+    # 16%. See RandomCTAugmentation.apply_batch.
+    device: gpu
+    balance_then_augment: true
+    views_per_sample: 5
+    probability: 1.0
+    class_indices:
+    - 0
+    - 1
+    rotation_degrees: 7.0
+    translation_fraction: 0.05
+    scale_range:
+    - 0.95
+    - 1.05
+    intensity_scale_range:
+    - 0.95
+    - 1.05
+    intensity_shift_range:
+    - -0.1
+    - 0.1
+    noise_std: 0.03
+task: RQ1_normal_v_abnormal_fev1fvc70
+resume:
+  enabled: false
+  uuid: null
+  start_fold: 0
+gpu:
+  device_id: '0'

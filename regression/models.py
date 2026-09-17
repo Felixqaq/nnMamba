@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import torch.nn as nn
 
+from networks.copdxnet import COPDxNet
 from networks.hybrid_mamba_attention_regressor import HybridMambaAttentionRegressor
 from networks.hybrid_mamba_tapct_abmil_fusion_regressor import (
     HybridMambaTapctABMILFusionRegressor,
@@ -18,6 +19,9 @@ from networks.tapct_abmil_classifier import TapctABMILClassifier
 
 
 MODEL_REGISTRY = {
+    # Published light-CNN baseline; see networks/copdxnet.py for what the paper
+    # specifies and what is reconstructed.
+    "copdxnet": COPDxNet,
     "hybrid": HybridMambaAttentionRegressor,
     "hybrid_mamba_attention": HybridMambaAttentionRegressor,
     "hybrid_mamba_attention_regressor": HybridMambaAttentionRegressor,
@@ -60,6 +64,15 @@ def build_model(model_config, device=None, output_dim: int | None = None) -> nn.
                 "base_channels": int(model_config.base_channels),
                 "depths": tuple([int(model_config.blocks)] * 3),
                 "dropout": float(model_config.dropout),
+            }
+        elif key == "copdxnet":
+            kwargs = {
+                "in_channels": int(model_config.in_channels),
+                "num_classes": num_outputs,
+                # 40 lands at 5.57 M parameters against the paper's stated 5.4 M
+                "base_channels": int(getattr(model_config, "base_channels", 40) or 40),
+                "dropout": float(model_config.dropout),
+                "head_hidden_dim": int(model_config.hidden_dim),
             }
         elif key in {
             "hybrid",

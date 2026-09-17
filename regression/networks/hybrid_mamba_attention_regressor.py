@@ -130,13 +130,26 @@ class HybridMambaAttentionRegressor(nn.Module):
             nn.Dropout(float(dropout)),
             nn.Linear(head_mid_dim, int(num_classes)),
         )
+        # Auxiliary emphysema head. Trained only when a run supplies %LAA-950
+        # targets; it shares forward_features with the classifier, so the shared
+        # trunk has to encode emphysema extent to satisfy it. Deployment never
+        # calls it -- the classifier path is unchanged, so no segmentation and no
+        # extra inference cost reach the field.
+        self.aux_emphysema_head = nn.Sequential(
+            nn.Linear(feature_dim, head_mid_dim),
+            nn.GELU(),
+            nn.Dropout(float(dropout)),
+            nn.Linear(head_mid_dim, 1),
+        )
+
         self._init_head()
 
     def _init_head(self) -> None:
         """Keep initial regression outputs close to zero in normalized space."""
-        final_linear = self.head[-1]
-        nn.init.normal_(final_linear.weight, mean=0.0, std=1e-3)
-        nn.init.zeros_(final_linear.bias)
+        for module in (self.head, self.aux_emphysema_head):
+            final_linear = module[-1]
+            nn.init.normal_(final_linear.weight, mean=0.0, std=1e-3)
+            nn.init.zeros_(final_linear.bias)
 
     def forward_features(self, x: torch.Tensor) -> torch.Tensor:
         x1 = self.stage1(self.stem(x))
@@ -154,3 +167,14 @@ class HybridMambaAttentionRegressor(nn.Module):
         features = self.forward_features(x)
         output = self.head(features)
         return output.squeeze(-1) if output.shape[-1] == 1 else output
+
+    def forward_with_emphysema(self, x: torch.Tensor):
+        """Classifier logits plus the auxiliary emphysema prediction.
+
+        Kept separate from forward() so every existing caller, checkpoint and
+        deployment path behaves exactly as before.
+        """
+        features = self.forward_features(x)
+        output = self.head(features)
+        logits = output.squeeze(-1) if output.shape[-1] == 1 else output
+        return logits, self.aux_emphysema_head(features).squeeze(-1)

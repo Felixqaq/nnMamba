@@ -50,6 +50,7 @@ train_log/
 logs/
 figures/
 regression/embeddings/
+regression/outputs/
 *.pth
 *.pt
 *.ckpt
@@ -135,3 +136,17 @@ origin_dataset/
 
 # TotalSegmentator 產出的肺部遮罩（可重跑）
 regression/masks/
+
+# Generated artefacts that list patients by hospital ID. Regenerable from the
+# scripts, and this repository is public -- an ID plus a clinical value is
+# identifiable to anyone with access to the hospital system.
+regression/laa_density_summary.json
+regression/**/laa_density_summary.json
+*.local.json
+cohort_decisions.local.json
+regression/cohort_decisions.local.json
+
+# Frozen copies of the cohort builder taken per experiment for provenance. They
+# keep the patient-level exclusion lists inline, which is the point of a snapshot
+# and the reason they cannot be public. run.py and the outputs record what ran.
+regression/experiments/*/build_snapshot.py

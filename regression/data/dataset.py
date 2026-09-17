@@ -18,6 +18,7 @@ from .manifest import AngleRecord, build_angle_manifest
 DEFAULT_IMAGE_SIZE = (112, 136, 112)
 InputNormalization = Literal["zscore", "none"]
 LungMaskMode = Literal["off", "zero_outside", "crop", "crop_and_zero"]
+LaaDensityMode = Literal["density", "density_and_occupancy"]
 CLASSIFICATION_TARGET_MODES = {
     "gold",
     "gold_severity4",
@@ -27,6 +28,49 @@ CLASSIFICATION_TARGET_MODES = {
     "oi_3class",
     "normal_v_abnormal",
 }
+
+
+def load_laa_density_array(
+    path: str | Path,
+    image_size: tuple[int, int, int],
+) -> np.ndarray:
+    """Load and validate one compact native-resolution LAA uint8 array."""
+    array = np.load(Path(path), allow_pickle=False)
+    expected_shape = (2, *tuple(int(value) for value in image_size))
+    if array.shape != expected_shape:
+        raise ValueError(
+            f"Expected LAA density shape {expected_shape}, got {array.shape} for {path}"
+        )
+    if array.dtype != np.uint8:
+        raise ValueError(f"Expected uint8 LAA density data, got {array.dtype} for {path}")
+    return array
+
+
+def select_laa_density_channels(
+    array: np.ndarray,
+    mode: LaaDensityMode,
+) -> np.ndarray:
+    """Convert the requested validated LAA channels to model-ready float32."""
+    if mode not in {"density", "density_and_occupancy"}:
+        raise ValueError(f"Unsupported laa_density_mode={mode!r}")
+    channel_count = 1 if mode == "density" else 2
+    return array[:channel_count].astype(np.float32) / 255.0
+
+
+def load_laa_density_channels(
+    path: str | Path,
+    image_size: tuple[int, int, int],
+    mode: LaaDensityMode,
+) -> np.ndarray:
+    """Load precomputed native-resolution LAA information as float channels.
+
+    Files are written by ``precompute_laa_density.py`` as uint8 arrays with
+    channel 0 = local %LAA-950 density and channel 1 = lung occupancy.  Refuse
+    shape or mode mismatches instead of silently resizing a channel whose
+    conservation property depends on the exact preprocessing order.
+    """
+    array = load_laa_density_array(path, image_size)
+    return select_laa_density_channels(array, mode)
 
 
 def _resize_volume(volume: np.ndarray, target_shape: tuple[int, int, int]) -> np.ndarray:
@@ -291,6 +335,8 @@ class AngleRegressionDataset(Dataset):
         lung_mask_dir: str | Path | None = None,
         lung_mask_mode: LungMaskMode = "off",
         lung_mask_dilate_mm: float = 0.0,
+        laa_density_dir: str | Path | None = None,
+        laa_density_mode: LaaDensityMode = "density",
         records: Sequence[AngleRecord] | None = None,
         tapct_embeddings: Mapping[str, np.ndarray] | None = None,
         transform=None,
@@ -322,6 +368,12 @@ class AngleRegressionDataset(Dataset):
         self.lung_mask_dir = Path(lung_mask_dir) if lung_mask_dir else None
         self.lung_mask_mode = lung_mask_mode
         self.lung_mask_dilate_mm = float(lung_mask_dilate_mm)
+        self.laa_density_dir = Path(laa_density_dir) if laa_density_dir else None
+        self.laa_density_mode = laa_density_mode
+        if self.laa_density_dir is not None and not bool(load_ct_data):
+            raise ValueError("laa_density_dir requires load_ct_data=True")
+        if self.laa_density_mode not in {"density", "density_and_occupancy"}:
+            raise ValueError(f"Unsupported laa_density_mode={self.laa_density_mode!r}")
         self.tapct_embeddings = dict(tapct_embeddings or {})
         self.transform = transform
         self.cache_data = cache_data
@@ -346,6 +398,7 @@ class AngleRegressionDataset(Dataset):
             self.records = list(records)
 
         self.cached_data: list[dict] = []
+        self.cached_laa_density: list[np.ndarray] = []
         if self.cache_data:
             self._preload_all()
 
@@ -359,6 +412,17 @@ class AngleRegressionDataset(Dataset):
                 f"Missing lung mask for patient {record.patient_id}: {mask_path}"
             )
         return mask_path
+
+    def _laa_density_path(self, record: AngleRecord) -> Path | None:
+        """Resolve one precomputed LAA density array when the channel is enabled."""
+        if self.laa_density_dir is None:
+            return None
+        density_path = self.laa_density_dir / f"{record.patient_id}.npy"
+        if not density_path.exists():
+            raise FileNotFoundError(
+                f"Missing LAA density for patient {record.patient_id}: {density_path}"
+            )
+        return density_path
 
     def _build_sample(self, record: AngleRecord) -> dict:
         """Load and assemble a sample dictionary for one CT volume."""
@@ -419,17 +483,29 @@ class AngleRegressionDataset(Dataset):
                     f"Missing TAP-CT embedding for patient {record.patient_id}."
                 )
             sample["tapct_embedding"] = np.asarray(embedding, dtype=np.float32)
-        if self.transform is not None:
-            sample = self.transform(sample)
         return sample
 
     def _preload_all(self) -> None:
-        """Preload all CTs into memory for fast k-fold iteration."""
+        """Preload CTs as float32 and compact auxiliary channels as uint8.
+
+        Keeping LAA density arrays in their stored uint8 form saves about 7.3 GB
+        for the 712-patient three-channel experiment.  They are converted only
+        for the current sample, before ``ToTensor`` and collation.
+        """
         from tqdm import tqdm
 
         self.cached_data = []
         for record in tqdm(self.records, desc="Caching CTs", leave=False):
             self.cached_data.append(self._build_sample(record))
+        self.cached_laa_density = []
+        if self.laa_density_dir is not None:
+            for record in tqdm(self.records, desc="Caching LAA uint8", leave=False):
+                density_path = self._laa_density_path(record)
+                if density_path is None:  # guarded by laa_density_dir above
+                    raise RuntimeError("LAA density path unexpectedly disabled")
+                self.cached_laa_density.append(
+                    load_laa_density_array(density_path, self.image_size)
+                )
 
     def __len__(self) -> int:
         return len(self.records)
@@ -443,4 +519,16 @@ class AngleRegressionDataset(Dataset):
             sample = dict(self.cached_data[idx])
         else:
             sample = self._build_sample(record)
+        density_path = self._laa_density_path(record)
+        if density_path is not None:
+            if self.cache_data and self.cached_laa_density:
+                stored_density = self.cached_laa_density[idx]
+            else:
+                stored_density = load_laa_density_array(density_path, self.image_size)
+            auxiliary = select_laa_density_channels(
+                stored_density, self.laa_density_mode
+            )
+            sample["ct"] = np.concatenate((sample["ct"], auxiliary), axis=0)
+        if self.transform is not None:
+            sample = self.transform(sample)
         return sample

@@ -8,6 +8,12 @@ import torch.nn as nn
 from .mamba_regressor import DownsampleStage, norm3d
 
 
+# The spirometry values predicted alongside FEV1/FVC. Names match the columns the
+# trainer reads from the clinical CSV; the order fixes the ModuleDict key order so
+# a checkpoint stays loadable.
+AUX_PFT_TARGETS: tuple[str, ...] = ("fev1", "fvc", "fev1_pctpred", "fvc_pctpred")
+
+
 def _resolve_attention_heads(dim: int, requested_heads: int) -> int:
     """Choose a valid attention head count for the given channel width."""
     heads = max(1, min(int(requested_heads), int(dim)))
@@ -142,11 +148,29 @@ class HybridMambaAttentionRegressor(nn.Module):
             nn.Linear(head_mid_dim, 1),
         )
 
+        # Auxiliary spirometry heads, one per additional PFT value. The point is
+        # regularisation, not these outputs: on this cohort in-sample ratio MAE
+        # runs near 1.1 against 7.1 on held-out patients, so the trunk has room to
+        # memorise a single target. FEV1/FVC and FVC are almost uncorrelated
+        # (r = -0.03) while FEV1/FVC and FEV1 are not (r = 0.46), so satisfying all
+        # of them at once demands features that describe the lung rather than the
+        # patient. Deployment reads self.head alone and never runs these.
+        self.aux_pft_heads = nn.ModuleDict({
+            name: nn.Sequential(
+                nn.Linear(feature_dim, head_mid_dim),
+                nn.GELU(),
+                nn.Dropout(float(dropout)),
+                nn.Linear(head_mid_dim, 1),
+            )
+            for name in AUX_PFT_TARGETS
+        })
+
         self._init_head()
 
     def _init_head(self) -> None:
         """Keep initial regression outputs close to zero in normalized space."""
-        for module in (self.head, self.aux_emphysema_head):
+        modules = [self.head, self.aux_emphysema_head, *self.aux_pft_heads.values()]
+        for module in modules:
             final_linear = module[-1]
             nn.init.normal_(final_linear.weight, mean=0.0, std=1e-3)
             nn.init.zeros_(final_linear.bias)
@@ -178,3 +202,18 @@ class HybridMambaAttentionRegressor(nn.Module):
         output = self.head(features)
         logits = output.squeeze(-1) if output.shape[-1] == 1 else output
         return logits, self.aux_emphysema_head(features).squeeze(-1)
+
+    def forward_multitarget(self, x: torch.Tensor):
+        """Main output plus one auxiliary spirometry value per head.
+
+        Separate from forward() for the same reason as forward_with_emphysema:
+        every existing caller, checkpoint and deployment path keeps its current
+        behaviour, and inference cost is unchanged because nothing in the field
+        calls this.
+        """
+        features = self.forward_features(x)
+        output = self.head(features)
+        main = output.squeeze(-1) if output.shape[-1] == 1 else output
+        aux = {name: head(features).squeeze(-1)
+               for name, head in self.aux_pft_heads.items()}
+        return main, aux

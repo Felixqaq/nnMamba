@@ -42,6 +42,7 @@ sys.path.insert(0, str(ROOT))
 from core.config import Config  # noqa: E402
 from core.runtime import configure_torch_runtime  # noqa: E402
 from data.loader import RegressionLoaderHelper as LoaderHelper  # noqa: E402
+from core.checkpoints import load_model_weights  # noqa: E402
 from models import build_model  # noqa: E402
 
 FIXED_CUTOFF = 70.0
@@ -166,7 +167,7 @@ def main() -> None:
     for path in args.checkpoints:
         blob = torch.load(path, map_location="cpu")
         model = build_model(config.model, output_dim=config.model_output_dim()).to(device)
-        model.load_state_dict(blob["state_dict"])
+        load_model_weights(model, blob["state_dict"], str(path))
         model.eval()
         mean, std = float(blob["ratio_mean"]), float(blob["ratio_std"])
 

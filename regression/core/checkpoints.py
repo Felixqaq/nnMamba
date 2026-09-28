@@ -52,10 +52,32 @@ def save_checkpoint(
     return save_path
 
 
+# Auxiliary heads are trained only when a run supplies their targets, and no
+# inference path reads them, so a checkpoint saved before they existed is still
+# a complete model. Nothing else may be missing.
+_OPTIONAL_PREFIXES = ("aux_pft_heads.", "aux_emphysema_head.")
+
+
+def load_model_weights(model, state_dict, source="") -> None:
+    """Strict load, except for auxiliary heads the inference path never reads."""
+    missing, unexpected = model.load_state_dict(state_dict, strict=False)
+    unknown = [k for k in missing if not k.startswith(_OPTIONAL_PREFIXES)]
+    if unknown or unexpected:
+        where = f" in {source}" if source else ""
+        raise SystemExit(
+            f"checkpoint{where} does not match {type(model).__name__}: "
+            f"{len(unknown)} unexpectedly missing key(s) {unknown[:5]}, "
+            f"{len(unexpected)} unexpected key(s) {list(unexpected)[:5]}")
+    if missing:
+        print(f"note: {len(missing)} auxiliary-head weight(s) absent from the "
+              f"checkpoint{' ' + source if source else ''}; they are left at their "
+              f"initial values and no prediction reads them", flush=True)
+
+
 def load_checkpoint(path: Path, model: nn.Module, device: torch.device) -> dict[str, Any]:
     """Load model weights and return checkpoint metadata."""
     checkpoint = torch.load(path, map_location=device)
     state_dict = checkpoint.get("state_dict", checkpoint)
-    model.load_state_dict(state_dict)
+    load_model_weights(model, state_dict, str(path))
     model.to(device)
     return checkpoint

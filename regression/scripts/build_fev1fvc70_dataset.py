@@ -67,6 +67,25 @@ RATIO_CUTOFF = 70.0
 # patient present in two pulls would have their source folder decided by sort order
 # rather than by the cohort definition. Set to None to scan every batch present.
 COHORT_BATCHES: set[str] | None = {
+    # Added 2026-09-29. The June to early-July 2025 pulls. The PFT pass of
+    # 2026-09-29 removed no row; it re-pointed one patient from a spirometry
+    # nine months before the CT to one six weeks after it, which the rebuild
+    # picks up.
+    "20250612", "20250619", "20250626", "20250703",
+    # Added 2026-09-24. The four July 2025 pulls; the PFT pass of 2026-09-24 added
+    # 58 patients to the export without removing or changing any existing row.
+    "20250710", "20250717", "20250724", "20250731",
+    # Added 2026-09-22. The four August 2025 pulls; the PFT pass of 2026-09-21
+    # added 73 patients to the export without removing or changing any existing
+    # row, and 66 of the new patients sit in these four batches.
+    "20250807", "20250814", "20250821", "20250828",
+    # Added 2026-09-18. The twelve weekly pulls that predate 20251127, curated in
+    # the latest PFT pass. 183 of their patients carry a FEV1FVC_pct row; six
+    # further stragglers in batches already listed below became labelled in the
+    # same pass, so this pull adds 189 patients in total.
+    "20250904", "20250911", "20250918", "20250925", "20251002",
+    "20251009", "20251016", "20251023",
+    "20251030", "20251106", "20251113", "20251120",
     # Added 2026-09-15. The six weekly pulls that predate 20260108, which the
     # 2026-08-31 pass started from and so never reached. All 103 carry both a
     # FEV1FVC_pct row and a DICOM folder; 2 of them are already in the cohort

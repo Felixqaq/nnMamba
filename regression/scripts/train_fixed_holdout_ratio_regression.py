@@ -54,6 +54,7 @@ from core.config import Config  # noqa: E402
 from core.runtime import configure_torch_runtime  # noqa: E402
 from data.loader import RegressionLoaderHelper as LoaderHelper  # noqa: E402
 from models import build_model  # noqa: E402
+from networks.hybrid_mamba_attention_regressor import AUX_PFT_TARGETS  # noqa: E402
 
 FIXED_CUTOFF = 70.0
 
@@ -67,6 +68,16 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--manifest", type=Path,
                    default=ROOT / "datasets/generated/doctor_validation_manifest.json")
     p.add_argument("--pft-csv", type=Path, required=True)
+    p.add_argument("--aux-pft-csv", type=Path,
+                   help="the full PFT export. Supplying it turns on the auxiliary "
+                        "spirometry heads: the trunk predicts FEV1, FVC and both "
+                        "%%predicted values alongside the ratio. The point is "
+                        "regularisation -- in-sample ratio MAE runs near 1.1 "
+                        "against 7.1 held out, so the trunk has room to memorise a "
+                        "single target. Omit it and the run is single-target, "
+                        "exactly as before.")
+    p.add_argument("--aux-weight", type=float, default=0.25,
+                   help="weight on each auxiliary target, against 1.0 on the ratio")
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--epochs", type=int, default=80)
     p.add_argument("--seed", type=int, default=72)
@@ -120,6 +131,71 @@ def ratio_of(clinical: dict, pid: str) -> float:
     if not value:
         raise SystemExit(f"{pid}: FEV1FVC_pct is empty")
     return float(value)
+
+
+# The ratio label is Pre for some patients and Post for others -- the export
+# says which in its Source column -- so the volumes have to be taken from the
+# matching half of the test. The %predicted columns already follow Source.
+AUX_SOURCES = {
+    "fev1": ("FEV1_pre", "FEV1_post"),
+    "fvc": ("FVC_pre", "FVC_post"),
+    "fev1_pctpred": ("FEV1_pctpred", "FEV1_pctpred"),
+    "fvc_pctpred": ("FVC_pctpred", "FVC_pctpred"),
+}
+# How far the volumes may disagree with the ratio label before the row is taken
+# to describe a different session. Labels are stored to whole percent, so ~0.5
+# of disagreement is arithmetic; 1.5 leaves room for that and still catches the
+# real case (one patient whose CT and PFT were captured months apart, kept in
+# the cohort under the ratio the reviewer chose, whose volumes are the other
+# session's and would be a wrong target).
+AUX_RATIO_TOLERANCE = 1.5
+
+
+def load_aux_targets(path: Path, order: tuple) -> tuple[dict, dict]:
+    """Per-patient spirometry targets from the full export, plus a reject log."""
+    rows: dict[str, dict[str, str]] = {}
+    with io.open(path, encoding="utf-8-sig", newline="") as fh:
+        for row in csv.DictReader(fh):
+            row = {(k or "").strip(): (v or "").strip() for k, v in row.items()}
+            if row.get("PatientID"):
+                rows[row["PatientID"]] = row
+    if not rows:
+        raise SystemExit(f"{path}: no rows")
+    missing = [c for name in order for c in set(AUX_SOURCES[name])
+               if c not in next(iter(rows.values()))]
+    if missing:
+        raise SystemExit(f"{path}: missing columns {sorted(set(missing))}")
+    return rows, {}
+
+
+def aux_of(aux_rows: dict, clinical: dict, pid: str, order: tuple):
+    """The auxiliary targets for one patient, or None with the reason why not.
+
+    Returning a reason rather than a silent zero matters: an unnoticed gap here
+    would train the heads towards a value nobody measured.
+    """
+    row = aux_rows.get(pid)
+    if row is None:
+        return None, "not in the auxiliary export"
+    post = row.get("Source", "") == "Post"
+    values = []
+    for name in order:
+        column = AUX_SOURCES[name][1 if post else 0]
+        raw = row.get(column, "")
+        if not raw:
+            return None, f"{column} empty"
+        try:
+            values.append(float(raw))
+        except ValueError:
+            return None, f"{column} not a number ({raw!r})"
+    fev1, fvc = values[0], values[1]
+    if fvc <= 0:
+        return None, "FVC is not positive"
+    drift = abs(100.0 * fev1 / fvc - ratio_of(clinical, pid))
+    if drift > AUX_RATIO_TOLERANCE:
+        return None, f"volumes imply ratio {100.0 * fev1 / fvc:.1f}, label says " \
+                     f"{ratio_of(clinical, pid):.1f}"
+    return values, ""
 
 
 def gli_cutoff_of(clinical: dict, pid: str) -> float:
@@ -186,9 +262,13 @@ def stratified_carve(ids, clinical, size, seed):
 
 
 def train_regressor(config, helper, clinical, seed, epochs, device, mean, std,
-                    eval_hook=None, eval_every=0):
+                    eval_hook=None, eval_every=0, aux=None):
     set_seed(seed)
     model = build_model(config.model, output_dim=config.model_output_dim()).to(device)
+    if aux is not None and not hasattr(model, "forward_multitarget"):
+        raise SystemExit(f"{config.model.name} has no forward_multitarget; it cannot "
+                         "train the auxiliary spirometry heads. Drop --aux-pft-csv or "
+                         "use a model that implements them.")
     train_loader = helper.get_train_dl(0, shuffle=True)
     optimizer = build_optimizer(model, float(config.training.learning_rate),
                                 float(config.training.weight_decay))
@@ -203,7 +283,7 @@ def train_regressor(config, helper, clinical, seed, epochs, device, mean, std,
 
     for epoch in range(1, epochs + 1):
         model.train()
-        total_loss, batches = 0.0, 0
+        total_loss, total_main, total_aux, batches = 0.0, 0.0, 0.0, 0
         for batch in tqdm(train_loader, leave=False,
                           desc=f"seed {seed} epoch {epoch}/{epochs}"):
             ct = batch["ct"].to(device, non_blocking=True)
@@ -212,19 +292,39 @@ def train_regressor(config, helper, clinical, seed, epochs, device, mean, std,
             raw = torch.tensor([ratio_of(clinical, pid) for pid in batch["patient_id"]],
                                dtype=torch.float32, device=device)
             target = (raw - mean) / std
+            if aux is not None:
+                aux_target, aux_mask = aux.batch(batch["patient_id"], device)
             optimizer.zero_grad(set_to_none=True)
 
-            def compute_loss(use_amp: bool) -> torch.Tensor:
+            def compute_loss(use_amp: bool):
                 with torch.autocast(device_type=device.type, dtype=torch.bfloat16,
                                     enabled=use_amp):
-                    out = model(ct)
-                    return loss_fn(out.view(-1), target)
+                    if aux is None:
+                        out = model(ct)
+                        main = loss_fn(out.view(-1), target)
+                        return main, main, main.new_zeros(())
+                    out, aux_out = model.forward_multitarget(ct)
+                    main = loss_fn(out.view(-1), target)
+                    # Averaged over the patients that have each value, not over
+                    # the batch: patients without spirometry must not pull the
+                    # heads towards zero.
+                    penalty = main.new_zeros(())
+                    for i, name in enumerate(aux.order):
+                        keep = aux_mask[:, i]
+                        if not bool(keep.any()):
+                            continue
+                        per = nn.functional.smooth_l1_loss(
+                            aux_out[name].view(-1)[keep], aux_target[keep, i],
+                            beta=1.0, reduction="mean")
+                        penalty = penalty + per
+                    penalty = penalty / max(len(aux.order), 1)
+                    return main + aux.weight * penalty, main, penalty
 
             use_amp = bool(config.training.amp and device.type == "cuda")
-            loss = compute_loss(use_amp)
+            loss, main_loss, aux_loss = compute_loss(use_amp)
             if not torch.isfinite(loss) and use_amp:
                 print("Non-finite loss under bf16; retrying this batch in fp32", flush=True)
-                loss = compute_loss(False)
+                loss, main_loss, aux_loss = compute_loss(False)
             if not torch.isfinite(loss):
                 raise RuntimeError("non-finite loss after fp32 retry")
             scaler.scale(loss).backward()
@@ -235,10 +335,17 @@ def train_regressor(config, helper, clinical, seed, epochs, device, mean, std,
             scaler.step(optimizer)
             scaler.update()
             total_loss += float(loss.item())
+            total_main += float(main_loss.item())
+            total_aux += float(aux_loss.item())
             batches += 1
         scheduler.step()
-        print(f"seed={seed} epoch={epoch}/{epochs} loss={total_loss/max(batches,1):.6f} "
-              f"lr={scheduler.get_last_lr()[0]:.8g}", flush=True)
+        # The combined loss is not comparable with a single-target run's, so the
+        # ratio term is printed on its own beside it.
+        detail = ("" if aux is None else
+                  f" ratio={total_main/max(batches,1):.6f} "
+                  f"aux={total_aux/max(batches,1):.6f}")
+        print(f"seed={seed} epoch={epoch}/{epochs} loss={total_loss/max(batches,1):.6f}"
+              f"{detail} lr={scheduler.get_last_lr()[0]:.8g}", flush=True)
         if eval_hook is not None and eval_every > 0 and (
                 epoch % eval_every == 0 or epoch == epochs):
             model.eval()
@@ -246,6 +353,45 @@ def train_regressor(config, helper, clinical, seed, epochs, device, mean, std,
             model.train()
     model.eval()
     return model
+
+
+class AuxTargets:
+    """Standardised auxiliary targets, with a per-patient mask.
+
+    Each target is standardised on the training patients that actually have it,
+    so the four losses are on one scale and none of them dominates by unit.
+    """
+
+    def __init__(self, values: dict, order: tuple, train_ids: list, weight: float):
+        self.order = order
+        self.weight = float(weight)
+        self.values = values
+        self.stats = []
+        for i, name in enumerate(order):
+            column = np.array([values[p][i] for p in train_ids if values.get(p) is not None],
+                              dtype=float)
+            if column.size < 2:
+                raise SystemExit(f"only {column.size} training patients have {name}; "
+                                 "refusing to standardise on that")
+            self.stats.append((float(column.mean()), float(column.std() or 1.0)))
+        self._cache: dict[str, tuple] = {}
+
+    def _row(self, pid: str):
+        if pid not in self._cache:
+            raw = self.values.get(pid)
+            if raw is None:
+                self._cache[pid] = ([0.0] * len(self.order), [False] * len(self.order))
+            else:
+                self._cache[pid] = (
+                    [(raw[i] - m) / s for i, (m, s) in enumerate(self.stats)],
+                    [True] * len(self.order))
+        return self._cache[pid]
+
+    def batch(self, patient_ids, device):
+        rows = [self._row(p) for p in patient_ids]
+        target = torch.tensor([r[0] for r in rows], dtype=torch.float32, device=device)
+        mask = torch.tensor([r[1] for r in rows], dtype=torch.bool, device=device)
+        return target, mask
 
 
 def inference_loader(helper: LoaderHelper, indices: list[int]):
@@ -370,6 +516,25 @@ def main() -> None:
     print(f"fixed split: train={len(train_ids)} internal_val={len(internal_ids)} "
           f"holdout={len(hold_ids)}; ratio mean={mean:.2f} sd={std:.2f}; "
           f"NO early stopping", flush=True)
+
+    aux = None
+    if args.aux_pft_csv is not None:
+        order = AUX_PFT_TARGETS
+        aux_rows, _ = load_aux_targets(args.aux_pft_csv, order)
+        values, reasons = {}, {}
+        for pid in train_ids:
+            got, why = aux_of(aux_rows, clinical, pid, order)
+            values[pid] = got
+            if got is None:
+                reasons[why] = reasons.get(why, 0) + 1
+        covered = sum(1 for v in values.values() if v is not None)
+        aux = AuxTargets(values, order, train_ids, args.aux_weight)
+        print(f"auxiliary targets {list(order)} weight {args.aux_weight} each: "
+              f"{covered}/{len(train_ids)} training patients covered", flush=True)
+        for name, (m, s) in zip(order, aux.stats):
+            print(f"  {name:<14} mean={m:.3f} sd={s:.3f}", flush=True)
+        for why, n in sorted(reasons.items(), key=lambda kv: -kv[1]):
+            print(f"  skipped {n:>3}: {why}", flush=True)
     if args.skip_holdout:
         print("frozen holdout will NOT be scored in this run", flush=True)
 
@@ -404,7 +569,7 @@ def main() -> None:
 
     model = train_regressor(config, helper, clinical, args.seed, args.epochs,
                             device, mean, std, eval_hook=eval_hook,
-                            eval_every=args.eval_every)
+                            eval_every=args.eval_every, aux=aux)
     train_pred_map = predict(model, inference_loader(helper, train_idx),
                              device, use_amp, mean, std)
     gap = [p for p in train_ids if p not in train_pred_map]

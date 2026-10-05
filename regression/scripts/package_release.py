@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import importlib.util
 import shutil
 import sys
@@ -66,6 +67,77 @@ def check_preprocess_matches(app_repo: Path) -> tuple[bool, str]:
     return True, ""
 
 
+DENSITY_BUILDER = (
+    Path(__file__).resolve().parents[1]
+    / "experiments" / "ratio5_20260918" / "run_1257_maskfree.py"
+)
+
+
+def check_density_matches(app_repo: Path) -> tuple[bool, str]:
+    """Return (True, "") iff the app's emphysema channel matches the training one.
+
+    Runs the real builder — run_1257_maskfree.maskfree(), the function that wrote the
+    channel the 2-channel checkpoints were trained on — over a synthetic volume, with
+    its output directory redirected to a temporary one, and compares the uint8 array
+    against the app's frozen maskfree_density. Bit-for-bit or nothing: the ways this
+    channel goes wrong (thresholding after the resize, dropping the uint8 step, using
+    clipped HU) all produce a plausible array that silently shifts every prediction.
+
+    Bundles without a density channel are not affected; main() only calls this when the
+    release being packaged declares in_channels=2.
+    """
+    import importlib.util
+
+    if not DENSITY_BUILDER.exists():
+        return False, f"density builder not found: {DENSITY_BUILDER}"
+    path = Path(app_repo) / "core" / "preprocess_density.py"
+    if not path.exists():
+        return False, f"app has no core/preprocess_density.py: {path}"
+
+    spec = importlib.util.spec_from_file_location("frozen_density", path)
+    frozen = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(frozen)
+
+    spec_b = importlib.util.spec_from_file_location("maskfree_builder", DENSITY_BUILDER)
+    builder = importlib.util.module_from_spec(spec_b)
+    spec_b.loader.exec_module(builder)
+
+    rng = np.random.default_rng(0)
+    # Deliberately spans both thresholds the builder writes, with a thin emphysema slab
+    # that only survives if the threshold is applied before the resize.
+    volume = (rng.random((90, 100, 80)).astype(np.float32) * 1400.0) - 1000.0
+    volume[:6] = -1000.0
+    volume[6:10] = -930.0
+
+    with tempfile.TemporaryDirectory() as d:
+        d = Path(d)
+        nii = d / "vol.nii.gz"
+        nib.save(nib.Nifti1Image(volume, affine=np.eye(4)), str(nii))
+        original = builder.DENSITY
+        builder.DENSITY = d
+        try:
+            pid, err = builder.maskfree(("synthetic", nii))
+        except Exception as exc:
+            return False, f"training builder raised: {type(exc).__name__}: {exc}"
+        finally:
+            builder.DENSITY = original
+        if err:
+            return False, f"training builder failed: {err}"
+        theirs = np.load(d / "synthetic.npy")[0]
+
+    mine = frozen.maskfree_density(volume, tuple(theirs.shape))
+    mine_u8 = np.rint(mine[0] * 255.0).astype(np.uint8)
+    if mine_u8.shape != theirs.shape:
+        return False, f"shape mismatch: app {mine_u8.shape} vs training {theirs.shape}"
+    if not np.array_equal(mine_u8, theirs):
+        worst = int(np.abs(mine_u8.astype(int) - theirs.astype(int)).max())
+        differing = int((mine_u8 != theirs).sum())
+        return False, (
+            f"density channel differs: {differing} voxels, max |delta| {worst}/255"
+        )
+    return True, ""
+
+
 def bundle_release(release_dir: Path, app_repo: Path, dest: Path) -> Path:
     """Copy checkpoints, metrics, and the frozen preprocess into a release bundle."""
     release_dir = Path(release_dir)
@@ -109,6 +181,22 @@ def main() -> None:
         print(f"RELEASE BLOCKED — preprocessing drift detected:\n  {reason}")
         raise SystemExit(1)
     print("Preprocessing check: frozen copy matches training bit-for-bit.")
+
+    # A 2-channel release depends on a second frozen function, so it needs a second
+    # gate. Read the release's own metrics.json rather than a flag: the bundle already
+    # has to declare its shape for the app, and one source of truth is enough.
+    try:
+        declared = json.loads(
+            (Path(args.release) / "metrics.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        declared = {}
+    if int(declared.get("in_channels", 1)) > 1:
+        ok, reason = check_density_matches(Path(args.app_repo))
+        if not ok:
+            print(f"RELEASE BLOCKED - density channel drift detected:\n  {reason}")
+            raise SystemExit(1)
+        print("Density check: frozen copy matches the training builder bit-for-bit.")
 
     out = bundle_release(Path(args.release), Path(args.app_repo), Path(args.dest))
     print(f"Release bundled: {out}")

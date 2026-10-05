@@ -67,6 +67,9 @@ RATIO_CUTOFF = 70.0
 # patient present in two pulls would have their source folder decided by sort order
 # rather than by the cohort definition. Set to None to scan every batch present.
 COHORT_BATCHES: set[str] | None = {
+    # Added 2026-09-29 (evening). Late May and early June 2025; the PFT pass of
+    # the same evening added 44 patients and removed or changed no row.
+    "20250522", "20250529", "20250605",
     # Added 2026-09-29. The June to early-July 2025 pulls. The PFT pass of
     # 2026-09-29 removed no row; it re-pointed one patient from a spirometry
     # nine months before the CT to one six weeks after it, which the rebuild

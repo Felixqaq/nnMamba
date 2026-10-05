@@ -6,6 +6,8 @@ import torch.nn as nn
 
 from networks.copdxnet import COPDxNet
 from networks.hybrid_mamba_attention_regressor import HybridMambaAttentionRegressor
+from networks.hybrid_mamba_attnpool_regressor import HybridMambaAttnPoolRegressor
+from networks.hybrid_mamba_guided_attnpool_regressor import HybridMambaGuidedAttnPoolRegressor
 from networks.hybrid_mamba_tapct_abmil_fusion_regressor import (
     HybridMambaTapctABMILFusionRegressor,
 )
@@ -25,6 +27,8 @@ MODEL_REGISTRY = {
     "hybrid": HybridMambaAttentionRegressor,
     "hybrid_mamba_attention": HybridMambaAttentionRegressor,
     "hybrid_mamba_attention_regressor": HybridMambaAttentionRegressor,
+    "hybrid_mamba_attnpool": HybridMambaAttnPoolRegressor,
+    "hybrid_mamba_attnpool_guided": HybridMambaGuidedAttnPoolRegressor,
     "hybrid_mamba_tapct_fusion": HybridMambaTapctFusionRegressor,
     "hybrid_tapct_fusion": HybridMambaTapctFusionRegressor,
     "tapct_late_fusion": HybridMambaTapctFusionRegressor,
@@ -134,6 +138,35 @@ def build_model(model_config, device=None, output_dim: int | None = None) -> nn.
                         ),
                     }
                 )
+        elif key == "hybrid_mamba_attnpool":
+            # Same arguments as hybrid_mamba_attention: the subclass changes
+            # only the pooling, so the two must be built identically.
+            kwargs = {
+                "in_channels": int(model_config.in_channels),
+                "num_classes": num_outputs,
+                "base_channels": int(model_config.base_channels),
+                "depths": tuple([int(model_config.blocks)] * 3),
+                "head_hidden_dim": int(model_config.hidden_dim),
+                "dropout": float(model_config.dropout),
+                "attn_heads": int(model_config.attn_heads),
+                "attn_layers": int(model_config.attn_layers),
+                "attn_mlp_ratio": float(model_config.attn_mlp_ratio),
+                "attn_dropout": float(model_config.attn_dropout),
+            }
+        elif key == "hybrid_mamba_attnpool_guided":
+            # Same arguments again; only the scorer initialisation differs.
+            kwargs = {
+                "in_channels": int(model_config.in_channels),
+                "num_classes": num_outputs,
+                "base_channels": int(model_config.base_channels),
+                "depths": tuple([int(model_config.blocks)] * 3),
+                "head_hidden_dim": int(model_config.hidden_dim),
+                "dropout": float(model_config.dropout),
+                "attn_heads": int(model_config.attn_heads),
+                "attn_layers": int(model_config.attn_layers),
+                "attn_mlp_ratio": float(model_config.attn_mlp_ratio),
+                "attn_dropout": float(model_config.attn_dropout),
+            }
         elif key in {"tapct_abmil", "tapct_abmil_classifier"}:
             kwargs = {
                 "tapct_embedding_dim": int(model_config.tapct_embedding_dim),
